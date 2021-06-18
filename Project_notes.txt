@@ -1,0 +1,30 @@
+Project notes file
+
+1) Do species have reverse J distributions
+figures: size distribution histograms
+Numbers of SE, JU, SA, and then bins of tree size
+Can also do bins of SAs by basal diameter
+
+>>>> 2) Descriptive understory statistics of each plot BY QUAD - 2013
+Total # SE, JU, SA (separately) per plot
+> Conifer SE, JU, SA per plot (Doug Fir + Torreya)
+> Hardwood SE, JU, SA # (total - Doug Fir - Torreya)
+#Diversity - species richness - of SE, JU, SA and cumulative
+
+#not for TBC3
+#how similar is understory to overstory
+
+3) what summary statistic - sum of JU + SA, or just SA, or SA + trees < 2 cm is most strongly correlated with LIDAR ladder fuel metrics (lidar hits 1-4 m above ground)
+
+Weighted sums to describe understory density:
+e.g., 3*SA + 2*JU + SE
+
+>>> 4) How do we work across the SA/TR divide? DBH to basal diameter transfer function, heights of saplings as they reach 1 cm
+- >>> plot DBH vs. basal diameter for threshold trees
+- What is the min, average, max height of trees right at 1 cm dbh
+- what are the max heights of saplings of each species?
+- make height histograms for saplings of each species
+
+  What is the dbh of a 4 m tree of each species? 
+
+5) Are there signatures of doug fir understory, below oak? E.g. high ladder fuels
