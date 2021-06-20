@@ -4,6 +4,7 @@ require('maptools')
 require('sp')
 require('rgeos')
 
+## input 64m from Sonoma Veg and extract per 50 plots
 ld <- raster('big_data/Classified_Ladder_Fuels/ladder.tif')
 ld
 plot(ld)
@@ -32,4 +33,26 @@ ldf <- extract(Pld,p54l)
 str(ldf)
 ldf
 
+ldf.sum <- data.frame(plot=1:54,ld=NA)
+for (i in 1:54) ldf.sum$ld[i] <- mean(ldf[[i]])
 ldf.sum
+
+write.csv(ldf.sum,'data/mean_ladder_fuel_54_64m.csv')
+
+
+# input 20m provided by Ryan and extract for 20 m plots
+ld2 <- raster('big_data/lf_clip/')
+
+proj4string(ld2)
+proj4string(p54l)
+
+plot(ld2)
+plot(p54l,bg="transparent", add=TRUE)
+
+ldf2 <- extract(ld2,p54l)
+class(ldf2)
+ldf2[[1]]
+
+ldf.sum$ld2 <- NA
+for (i in 1:54) ldf.sum$ld2[i] <- mean(ldf2[[i]])
+plot(ld2~ld,data=ldf.sum)
