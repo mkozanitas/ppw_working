@@ -25,3 +25,6 @@ seju.data<-seju.data[,c(2,1,3,4,5)]
 
 
 
+
+
+
