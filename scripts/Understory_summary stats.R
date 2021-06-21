@@ -29,7 +29,7 @@ write.csv(seju.data.p, "data/seju_data_p.csv", row.names=F)
 write.csv(seju.data.s, "data/seju_data_s.csv", row.names=F)
 
 
-
+##### GIVING ERRORS BELOW....
 #not sure how to break these up by quad, plants.by.plot() is an existing function 
 
 tree<-plants.by.plot(year=2013, type="TR")
