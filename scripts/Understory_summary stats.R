@@ -1,12 +1,16 @@
+## Script to extract seju data
+rm(list=ls())
+require('RCurl')
 
+source('PWfunctions_GitHub_local.R')
 seedling.juvenile<-get.seju.data(year=2013)
+
 #look at results
 head(seedling.juvenile)
 dim(seedling.juvenile)
 sum(seedling.juvenile$Total.Number) 
 
-write.csv(seedling.juvenile, "/Users/melinakozanitas/R projects/ppw_working/seju.data.csv", row.names=F)
-
+write.csv(seedling.juvenile, "data/seju.data.csv", row.names=F)
 
 #not sure how to break these up by quad, plants.by.plot() is an existing function 
 
