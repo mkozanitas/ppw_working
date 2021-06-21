@@ -1,8 +1,8 @@
 ## Script to extract seju data
 rm(list=ls())
-require('RCurl')
+source('scripts/PWfunctions_GitHub_Tutorial.R')
+source('scripts/PWfunctions_GitHub_local.R')
 
-source('PWfunctions_GitHub_local.R')
 seedling.juvenile<-get.seju.data(year=2013)
 
 #look at results
