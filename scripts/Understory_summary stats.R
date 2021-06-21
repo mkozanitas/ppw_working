@@ -1,9 +1,35 @@
 ## Script to extract seju data
 rm(list=ls())
-source('scripts/PWfunctions_GitHub_Tutorial.R')
-source('scripts/PWfunctions_GitHub_local.R')
+source('scripts/PWFunctions_load.R')
+#source('scripts/PWfunctions_GitHub_local.R')
 
-#from Megan's code...looks the same but totals remove quad distinction
+
+
+
+##### GIVING ERRORS BELOW....
+#not sure how to break these up by quad, plants.by.plot() is an existing function 
+
+source('scripts/PW_functions_local.R')
+tree<-plants.by.plot(year=2013, type="TR")
+sapling<-plants.by.plot(year=2013,type="SA")
+all<-plants.by.plot(year=2013,type="SA.TR")
+
+# make summary files of saplings
+head(sapling)
+sapling.p <- aggregate(cbind(Basal.Area, Count)~Plot, data=sapling, FUN=sum)
+head(sapling.p)
+dim(sapling.p)
+
+plot.list <- get.plot(2013)
+
+match.plots <- match(plot.list,sapling.p$Plot)
+sapling.p <- cbind(plot.list,sapling.p[match.plots,])
+sapling.p <- sapling.p[,-2]
+names(sapling.p)[1] <- 'Plot'
+rownames(sapling.p) <- 1:50
+head(sapling.p)
+write.csv(sapling.p,'data/saplings_p.csv')
+#Pull SEJU data and create summary files
 
 seju.data<-get.seju.data(2013)
 
@@ -27,20 +53,6 @@ write.csv(seju.data, "data/seju_data.csv", row.names=F)
 write.csv(seju.data.sp, "data/seju_data_sp.csv", row.names=F)
 write.csv(seju.data.p, "data/seju_data_p.csv", row.names=F)
 write.csv(seju.data.s, "data/seju_data_s.csv", row.names=F)
-
-
-##### GIVING ERRORS BELOW....
-#not sure how to break these up by quad, plants.by.plot() is an existing function 
-
-tree<-plants.by.plot(year=2013, type="TR")
-sapling<-plants.by.plot(year=2013,type="SA")
-all<-plants.by.plot(year=2013,type="SA.TR")
-babies<-plants.by.plot(year = 2013, type = "SEJU")
-
-
-
-
-
 
 
 
