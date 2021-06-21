@@ -3,6 +3,7 @@ require('raster')
 require('maptools')
 require('sp')
 require('rgeos')
+require("rgdal")
 
 ## input 64m from Sonoma Veg and extract per 50 plots
 ld <- raster('input_data/Classified_Ladder_Fuels/ladder.tif')
@@ -34,6 +35,7 @@ str(ldf)
 ldf
 
 ldf.sum <- data.frame(plot=1:54,ld=NA)
+head(ldf.sum)
 for (i in 1:54) ldf.sum$ld[i] <- mean(ldf[[i]])
 ldf.sum
 
