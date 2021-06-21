@@ -5,12 +5,12 @@ require('sp')
 require('rgeos')
 
 ## input 64m from Sonoma Veg and extract per 50 plots
-ld <- raster('big_data/Classified_Ladder_Fuels/ladder.tif')
+ld <- raster('input_data/Classified_Ladder_Fuels/ladder.tif')
 ld
 plot(ld)
 proj4string(ld)
 
-PWD <- readShapeSpatial('/Users/david/Google\ Drive/Drive-Projects/Pepperwood/PWD_GIS/PPshapefiles/PPshapefile-teale-albers/pepperwood')
+PWD <- readShapeSpatial('input_data/PPshapefile-teale-albers/pepperwood')
 plot(PWD)
 proj4string(PWD) <- CRS('+proj=aea +datum=NAD83 +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000')
 
@@ -22,7 +22,7 @@ Pld <- crop(ld,PWDl)
 plot(Pld)
 lines(PWDl)
 
-p54 <- readShapeSpatial('/Users/david/Google\ Drive/Drive-Projects/Pepperwood/PepperwoodVegPlots-DAproject/plot.info/2021\ updated\ shapefiles\ and\ coordinates/shapefiles/vegplots-54-20m-aea/vegplots-54-20m')
+p54 <- readShapeSpatial('input_data/shapefiles/vegplots-54-20m-aea/vegplots-54-20m')
 proj4string(p54) <- proj4string(PWD)
 p54l <- spTransform(p54,proj4string(ld))
 
@@ -41,7 +41,7 @@ write.csv(ldf.sum,'data/mean_ladder_fuel_54_64m.csv')
 
 
 # input 20m provided by Ryan and extract for 20 m plots
-ld2 <- raster('big_data/lf_clip/')
+ld2 <- raster('input_data/lf_clip/')
 
 proj4string(ld2)
 proj4string(p54l)
