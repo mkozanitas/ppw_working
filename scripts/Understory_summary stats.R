@@ -1,16 +1,11 @@
-## Script to extract seju data
+## Script to extract plot data for plants of different sizes
 rm(list=ls())
 source('scripts/PWFunctions_load.R')
 #source('scripts/PWfunctions_GitHub_local.R')
 
-
-
-
-##### GIVING ERRORS BELOW....
-#not sure how to break these up by quad, plants.by.plot() is an existing function 
-
 source('scripts/PW_functions_local.R')
-tree<-plants.by.plot(year=2013, type="TR")
+
+#Extract and summarize saplings
 sapling<-plants.by.plot(year=2013,type="SA")
 all<-plants.by.plot(year=2013,type="SA.TR")
 
@@ -29,6 +24,35 @@ names(sapling.p)[1] <- 'Plot'
 rownames(sapling.p) <- 1:50
 head(sapling.p)
 write.csv(sapling.p,'data/saplings_p.csv')
+
+# Extract and summarize trees
+tree<-plants.by.plot(year=2013, type="TR")
+head(tree)
+
+## extract small trees
+indv.data <- get.indv.data(year = 2013)
+head(indv.data)
+dim(indv.data)
+
+diam.range <- c(1,2) #enter min and max diam of interest
+ba.range <- pi*(diam.range/2)^2
+
+small.trees <- indv.data[which(indv.data$Basal.Area>=ba.range[1] & indv.data$Basal.Area<ba.range[2]),]
+dim(small.trees)
+
+small.trees.p <- aggregate(Basal.Area~Plot,data=small.trees,FUN=sum)
+head(small.trees.p)
+
+plot.list <- get.plot(2013)
+
+match.plots <- match(plot.list,small.trees.p$Plot)
+small.trees.p <- cbind(plot.list,small.trees.p[match.plots,])
+small.trees.p <- small.trees.p[,-2]
+names(small.trees.p)[1] <- 'Plot'
+rownames(small.trees.p) <- 1:50
+head(small.trees.p)
+write.csv(small.trees.p,'data/trees_1_2_p.csv')
+
 #Pull SEJU data and create summary files
 
 seju.data<-get.seju.data(2013)

@@ -16,3 +16,49 @@ head(seju.data.p)
 plot(ld~Total.Number,data=seju.data.p)
 fit <- lm(ld~Total.Number,data=seju.data.p)
 abline(fit)
+
+# compare saplings
+saplings.p <- read.csv('data/saplings_p.csv')
+dim(saplings.p)
+
+saplings.p$ld <- ld$ld[1:50]
+head(saplings.p)
+
+# run these lines to replace NAs with zeros
+saplings.p$Basal.Area[which(is.na(saplings.p$Basal.Area))] <- 0
+saplings.p$Count[which(is.na(saplings.p$Count))] <- 0
+
+plot(ld~Basal.Area,data=saplings.p[-28,])
+fit <- lm(ld~Basal.Area,data=saplings.p[-28,])
+abline(fit)
+summary(fit)
+
+plot(ld~Count,data=saplings.p[-28,])
+fit <- lm(ld~Count,data=saplings.p[-28,])
+abline(fit)
+summary(fit)
+
+# compare small trees
+smalltrees.p <- read.csv('data/trees_1_2_p.csv')
+dim(smalltrees.p)
+
+smalltrees.p$ld <- ld$ld[1:50]
+head(smalltrees.p)
+
+# run these lines to replace NAs with zeros
+smalltrees.p$Basal.Area[which(is.na(smalltrees.p$Basal.Area))] <- 0
+#smalltrees.p$Count[which(is.na(smalltrees.p$Count))] <- 0
+
+plot(ld~Basal.Area,data=smalltrees.p)
+fit <- lm(ld~Basal.Area,data=smalltrees.p)
+abline(fit)
+summary(fit)
+
+head(saplings.p)
+head(smalltrees.p)
+smalltrees.p$sap.smtr.BA <- saplings.p$Basal.Area+smalltrees.p$Basal.Area
+
+plot(ld~sap.smtr.BA,data=smalltrees.p[-28,])
+fit <- lm(ld~sap.smtr.BA,data=smalltrees.p[-28,])
+abline(fit)
+summary(fit)
