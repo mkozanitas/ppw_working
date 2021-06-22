@@ -7,7 +7,7 @@ source('scripts/PW_functions_local.R')
 
 #Extract and summarize saplings
 sapling<-plants.by.plot(year=2013,type="SA")
-all<-plants.by.plot(year=2013,type="SA.TR")
+#all<-plants.by.plot(year=2013,type="SA.TR")
 
 # make summary files of saplings
 head(sapling)
@@ -34,7 +34,7 @@ indv.data <- get.indv.data(year = 2013)
 head(indv.data)
 dim(indv.data)
 
-diam.range <- c(1,2) #enter min and max diam of interest
+diam.range <- c(1,5) #enter min and max diam of interest
 ba.range <- pi*(diam.range/2)^2
 
 small.trees <- indv.data[which(indv.data$Basal.Area>=ba.range[1] & indv.data$Basal.Area<ba.range[2]),]
@@ -51,7 +51,9 @@ small.trees.p <- small.trees.p[,-2]
 names(small.trees.p)[1] <- 'Plot'
 rownames(small.trees.p) <- 1:50
 head(small.trees.p)
-write.csv(small.trees.p,'data/trees_1_2_p.csv')
+
+out.file <- paste('data/trees_',diam.range[1],'_',diam.range[2],'_p.csv',sep='')
+write.csv(small.trees.p,out.file)
 
 #Pull SEJU data and create summary files
 
@@ -79,6 +81,7 @@ write.csv(seju.data.p, "data/seju_data_p.csv", row.names=F)
 write.csv(seju.data.s, "data/seju_data_s.csv", row.names=F)
 
 
-
+# %in% function
+which(indv.data$Species %in% c('PSEMEN'))
 
 

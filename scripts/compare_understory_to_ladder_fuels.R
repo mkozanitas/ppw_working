@@ -53,7 +53,10 @@ plot(ld~Basal.Area,data=smalltrees.p)
 fit <- lm(ld~Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
+identify(smalltrees.p$ld~smalltrees.p$Basal.Area)
 
+
+## add together small trees and saplings
 head(saplings.p)
 head(smalltrees.p)
 smalltrees.p$sap.smtr.BA <- saplings.p$Basal.Area+smalltrees.p$Basal.Area
@@ -62,3 +65,4 @@ plot(ld~sap.smtr.BA,data=smalltrees.p[-28,])
 fit <- lm(ld~sap.smtr.BA,data=smalltrees.p[-28,])
 abline(fit)
 summary(fit)
+identify(smalltrees.p$ld[-28]~smalltrees.p$sap.smtr.BA[-28])
