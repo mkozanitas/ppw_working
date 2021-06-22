@@ -51,7 +51,7 @@ abline(fit)
 summary(fit)
 
 # compare small trees
-smalltrees.p <- read.csv('data/trees_1_2_p.csv')
+smalltrees.p <- read.csv('data/trees_1_5_p.csv')
 dim(smalltrees.p)
 
 smalltrees.p$ld <- ld$ld[1:50]
@@ -61,6 +61,9 @@ head(smalltrees.p)
 # run these lines to replace NAs with zeros
 smalltrees.p$Basal.Area[which(is.na(smalltrees.p$Basal.Area))] <- 0
 #smalltrees.p$Count[which(is.na(smalltrees.p$Count))] <- 0
+
+smalltrees.p$log10.Basal.Area <- log10(smalltrees.p$Basal.Area+1)
+smalltrees.p$log10.rl <- log10(smalltrees.p$rl+1)
 
 plot(ld~Basal.Area,data=smalltrees.p)
 fit <- lm(ld~Basal.Area,data=smalltrees.p)
@@ -72,6 +75,11 @@ summary(fit)
 
 plot(rl~Basal.Area,data=smalltrees.p)
 fit <- lm(rl~Basal.Area,data=smalltrees.p)
+abline(fit)
+summary(fit)
+
+plot(log10.rl~log10.Basal.Area,data=smalltrees.p)
+fit <- lm(log10.rl~log10.Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
 
