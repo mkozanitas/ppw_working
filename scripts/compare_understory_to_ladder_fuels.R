@@ -10,6 +10,7 @@ ld <- read.csv('data/mean_ladder_fuel_54.csv')
 dim(ld)
 
 seju.data.p$ld <- ld$ld[1:50]
+seju.data.p$rl <- ld$rl[1:50]
 head(seju.data.p)
 
 #plot(seju.data.p$ld~seju.data.p$Total.Number)
@@ -22,6 +23,7 @@ saplings.p <- read.csv('data/saplings_p.csv')
 dim(saplings.p)
 
 saplings.p$ld <- ld$ld[1:50]
+saplings.p$rl <- ld$rl[1:50]
 head(saplings.p)
 
 # run these lines to replace NAs with zeros
@@ -33,8 +35,18 @@ fit <- lm(ld~Basal.Area,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
 
+plot(rl~Basal.Area,data=saplings.p[-28,])
+fit <- lm(rl~Basal.Area,data=saplings.p[-28,])
+abline(fit)
+summary(fit)
+
 plot(ld~Count,data=saplings.p[-28,])
 fit <- lm(ld~Count,data=saplings.p[-28,])
+abline(fit)
+summary(fit)
+
+plot(rl~Count,data=saplings.p[-28,])
+fit <- lm(rl~Count,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
 
@@ -43,6 +55,7 @@ smalltrees.p <- read.csv('data/trees_1_2_p.csv')
 dim(smalltrees.p)
 
 smalltrees.p$ld <- ld$ld[1:50]
+smalltrees.p$rl <- ld$rl[1:50]
 head(smalltrees.p)
 
 # run these lines to replace NAs with zeros
@@ -53,8 +66,14 @@ plot(ld~Basal.Area,data=smalltrees.p)
 fit <- lm(ld~Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
-identify(smalltrees.p$ld~smalltrees.p$Basal.Area)
 
+#uncomment to identify specific points
+#identify(smalltrees.p$ld~smalltrees.p$Basal.Area)
+
+plot(rl~Basal.Area,data=smalltrees.p)
+fit <- lm(rl~Basal.Area,data=smalltrees.p)
+abline(fit)
+summary(fit)
 
 ## add together small trees and saplings
 head(saplings.p)
