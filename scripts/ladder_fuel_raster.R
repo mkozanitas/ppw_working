@@ -28,6 +28,7 @@ proj4string(p54) <- proj4string(PWD)
 p54l <- spTransform(p54,proj4string(ld))
 
 plot(Pld)
+plot(PWDl,bg='transparent',add=T)
 plot(p54l,bg="transparent", add=TRUE)
 
 ldf <- extract(Pld,p54l)
@@ -39,22 +40,42 @@ head(ldf.sum)
 for (i in 1:54) ldf.sum$ld[i] <- mean(ldf[[i]])
 ldf.sum
 
-write.csv(ldf.sum,'data/mean_ladder_fuel_54_64m.csv')
 
 
 # input 20m provided by Ryan and extract for 20 m plots
-ld2 <- raster('input_data/lf_clip/')
+## TURNS OUT TO BE THE SAME DATA - COMMENTED OUT
+# ld2 <- raster('input_data/lf_clip/')
+# 
+# proj4string(ld2)
+# proj4string(p54l)
+# 
+# plot(ld2)
+# plot(p54l,bg="transparent", add=TRUE)
+# 
+# ldf2 <- extract(ld2,p54l)
+# class(ldf2)
+# ldf2[[1]]
+# 
+# ldf.sum$ld2 <- NA
+# for (i in 1:54) ldf.sum$ld2[i] <- mean(ldf2[[i]])
+# plot(ld2~ld,data=ldf.sum)
 
-proj4string(ld2)
-proj4string(p54l)
 
-plot(ld2)
+# RAW Ladder fuels data
+rl <- raster('input_data/Raw_Ladder_Fuels/COUNTY_one_to_four.tif')
+Prl <- crop(rl,PWDl)
+plot(Prl)
+plot(PWDl,bg='transparent',add=T)
 plot(p54l,bg="transparent", add=TRUE)
 
-ldf2 <- extract(ld2,p54l)
-class(ldf2)
-ldf2[[1]]
+rlf <- extract(Prl,p54l)
+str(rlf)
+rlf
 
-ldf.sum$ld2 <- NA
-for (i in 1:54) ldf.sum$ld2[i] <- mean(ldf2[[i]])
-plot(ld2~ld,data=ldf.sum)
+ldf.sum$rl <- NA
+head(ldf.sum)
+for (i in 1:54) ldf.sum$rl[i] <- mean(rlf[[i]])
+ldf.sum
+plot(ldf.sum$ld,ldf.sum$rl)
+
+write.csv(ldf.sum,'data/mean_ladder_fuel_54.csv')
