@@ -171,7 +171,7 @@ indv.data <- indv.data.archive[which(indv.data.archive$Species %in% c('HETARB','
 dim(indv.data)
 head(indv.data)
 
-diam.range <- c(1,3) #enter min and max diam of interest
+diam.range <- c(7,10) #enter min and max diam of interest
 ba.range <- pi*(diam.range/2)^2
 
 small.trees <- indv.data[which(indv.data$Basal.Area>=ba.range[1] & indv.data$Basal.Area<ba.range[2]),]
@@ -195,6 +195,8 @@ head(pl)
 names(pl)[grep('x',names(pl))] <- colname
 head(pl)
 pl[,c(colname,'Plot')]
+
+write.csv(pl, "data/pl_data.csv", row.names=F)
 
 #### NOT USED FOR NOW
 #Pull SEJU data and create summary files

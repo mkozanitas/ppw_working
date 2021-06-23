@@ -1,6 +1,80 @@
 # compare seju counts to ladder fuels
 rm(list=ls())
 
+
+#read in pl data frame 
+
+pl <- read.csv("data/pl_data.csv")
+
+plot(cl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
+fit <- lm(cl~sapling.BA,data=pl[-28,])
+abline(fit)
+summary(fit)
+
+plot(rl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
+fit <- lm(rl~sapling.BA,data=pl[-28,])
+abline(fit)
+summary(fit)
+
+plot(cl~sapling.count,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by count totals")
+fit <- lm(cl~sapling.count,data=pl[-28,])
+abline(fit)
+summary(fit)
+
+plot(rl~sapling.count,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by count totals")
+fit <- lm(rl~sapling.count,data=pl[-28,])
+abline(fit)
+summary(fit)
+
+plot(cl~TBA_1_3,data=pl, main = "Small trees (1-3cm DBH) by Basal Area")
+fit <- lm(cl~TBA_1_3,data=pl)
+abline(fit)
+summary(fit)
+
+plot(cl~TBA_3_5,data=pl, main = "Small trees (3-5cm DBH) by Basal Area")
+fit <- lm(cl~TBA_3_5,data=pl)
+abline(fit)
+summary(fit)
+
+plot(cl~TBA_5_7,data=pl, main = "Small trees (5-7cm DBH) by Basal Area")
+fit <- lm(cl~TBA_5_7,data=pl)
+abline(fit)
+summary(fit)
+
+plot(cl~TBA_7_10,data=pl, main = "Small trees (7-10cm DBH) by Basal Area")
+fit <- lm(cl~TBA_7_10,data=pl)
+abline(fit)
+summary(fit)
+
+plot(rl~TBA_1_3,data=pl, main = "Small trees (1-3cm DBH) by Basal Area")
+fit <- lm(rl~TBA_1_3,data=pl)
+abline(fit)
+summary(fit)
+
+plot(rl~TBA_3_5,data=pl, main = "Small trees (3-5cm DBH) by Basal Area")
+fit <- lm(rl~TBA_3_5,data=pl)
+abline(fit)
+summary(fit)
+
+plot(rl~TBA_5_7,data=pl, main = "Small trees (5-7cm DBH) by Basal Area")
+fit <- lm(rl~TBA_5_7,data=pl)
+abline(fit)
+summary(fit)
+
+plot(rl~TBA_7_10,data=pl, main = "Small trees (7-10cm DBH) by Basal Area")
+fit <- lm(rl~TBA_7_10,data=pl)
+abline(fit)
+summary(fit)
+
+
+
+
+
+
+
+
+#####This was used before creating main "pl" dataframe for pepperwood ladderfuels####
+
 # read in seju data summarized by plot
 seju.data.p <- read.csv('data/seju_data_p.csv')
 dim(seju.data.p)
