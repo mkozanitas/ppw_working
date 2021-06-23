@@ -84,15 +84,6 @@ write.csv(seju.data.s, "data/seju_data_s.csv", row.names=F)
 # %in% function
 which(indv.data$Species %in% c('PSEMEN'))
 
-#notes for buikding a data frame 
-x=data.frame(c1=1:10)
-x
-x$c2 <- 11:20
-x
-x$c3 <- NA
-x
-x$c4 <- c(1,2,3)
-x
 
 ladderfuels=data.frame(c1=1:50)
 ladderfuels$c2 <- sapling
