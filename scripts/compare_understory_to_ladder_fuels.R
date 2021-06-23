@@ -5,13 +5,22 @@ rm(list=ls())
 #read in pl data frame 
 
 pl <- read.csv("data/pl_data.csv")
+pl$DF.rem <- 0
+pl$DF.rem[c(20,21,49,40,41,6,25)] <- 1 #from a random word document*
 
-plot(cl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
+plot(cl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area",ylab='Classified ladder fuels',xlab='Sapling basal area (cm2)')
 fit <- lm(cl~sapling.BA,data=pl[-28,])
 abline(fit)
 summary(fit)
 
-plot(rl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
+plot(rl~sapling.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area",pch=19)
+points(rl~sapling.BA,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
+fit <- lm(rl~sapling.BA,data=pl[-28,])
+abline(fit)
+summary(fit)
+
+plot(rl~consap.BA,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area",pch=19)
+points(rl~consap.BA,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~sapling.BA,data=pl[-28,])
 abline(fit)
 summary(fit)
@@ -67,11 +76,32 @@ abline(fit)
 summary(fit)
 
 
+# Multiple regression of contribution of saplings vs. small trees
+head(pl)
+cor(pl[,c('sapling.BA','TBA_1_3','TBA_3_5','TBA_5_7','TBA_7_10')])
+pl$TBA_1_5 <- pl$TBA_1_3 + pl$TBA_3_5
+pl$TBA_5_10 <- pl$TBA_5_7 + pl$TBA_7_10
 
+cor(pl[-28,c('sapling.BA','TBA_1_5','TBA_5_10')])
 
+fit <- glm(rl~sapling.BA + TBA_1_5,data=pl[-28,])
+summary(fit)
 
+plot(rl~sapling.BA,data=pl[-28,])
+fit <- lm(rl~sapling.BA,data=pl[-28,])
+summary(fit)
 
+plot(rl~TBA_1_5,data=pl[-28,])
+fit <- lm(rl~TBA_1_5,data=pl[-28,])
+summary(fit)
 
+plot(rl~TBA_1_3,data=pl[-28,])
+fit <- lm(rl~TBA_1_3,data=pl[-28,])
+summary(fit)
+
+plot(rl~TBA_3_5,data=pl[-28,])
+fit <- lm(rl~TBA_3_5,data=pl[-28,])
+summary(fit)
 
 #####This was used before creating main "pl" dataframe for pepperwood ladderfuels####
 
@@ -157,12 +187,7 @@ fit <- lm(log10.rl~log10.Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
 
-# Multiple regression of contribution of saplings vs. small trees
-cor(smalltrees.p$Basal.Area,saplings.p$Basal.Area)
-# weakly correlated so both can be used in model
 
-fit <- glm(smalltrees.p$rl~smalltrees.p$Basal.Area + saplings.p$Basal.Area)
-summary(fit)
 
 # raw vs. classified
 plot(ld~rl,data=smalltrees.p)
