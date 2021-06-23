@@ -30,22 +30,22 @@ head(saplings.p)
 saplings.p$Basal.Area[which(is.na(saplings.p$Basal.Area))] <- 0
 saplings.p$Count[which(is.na(saplings.p$Count))] <- 0
 
-plot(ld~Basal.Area,data=saplings.p[-28,])
+plot(ld~Basal.Area,data=saplings.p[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
 fit <- lm(ld~Basal.Area,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
 
-plot(rl~Basal.Area,data=saplings.p[-28,])
+plot(rl~Basal.Area,data=saplings.p[-28,],main = "Saplings (>50cm, <1cm DBH) by Basal Area")
 fit <- lm(rl~Basal.Area,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
 
-plot(ld~Count,data=saplings.p[-28,])
+plot(ld~Count,data=saplings.p[-28,],main = "Saplings (>50cm, <1cm DBH) by count totals")
 fit <- lm(ld~Count,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
 
-plot(rl~Count,data=saplings.p[-28,])
+plot(rl~Count,data=saplings.p[-28,],main = "Saplings (>50cm, <1cm DBH) by count totals")
 fit <- lm(rl~Count,data=saplings.p[-28,])
 abline(fit)
 summary(fit)
@@ -65,7 +65,7 @@ smalltrees.p$Basal.Area[which(is.na(smalltrees.p$Basal.Area))] <- 0
 smalltrees.p$log10.Basal.Area <- log10(smalltrees.p$Basal.Area+1)
 smalltrees.p$log10.rl <- log10(smalltrees.p$rl+1)
 
-plot(ld~Basal.Area,data=smalltrees.p)
+plot(ld~Basal.Area,data=smalltrees.p, main = "Small trees (1-5cm DBH) by Basal Area")
 fit <- lm(ld~Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
@@ -73,12 +73,12 @@ summary(fit)
 #uncomment to identify specific points
 #identify(smalltrees.p$ld~smalltrees.p$Basal.Area)
 
-plot(rl~Basal.Area,data=smalltrees.p)
+plot(rl~Basal.Area,data=smalltrees.p, main = "Small trees (1-5cm DBH) by Basal Area")
 fit <- lm(rl~Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
 
-plot(log10.rl~log10.Basal.Area,data=smalltrees.p)
+plot(log10.rl~log10.Basal.Area,data=smalltrees.p,main = "Small trees (1-5cm DBH) by Basal Area")
 fit <- lm(log10.rl~log10.Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
