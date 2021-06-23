@@ -83,6 +83,13 @@ fit <- lm(log10.rl~log10.Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
 
+# Multiple regression of contribution of saplings vs. small trees
+cor(smalltrees.p$Basal.Area,saplings.p$Basal.Area)
+# weakly correlated so both can be used in model
+
+fit <- glm(smalltrees.p$rl~smalltrees.p$Basal.Area + saplings.p$Basal.Area)
+summary(fit)
+
 # raw vs. classified
 plot(ld~rl,data=smalltrees.p)
 
