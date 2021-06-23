@@ -83,6 +83,9 @@ fit <- lm(log10.rl~log10.Basal.Area,data=smalltrees.p)
 abline(fit)
 summary(fit)
 
+# raw vs. classified
+plot(ld~rl,data=smalltrees.p)
+
 ## add together small trees and saplings
 head(saplings.p)
 head(smalltrees.p)
