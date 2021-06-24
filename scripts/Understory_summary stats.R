@@ -196,7 +196,26 @@ names(pl)[grep('x',names(pl))] <- colname
 head(pl)
 pl[,c(colname,'Plot')]
 
+##attempting to make ht (hardwood tree) by size class columns
+
+pl$htTBA_BA_1_3 <- pl$TBA_1_3 - pl$conTBA_BA_1_3 - pl$shrubTBA_BA_1_3
+head(pl)
+
+
+
 write.csv(pl, "data/pl_data.csv", row.names=F)
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### NOT USED FOR NOW
 #Pull SEJU data and create summary files
