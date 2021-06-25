@@ -84,21 +84,25 @@ summary(fit)
 
 
 plot(rl~TBA_1_3,data=pl, main = "Small trees (1-3cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small tree (1-3cm DBH) basal area (cm2)',pch=19)
+points(rl~TBA_1_3,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~TBA_1_3,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~TBA_3_5,data=pl, main = "Small trees (3-5cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small tree (3_5 cm DBH) basal area (cm2)',pch=19)
+points(rl~TBA_3_5,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~TBA_3_5,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~TBA_5_7,data=pl, main = "Small trees (5-7cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small tree (5-7cm DBH) basal area (cm2)',pch=19)
+points(rl~TBA_5_7,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~TBA_5_7,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~TBA_7_10,data=pl, main = "Small trees (7-10cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small tree (7-10cm DBH) basal area (cm2)',pch=19)
+points(rl~TBA_7_10,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~TBA_7_10,data=pl)
 abline(fit)
 summary(fit)
@@ -106,21 +110,25 @@ summary(fit)
 #conifer trees
 
 plot(rl~conTBA_1_3,data=pl, main = "Small conifer trees (1-3cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small conifer tree (1-3cm DBH) basal area (cm2)',pch=19)
+points(rl~conTBA_1_3,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~conTBA_1_3,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~conTBA_3_5,data=pl, main = "Small conifer trees (3-5cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small conifer tree (3_5 cm DBH) basal area (cm2)',pch=19)
+points(rl~conTBA_3_5,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~conTBA_3_5,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~conTBA_5_7,data=pl, main = "Small conifer trees (5-7cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small conifer tree (5-7cm DBH) basal area (cm2)',pch=19)
+points(rl~conTBA_5_7,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~conTBA_5_7,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~conTBA_7_10,data=pl, main = "Small conifer trees (7-10cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Small conifer tree (7-10cm DBH) basal area (cm2)',pch=19)
+points(rl~conTBA_7_10,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~conTBA_7_10,data=pl)
 abline(fit)
 summary(fit)
@@ -128,21 +136,25 @@ summary(fit)
 #shrub species_trees
 
 plot(rl~shrubTBA_1_3,data=pl, main = "Shrub species small trees (1-3cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Shrub species small tree (1-3cm DBH) basal area (cm2)',pch=19)
+points(rl~shrubTBA_1_3,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~shrubTBA_1_3,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~shrubTBA_3_5,data=pl, main = "Shrub species small trees (3-5cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Shrub species small tree (3_5 cm DBH) basal area (cm2)',pch=19)
+points(rl~shrubTBA_3_5,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~shrubTBA_3_5,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~shrubTBA_5_7,data=pl, main = "Shrub species small trees (5-7cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Shrub species small tree (5-7cm DBH) basal area (cm2)',pch=19)
+points(rl~shrubTBA_5_7,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~shrubTBA_5_7,data=pl)
 abline(fit)
 summary(fit)
 
 plot(rl~shrubTBA_7_10,data=pl, main = "Shrub species small trees (7-10cm DBH) by Basal Area",ylab='Raw ladder fuels',xlab='Shrub species small tree (7-10cm DBH) basal area (cm2)',pch=19)
+points(rl~shrubTBA_7_10,data=pl[pl$DF.rem==1,],pch=19,col='red',cex=2)
 fit <- lm(rl~shrubTBA_7_10,data=pl)
 abline(fit)
 summary(fit)
