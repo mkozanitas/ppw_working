@@ -8,6 +8,7 @@ pl <- read.csv("data/pl_data.csv")
 pl$DF.rem <- 0
 pl$DF.rem[c(20,21,49,40,41,6,25)] <- 1 #from a random word document*
 
+plot(pl$cl~pl$rl,xlab='Raw Ladder Fuels',ylab='Classified Ladder Fuels',pch=19)
 #saplings_all
 
 plot(cl~sapling.count,data=pl[-28,],main = "Saplings (>50cm, <1cm DBH) by count totals",ylab='Classified ladder fuels',xlab='Sapling count totals')
