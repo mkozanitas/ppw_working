@@ -34,3 +34,10 @@ fit <- lm(log(SA.Stump.BD_cm)~log(SA.Stump.Height_cm),data=sap.data[sap.data$mai
 abline(fit)
 summary(fit)
 exp(5.5)
+
+#species specific
+ssel <- 'UMBCAL'
+plot(SA.Stump.BD_cm~SA.Stump.Height_cm,data=sap.data[sap.data$mainStem==T & sap.data$Species==ssel,],ylim=c(0,5),main=ssel)
+fit <- lm(SA.Stump.BD_cm~SA.Stump.Height_cm,data=sap.data[sap.data$mainStem==T & sap.data$Species==ssel,])
+abline(fit)
+summary(fit)
