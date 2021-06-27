@@ -8,15 +8,16 @@ source('scripts/PW_functions_local.R')
 seju.data<-get.seju.data(2013)
 sapling<-plants.by.plot(year=2013,type="SA")
 indv.data <- get.indv.data(year = 2013)
+tree.data <- indv.data[which(indv.data$Type=='TR'),]
 
 head(seju.data)
 head(sapling)
-head(indv.data)
-indv.data$dbh <- 2*sqrt(indv.data$Basal.Area/pi)
-max(indv.data$dbh,na.rm=T)
+head(tree.data)
+tree.data$dbh <- 2*sqrt(tree.data$Basal.Area/pi)
+max(tree.data$dbh,na.rm=T)
 
 
-count.by.size <- function(id=indv.data,species=select.species,sr=c(1,10)) {
+count.by.size <- function(id=tree.data,species=select.species,sr=c(1,10)) {
   ssel <- which(id$Species %in% species)
   dsel <- which(id$dbh>=sr[1] & id$dbh<sr[2])
   rsel <- intersect(ssel,dsel)
@@ -25,11 +26,12 @@ count.by.size <- function(id=indv.data,species=select.species,sr=c(1,10)) {
 
 cuts <- c(1,2,4,8,16,32,64,128)
 
-all.spp <- sort(unique(indv.data$Species))
+all.spp <- sort(unique(tree.data$Species))
 all.spp
 
-select.species <- all.spp
-sp.name <- 'all'
+# if one species, enter code in first line and figure legend name in second line. select.species can also take lists of species, including all.spp to get all data
+select.species <- 'QUEDOU'
+sp.name <- 'BlueOak'
 {
   sc <- data.frame(class=c('seedling','juvenile','sapling','T1','T2','T3','T4','T5','T6','T7'),species=sp.name,count=NA)
   sc$count[1] <- sum(seju.data$Num.Seedlings[which(seju.data$Species %in% select.species)])
@@ -46,4 +48,6 @@ sp.name <- 'all'
   }
   sc
 }
-barplot(sc$count,main=sp.name)
+png(paste('figures/sizedist_',sp.name,'.png',sep=''),width = 800,height = 600)
+if (select.species=='UMBCAL') barplot(sc$count,main=sp.name,ylim=c(0,1000)) else barplot(sc$count,main=sp.name)
+dev.off()

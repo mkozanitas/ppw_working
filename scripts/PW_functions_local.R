@@ -49,12 +49,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     if(year>=2018) {
       mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,20,8:12,17:19)]
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species",  
-                                  "SA.Stump.Height_cm","SA.Stump.BD_cm", "SA.Branch.Num",
-                                  "DBH_cm", "X_cm", "Y_cm", "Notes", 
-                                  "Survival", "Basal.Resprout", "Epicormic.Resprout", 
-                                  "Apical.Growth", "Canopy.Percent", "Basal.Resprout.Height_cm", 
-                                  "Basal.Resprout.Count", "Tag.Pulled")
+      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species","SA.Stump.Height_cm","SA.Stump.BD_cm", "SA.Branch.Num","DBH_cm", "X_cm", "Y_cm", "Notes","Survival", "Basal.Resprout", "Epicormic.Resprout","Apical.Growth", "Canopy.Percent", "Basal.Resprout.Height_cm","Basal.Resprout.Count", "Tag.Pulled")
       if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
       if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
       if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
@@ -66,8 +61,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       if(keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
       mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump", 
-                                  "SA.Stump.Height_cm", "SA.Stump.BD_cm", "SA.Branch.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
+      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump","SA.Stump.Height_cm", "SA.Stump.BD_cm", "SA.Branch.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
       # subset stumps and original dead
       if(stump==F & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump))) 
       # subset original dead individuals
@@ -126,9 +120,11 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Y_cm<0),"Y_cm"]<-indv.data[which(indv.data$Y_cm<0),"Y_cm"]+500
   
   # condense each individual into a single row 
-  if (branches==F){
+  if (branches==F)
+  {
     indv.data$Num<-floor(indv.data$Num)
-    if(year==2018) {
+    if(year==2018) 
+    {
       indv.data[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num), "SA.Stem.Num" ] <- 0
       indv.data[indv.data$Type=="SA", "SA.Stem.Num" ]<- indv.data[indv.data$Type=="SA", "SA.Stem.Num" ] + 1
     }
