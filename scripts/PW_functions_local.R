@@ -33,8 +33,7 @@ plants.by.plot <- function(year, type){
   }   
 }
 
-get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/')
-{
+get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'){
   options(stringsAsFactors=FALSE)  
   file.list <-(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/WoodySurvey",year,"_", sep='')) 
   plot.list<-get.plot(year=year)
@@ -42,6 +41,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list 
   
+  i=1
   for (i in 1:length(mega.data)) 
   {
     Plot<-plot.list[i]
@@ -49,7 +49,14 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     if(year>=2018) {
       mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,20,8:12,17:19)]
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species","SA.Stump.Height_cm","SA.Stump.BD_cm", "SA.Branch.Num","DBH_cm", "X_cm", "Y_cm", "Notes","Survival", "Basal.Resprout", "Epicormic.Resprout","Apical.Growth", "Canopy.Percent", "Basal.Resprout.Height_cm","Basal.Resprout.Count", "Tag.Pulled")
+      colnames(mega.data[[i]])<-c(
+        "Plot", "Quad", "Type", "Num", "Species",
+        "SA.Stump.Height_cm","SA.Stump.BD_cm",
+        "SA.Branch.Num","DBH_cm", "X_cm", "Y_cm",
+        "Notes","Survival", "Basal.Resprout",
+        "Epicormic.Resprout","Apical.Growth",
+        "Canopy.Percent", "Basal.Resprout.Height_cm",
+        "Basal.Resprout.Count", "Tag.Pulled")
       if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
       if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
       if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
@@ -61,7 +68,8 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       if(keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
       mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump","SA.Stump.Height_cm", "SA.Stump.BD_cm", "SA.Branch.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
+      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump", 
+                                  "SA.Stump.Height_cm", "SA.Stump.BD_cm", "SA.Branch.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
       # subset stumps and original dead
       if(stump==F & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump))) 
       # subset original dead individuals
@@ -120,15 +128,14 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Y_cm<0),"Y_cm"]<-indv.data[which(indv.data$Y_cm<0),"Y_cm"]+500
   
   # condense each individual into a single row 
-  if (branches==F)
-  {
+  if (branches==F){
     indv.data$Num<-floor(indv.data$Num)
-    if(year==2018) 
-    {
+    if(year==2018) {
       indv.data[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num), "SA.Stem.Num" ] <- 0
       indv.data[indv.data$Type=="SA", "SA.Stem.Num" ]<- indv.data[indv.data$Type=="SA", "SA.Stem.Num" ] + 1
     }
     indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Branch.Num"])
+    
     indv.data[indv.data$Type=="TR", "Basal.Area"]<- (((indv.data[indv.data$Type=="TR","DBH_cm"]/2)^2)*(pi))
     # get rid of TS rows
     indv.data<-indv.data[indv.data$Type!="TS",]
@@ -147,7 +154,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     # Get rid of the extra columns "DBH_cm", ... 
     indv.data<-as.data.frame(indv.data)
-    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","Dead.Stump","X_cm","Y_cm","Basal.Area")]
+    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area")]
   } else {
     indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Branch.Num"])
     indv.data[indv.data$Type=="TR", "Basal.Area"]<- (((indv.data[indv.data$Type=="TR","DBH_cm"]/2)^2)*(pi))

@@ -5,9 +5,11 @@ source('scripts/PWFunctions_load.R')
 
 source('scripts/PW_functions_local.R')
 
-seju.data<-get.seju.data(2013)
-sapling<-plants.by.plot(year=2013,type="SA")
-indv.data <- get.indv.data(year = 2013)
+seju.data<-get.seju.data(2018)
+sapling<-plants.by.plot(year=2018,type="SA")
+indv.data <- get.indv.data(year = 2018)
+
+
 tree.data <- indv.data[which(indv.data$Type=='TR'),]
 
 head(seju.data)
@@ -15,7 +17,6 @@ head(sapling)
 head(tree.data)
 tree.data$dbh <- 2*sqrt(tree.data$Basal.Area/pi)
 max(tree.data$dbh,na.rm=T)
-
 
 count.by.size <- function(id=tree.data,species=select.species,sr=c(1,10)) {
   ssel <- which(id$Species %in% species)
@@ -48,6 +49,14 @@ sp.name <- 'BlueOak'
   }
   sc
 }
-png(paste('figures/sizedist_',sp.name,'.png',sep=''),width = 800,height = 600)
+png(paste('figures/sizedist_2018_',sp.name,'.png',sep=''),width = 800,height = 600)
 if (select.species=='UMBCAL') barplot(sc$count,main=sp.name,ylim=c(0,1000)) else barplot(sc$count,main=sp.name)
 dev.off()
+
+
+## compare years
+id18 <- indv.data
+id13 <- get.indv.data(year = 2013)
+
+id13[id13$Num==2976,]
+id18[id18$Num==2976,]
