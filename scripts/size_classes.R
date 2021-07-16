@@ -5,9 +5,11 @@ source('scripts/PWFunctions_load.R')
 
 source('scripts/PW_functions_local.R')
 
-seju.data<-get.seju.data(2018)
-sapling<-plants.by.plot(year=2018,type="SA")
-indv.data <- get.indv.data(year = 2018)
+syear <- 2018
+
+seju.data<-get.seju.data(syear)
+sapling<-plants.by.plot(year=syear,type="SA")
+indv.data <- get.indv.data(year = syear)
 
 
 tree.data <- indv.data[which(indv.data$Type=='TR'),]
@@ -32,7 +34,8 @@ all.spp
 
 # if one species, enter code in first line and figure legend name in second line. select.species can also take lists of species, including all.spp to get all data
 select.species <- 'QUEDOU'
-sp.name <- 'BlueOak'
+select.species <- all.spp
+sp.name <- 'ALL'
 {
   sc <- data.frame(class=c('seedling','juvenile','sapling','T1','T2','T3','T4','T5','T6','T7'),species=sp.name,count=NA)
   sc$count[1] <- sum(seju.data$Num.Seedlings[which(seju.data$Species %in% select.species)])
@@ -49,7 +52,7 @@ sp.name <- 'BlueOak'
   }
   sc
 }
-png(paste('figures/sizedist_2018_',sp.name,'.png',sep=''),width = 800,height = 600)
+png(paste('figures/sizedist_',syear,'_',sp.name,'.png',sep=''),width = 800,height = 600)
 if (select.species=='UMBCAL') barplot(sc$count,main=sp.name,ylim=c(0,1000)) else barplot(sc$count,main=sp.name)
 dev.off()
 
