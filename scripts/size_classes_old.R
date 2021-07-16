@@ -57,5 +57,9 @@ dev.off()
 id18 <- indv.data
 id13 <- get.indv.data(year = 2013)
 
-id13[id13$Num==2976,]
-id18[id18$Num==2976,]
+
+#to check for giant 290 DBH-in tree 2976. 
+#fixed in csv so now should be the same 
+
+#id13[id13$Num==2976,]
+#id18[id18$Num==2976,]
