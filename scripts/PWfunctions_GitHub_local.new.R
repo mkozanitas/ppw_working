@@ -11,8 +11,12 @@ rm(list=ls())
 ######################################################################
 get.plot<-function(year=2013){ 
   # list of file names
-  if(year>=2018) plot.list<- paste("PPW",c(1301:1350,1851:1854), sep="")
-  else plot.list<- paste("PPW",1301:1350, sep="")
+  if(year>=2018) {
+    plot.list <- paste("PPW",c(1301:1350,1851:1854), sep="")
+# This is the stupidest thing ever
+    if(year==2020) plot.list <- plot.list[-c(5,6,20,25,28,30,40,41,42,46,49,51:54)] 
+  } else plot.list <- paste("PPW",1301:1350, sep="")
+
   return(plot.list)
 }
 
@@ -112,11 +116,35 @@ kill.trees<-function(year,prefix='https://raw.githubusercontent.com/dackerly/Pep
 ######################################################################
 ### get.indv.data() ### 
 ######################################################################
-get.indv.data<-function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'){
+get.indv.data<-function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, 
+bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'){
+  
+  year=2019
+  stump=F
+  orig.dead=F
+  survival=F
+  bsprout=F
+  epicormic=F
+  apical=F
+  canopy=F
+  bsprout.height=F
+  bsprout.count=F
+  tag.pulled=F
+  keep.999=F
+  branches=F
+  prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'
+  
+  
   options(stringsAsFactors=FALSE)  
   file.list <-(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/WoodySurvey",year,"_", sep='')) 
   plot.list<-get.plot(year=year)
-  
+
+flist <- paste(file.list, plot.list, ".csv", sep='')
+for(f in 1:length(flist)){
+  read.csv(text=getURL(flist[f], followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)
+}
+flist[f]
+
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list 
   
@@ -164,6 +192,7 @@ get.indv.data<-function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epico
   indv.data$SA.Stump.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.Stump.BD_cm))
   # make indv.data$TreeNum numeric
   indv.data$Num<-as.numeric(indv.data$Num)
+indv.data[is.na(as.numeric(indv.data$Num)),]
   # cleaning up Types 
   indv.data[indv.data$Type==" TR", "Type"]<-"TR"
   indv.data[indv.data$Type=="SA ","Type"]<-"SA"
