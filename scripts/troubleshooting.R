@@ -10,7 +10,7 @@ source('scripts/PWFunctions_load.R')
 source('scripts/PW_functions_local.R')
 
 # Load the per-year data (without aggregating branches)
-indv.data.2013 <- get.indv.data(year = 2013,branches=F)
+indv.data.2013 <- get.indv.data(year = 2013,branches=T)
 #head(indv.data.2013)
 
 indv.data.2018 <- get.indv.data(year = 2018,branches=T)
@@ -27,7 +27,7 @@ str(indv.data.2020)
 !(1000:5153 %in% indv.data.2013$Num)
 
 # THe following lines identify which plots dupolicated numbers are in
-indv.data <- indv.data.2013
+indv.data <- indv.data.2018
 
 # Check to see if tag numbers are duplicated in a particular year
 length(unique(indv.data$Num)) # How many UNIQUE tag numbers
