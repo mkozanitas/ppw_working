@@ -79,8 +79,9 @@ newtags
 maxnum.2018 <- 6325 # entered manually due to two outliers
 
 # those last two don't look right - worth fixing in csv
-indv.data.2018[which(indv.data.2018$Num==27775),]
-indv.data.2018[which(indv.data.2018$Num==40070),]
+#indv.data.2018[which(indv.data.2018$Num==27775),]
+#indv.data.2018[which(indv.data.2018$Num==40070),]
+#now fixed
 
 # Identify new tag numbers in 2019 that weren't in the 2018 data
 # Including ones less than 5154 that must have been out
@@ -91,11 +92,12 @@ newtags.19
 maxnum.19 <- 6951
 
 # those last five don't look right - worth fixing in csv
-indv.data.2019[which(indv.data.2019$Num==9595),]
-indv.data.2019[which(indv.data.2019$Num==20804),]
-indv.data.2019[which(indv.data.2019$Num==21223),]
-indv.data.2019[which(indv.data.2019$Num==47990),]
-indv.data.2019[which(indv.data.2019$Num==48070),]
+#indv.data.2019[which(indv.data.2019$Num==9595),]
+#indv.data.2019[which(indv.data.2019$Num==20804),]
+#indv.data.2019[which(indv.data.2019$Num==21223),]
+#indv.data.2019[which(indv.data.2019$Num==47990),]
+#indv.data.2019[which(indv.data.2019$Num==48070),]
+#all fixed
 
 # Identify new tag numbers in 2020 that weren't in the 2019 data
 # Including ones less than 5154 that must have been out
@@ -105,7 +107,8 @@ newtags.20
 (newtags.20[newtags.20 > maxnum.19])
 
 # there's one funny one
-indv.data.2020[which(indv.data.2020$Num==282873),]
+#indv.data.2020[which(indv.data.2020$Num==282873),]
+#Fixed
 
 ## Now make a list of all numbers that appear across all years
 # The loop here makes this so it will run smoothly if additional years are added
