@@ -76,12 +76,7 @@ newtags <- sort(indv.data.2018$Num[!(indv.data.2018$Num %in% indv.data.2013$Num)
 newtags
 (newtags.lt.maxnum <- newtags[newtags <= maxnum.2013])
 (newtags.gt.maxnum <- newtags[newtags > maxnum.2013])
-maxnum.2018 <- 6325 # entered manually due to two outliers
-
-# those last two don't look right - worth fixing in csv
-#indv.data.2018[which(indv.data.2018$Num==27775),]
-#indv.data.2018[which(indv.data.2018$Num==40070),]
-#now fixed
+(maxnum.2018 <- max(indv.data.2018$Num))
 
 # Identify new tag numbers in 2019 that weren't in the 2018 data
 # Including ones less than 5154 that must have been out
@@ -89,15 +84,7 @@ newtags.19 <- sort(indv.data.2019$Num[!(indv.data.2019$Num %in% indv.data.2018$N
 newtags.19
 (newtags.19[newtags.19 <= maxnum.2018])
 (newtags.19[newtags.19 > maxnum.2018])
-maxnum.19 <- 6951
-
-# those last five don't look right - worth fixing in csv
-#indv.data.2019[which(indv.data.2019$Num==9595),]
-#indv.data.2019[which(indv.data.2019$Num==20804),]
-#indv.data.2019[which(indv.data.2019$Num==21223),]
-#indv.data.2019[which(indv.data.2019$Num==47990),]
-#indv.data.2019[which(indv.data.2019$Num==48070),]
-#all fixed
+(maxnum.19 <- max(indv.data.2019$Num))
 
 # Identify new tag numbers in 2020 that weren't in the 2019 data
 # Including ones less than 5154 that must have been out
@@ -105,10 +92,6 @@ newtags.20 <- sort(indv.data.2020$Num[!(indv.data.2020$Num %in% indv.data.2019$N
 newtags.20
 (newtags.20[newtags.20 <= maxnum.19])
 (newtags.20[newtags.20 > maxnum.19])
-
-# there's one funny one
-#indv.data.2020[which(indv.data.2020$Num==282873),]
-#Fixed
 
 ## Now make a list of all numbers that appear across all years
 # The loop here makes this so it will run smoothly if additional years are added
@@ -127,8 +110,6 @@ length(allNums)
 head(allNums)
 tail(allNums)
 
-##### edit from here for 2020
-
 # there are some numbers above that should be fixed. In the meantime, let's make a dataframe with all individuals across all years, which we can use to start checking problems
 allIndv <- data.frame(Num=allNums,P13=NA,P18=NA,P19=NA,P20=NA,S13=NA,S18=NA,S19=NA,S20=NA)
 
@@ -145,7 +126,7 @@ for (i in 1:length(all.indv.data))
 head(allIndv)
 
 ## This data.frame may be quite useful for quickly identifying problem individuals. For example, what numbers were present in plot 1345 in 2018 that were missed in 2013. Maybe that's the right number for the -999 individual
-allIndv[which(allIndv$P18=='PPW1345'),c('Num',Pn)]
+allIndv[which(allIndv$P13=='PPW1345'),c('Num',Pn)]
 # Indv 2276 is missing in 2013 and present in later years. Is that the right number for the one with -999?
 
 # Now, let's see which numbers were assigned in different plots in different years. To do this we'll use the apply function which can apply a function either across the rows or columns of a matrix or dataframe. We'll make a new function which counts the number of unique entries. So if all three plot IDs were the same for a number, the function returns 1. If it's more than 1, indicates a problem
@@ -169,6 +150,9 @@ head(allIndv$nSp)
 
 # OK, almost 300 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
 allIndv[multSp,c('Num',Sn)]
+
+## how many are the same individuals
+table(allIndv$nP,allIndv$nSp)
 
 ## which individuals are missing from 2018 and present in 2013 and 2019
 midNA <- function(x)
