@@ -1,7 +1,6 @@
 # make demographic distributions for species
 rm(list=ls())
 update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
-library(RCurl)
 
 source('scripts/PWFunctions_load.R')
 #source('scripts/PWfunctions_GitHub_local.R')
@@ -9,29 +8,45 @@ source('scripts/PWFunctions_load.R')
 source('scripts/PW_functions_local.R')
 
 # Load the per-year data (without aggregating branches)
-indv.data.2013 <- get.indv.data(year = 2013,branches=F)
-dim(indv.data.2013)
-head(indv.data.2013)
+id13 <- get.indv.data(year = 2013,branches=F)
+dim(id13)
+head(id13)
+head(sort(id13$Num))
+nNum <- table(id13$Num)
+nNum[which(nNum>1)]
+
+id13b <- get.indv.data(year = 2013,branches=T)
+dim(id13b)
+head(id13b)
+head(sort(id13b$Num))
+
+# sloppy coding to be able to turn a code snippet on and off
+if (FALSE) 
+{
+  id13f <- get.indv.data(year = 2013, stump=T, orig.dead=T, survival=T, bsprout=T, epicormic=T, apical=T, canopy=T, bsprout.height=T, bsprout.count=T, tag.pulled=T, keep.999=T, branches=F)
+  dim(id13f)
+  head(id13f)
+}
 
 #indv.data.2013.B <- get.indv.data(year = 2013,branches=T)
 #dim(indv.data.2013.B)
 #head(indv.data.2013.B)
+id18 <- get.indv.data(year = 2018, branches=F)
+dim(id18)
+head(id18)
 
-indv.data.2018 <- get.indv.data(year = 2018,branches=F)
-dim(indv.data.2018)
-head(indv.data.2018)
+id18b <- get.indv.data(year = 2018,branches=T)
+dim(id18b)
+head(id18b)
 
-#indv.data.2018.B <- get.indv.data(year = 2018,branches=T)
-#dim(indv.data.2018.B)
-#head(indv.data.2018.B)
+####
+id19 <- get.indv.data(year = 2019,branches=F)
+dim(id19)
+head(id19)
 
-indv.data.2019 <- get.indv.data(year = 2019,branches=F)
-dim(indv.data.2019)
-head(indv.data.2019)
-
-#indv.data.2019.B <- get.indv.data(year = 2019,branches=T)
-#dim(indv.data.2019.B)
-#head(indv.data.2019.B)
+id19b <- get.indv.data(year = 2019,branches=T)
+dim(id19b)
+head(id19b)
 
 # This one gives an error - skip for now
 
@@ -39,24 +54,29 @@ plot.list.2020 <- get.plot(2020)
 # now remove plots not sampled
 plot.list.2020 <- plot.list.2020[-c(5,6,20,25,28,30,40:42,46,49,51:54)]
 plot.list.2020
-indv.data.2020 <- get.indv.data(year = 2020,branches=F,plot.list=plot.list.2020)
-dim(indv.data.2020)
-head(indv.data.2020)
-# str(indv.data.2020)
+id20 <- get.indv.data(year = 2020,branches=F,plot.list=plot.list.2020)
+dim(id20)
+head(id20)
+
+id20b <- get.indv.data(year = 2020,branches=T,plot.list=plot.list.2020)
+dim(id20b)
+head(id20b)
+
+## write out all the data to an RData file, so it can be read and analyzed without going back to github
+all.id <- list(id13,id18,id19,id20)
+all.idb <- list(id13b,id18b,id19b,id20b)
+saveRDS(all.id)
 
 ## which numbers were missing in 2013
-head(sort(indv.data.2013$Num))
-tail(sort(indv.data.2013$Num))
-maxnum.2013 <- max(indv.data.2013$Num)
+head(sort(id13$Num))
+tail(sort(id13$Num))
 
-# There's one individual missing a number! Where is that?
-indv.data.2013[which(indv.data.2013$Num==-999),]
+#set manually for quick and dirty
+maxnum.2013 <- 5153
 
 # Setting that one aside, which numbers are missing between 1001 and 5153 in 2013
-allNum13 <- 1001:5153
-missNum13 <- which(!(allNum13 %in% indv.data.2013$Num))
-allNum13[missNum13]
-length(allNum13[missNum13]) # number of missing tag numbers
+allNum13 <- sort(unique(id13$Num))
+length(allNum13) # number of missing tag numbers
 
 # Are there duplicated tags in any year?
 # put the three individual data dataframes into a list so that we can loop through them and do operations on them

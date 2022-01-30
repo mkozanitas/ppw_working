@@ -33,70 +33,100 @@ plants.by.plot <- function(year, type){
   }   
 }
 
+### only for debugging
+year <- 2018
+stump <- F
+orig.dead <- F
+survival <- F
+bsprout <- F
+epicormic <- F
+apical <- F
+canopy <- F
+bsprout.height <- F
+bsprout.count <- F
+tag.pulled <- T
+keep.999 <- T
+branches <- F
+prefix <- 'https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'
+plot.list <- NA
+###
+
 get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/',plot.list=NA){
-  options(stringsAsFactors=FALSE)  
-  getURL('https://github.com/dackerly/PepperwoodVegPlots/tree/master/2020/Woody2020/Data/OriginalCSV/Woody')
-  dir.list <- dir(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/",sep=''))
+  require(RCurl)
+  options(stringsAsFactors=FALSE) 
+  #getURL('https://github.com/dackerly/PepperwoodVegPlots/tree/master/2020/Woody2020/Data/OriginalCSV/Woody')
+  #dir.list <- dir(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/",sep=''))
   file.list <-(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/WoodySurvey",year,"_", sep='')) 
   if (is.na(plot.list)) plot.list<-get.plot(year=year)
   
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
-  names(mega.data) <- plot.list 
+  names(mega.data) <- plot.list # assigns a name to each item of the list
   
-  i=1
+  i=45
   for (i in 1:length(mega.data)) 
   {
     Plot<-plot.list[i]
     mega.data[[i]]<-cbind(Plot=Plot, mega.data[[i]]) 
     
     if(year>=2018) {
-      mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,20,8:12,17:19)]
+      if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
+      mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
       colnames(mega.data[[i]])<-c(
         "Plot", "Quad", "Type", "Num", "Species",
         "SA.Stump.Height_cm","SA.Stump.BD_cm",
-        "SA.Branch.Num","DBH_cm", "X_cm", "Y_cm",
+        "SA.Stem.Num","DBH_cm", "X_cm", "Y_cm",
         "Notes","Survival", "Basal.Resprout",
         "Epicormic.Resprout","Apical.Growth",
         "Canopy.Percent", "Basal.Resprout.Height_cm",
-        "Basal.Resprout.Count", "Tag.Pulled")
-      if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
-      if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
-      if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
-      if(canopy==F) mega.data[[i]] <- mega.data[[i]][,-17]
-      if(apical==F) mega.data[[i]] <- mega.data[[i]][,-16]
-      if(epicormic==F) mega.data[[i]] <- mega.data[[i]][,-15]
-      if(bsprout==F) mega.data[[i]] <- mega.data[[i]][,-14]
-      if(survival==F) mega.data[[i]] <- mega.data[[i]][,-13]    
+        "Basal.Resprout.Count", "Tag.Pulled", "SOD.on.Bay")
+      #if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
+      #if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
+      #if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
+      #if(canopy==F) mega.data[[i]] <- mega.data[[i]][,-17]
+      #if(apical==F) mega.data[[i]] <- mega.data[[i]][,-16]
+      #if(epicormic==F) mega.data[[i]] <- mega.data[[i]][,-15]
+      #if(bsprout==F) mega.data[[i]] <- mega.data[[i]][,-14]
+      #if(survival==F) mega.data[[i]] <- mega.data[[i]][,-13]    
+      
+      # in 2018 only, newly killed trees were measured in 1851:1854 to recreate pre fire stands
       if(keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
       mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
       colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump", 
-                                  "SA.Stump.Height_cm", "SA.Stump.BD_cm", "SA.Branch.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
-      # subset stumps and original dead
+                                  "SA.Stump.Height_cm", "SA.Stump.BD_cm", 
+                                  "SA.Stem.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
+      mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
+
+      # subset no stumps and original dead
+      if(stump==T & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump)))       
+      # subset no stumps and original dead
       if(stump==F & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump))) 
       # subset original dead individuals
       if(stump==T & orig.dead==F) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | is.na(mega.data[[i]]$Dead.Stump)))
       #subset both 
       if(stump==F & orig.dead==F) {mega.data[[i]]<-subset(mega.data[[i]], subset=(is.na(mega.data[[i]]$Dead.Stump)))
-      #mega.data[[i]]<-mega.data[[i]][,-6]}
       }
     }
   }
   
   # turn list of dataframes into a single large dataframe called indv.data for easier manipulations
   indv.data<-do.call(rbind, mega.data)
-  # get rid of extra rows
-  indv.data<-indv.data[!is.na(indv.data$Type),]
+
+  # get rid of extra rows - 2013 only
+  if (year==2013) indv.data<-indv.data[!is.na(indv.data$Type),]
+  if (year>=2018) indv.data<-indv.data[which(!is.na(indv.data$Num)),]
+  
   # change SA.Stump.BD_cm into numeric
   indv.data$SA.Stump.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.Stump.BD_cm))
+  indv.data$DBH_cm <- suppressWarnings(as.numeric(indv.data$DBH_cm))
   # make indv.data$TreeNum numeric
   indv.data$Num<-as.numeric(indv.data$Num)
   # cleaning up Types 
-  indv.data[indv.data$Type==" TR", "Type"]<-"TR"
-  indv.data[indv.data$Type=="SA ","Type"]<-"SA"
-  indv.data[indv.data$Type=="SA  ","Type"]<-"SA"
-  indv.data[indv.data$Type=="S","Type"]<-"SA"
-  indv.data[indv.data$Type=="AS","Type"]<-"SA"
+  indv.data$Type[indv.data$Type==" TR"]<-"TR"
+  indv.data$Type[indv.data$Type=="SA "]<-"SA"
+  indv.data$Type[indv.data$Type=="SA  "]<-"SA"
+  indv.data$Type[indv.data$Type=="S"]<-"SA"
+  indv.data$Type[indv.data$Type=="AS"]<-"SA"
   
   # fix up Species names for bad data entry, etc.
   indv.data[which(indv.data$Species=="CEOCUN"), "Species"]<-"CEACUN"
@@ -107,6 +137,8 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="QUEAGR "), "Species"]<-"QUEAGR"
   indv.data[which(indv.data$Species=="QUEAGRI"), "Species"]<-"QUEAGR"
   indv.data[which(indv.data$Species=="QUEARG"), "Species"]<-"QUEAGR"
+  indv.data[which(indv.data$Species=="QUERAGR"), "Species"]<-"QUEAGR"
+  indv.data[which(indv.data$Species=="QUEBERGAR"), "Species"]<-"QUEBEGA"
   indv.data[which(indv.data$Species=="QUEGAR "), "Species"]<-"QUEGAR"
   indv.data[which(indv.data$Species=="QUEKEL "), "Species"]<-"QUEKEL"
   indv.data[which(indv.data$Species=="PIEMEN"), "Species"]<-"PSEMEN"
@@ -115,6 +147,8 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="UMCAL"), "Species"]<-"UMBCAL"
   indv.data[which(indv.data$Species=="UNKN30"), "Species"]<-"UNK"
   indv.data[which(indv.data$Species=="QUEDEC"), "Species"]<-"QUEdec"
+  indv.data[which(indv.data$Species=="UNKN47"), "Species"]<-"PRUCER"
+  
   
   # Change individuals originally identified as "QUEDEC" to species-level indentification 
   if(year==2013) {
@@ -130,51 +164,92 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Y_cm<0),"Y_cm"]<-indv.data[which(indv.data$Y_cm<0),"Y_cm"]+500
   
   # condense each individual into a single row 
-  if (branches==F){
-    indv.data$Num<-floor(indv.data$Num)
-    if(year==2018) {
-      indv.data[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num), "SA.Stem.Num" ] <- 0
-      indv.data[indv.data$Type=="SA", "SA.Stem.Num" ]<- indv.data[indv.data$Type=="SA", "SA.Stem.Num" ] + 1
-    }
-    indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Branch.Num"])
+  indv.data$Point <- indv.data$Num %% 1
+  indv.data$iNum<-floor(indv.data$Num) #strips away decimal point values
+
+  # convert TS which were main stems to SA
+  indv.data$Type[indv.data$Type == 'TS' & indv.data$Point == 0] <- "SA"
+  
+  indv.data$SA.Stem.Num[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num)] <- 0
+  indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] <- indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] + 1
+  
+  indv.data$Basal.Area <- NA
+  indv.data$Basal.Area[which(indv.data$Type=="SA")] <-(((indv.data$SA.Stump.BD_cm[which(indv.data$Type=="SA")]/2)^2)*(pi))*(indv.data$SA.Stem.Num[which(indv.data$Type=="SA")])
+  
+  indv.data$Basal.Area[which(indv.data$Type=="TR")] <- (((indv.data$DBH_cm[which(indv.data$Type=="TR")]/2)^2)*(pi))
+  
+  # CREATE FOUR STATUS VARIABLES AND ASSIGN
+  indv.data$Live <- NA
+  indv.data$Topkill <- NA
+  indv.data$bSprout <- NA
+  indv.data$Epicormic <- NA
+  indv.data$Apical <- NA
+  indv.data$gCrown <- NA
+  
+  if (year==2013) 
+  {
+    indv.data$Live <- 1
+    indv.data$Live[!is.na(indv.data$Dead.Stump)] <- 0
+    indv.data$gCrown <- indv.data$Live
     
-    indv.data[indv.data$Type=="TR", "Basal.Area"]<- (((indv.data[indv.data$Type=="TR","DBH_cm"]/2)^2)*(pi))
-    # get rid of TS rows
-    indv.data<-indv.data[indv.data$Type!="TS",]
+    ## make list of individuals with TS attached
+    indv.data$bSprout[indv.data$Point==0] <- 0
+    TSlist <- unique(indv.data$iNum[which(indv.data$Type=='TS')])
+    indv.data$bSprout[which(indv.data$Num %in% TSlist)] <- 1
+  } else 
+  {
+    indv.data$Live <- apply(indv.data[,c('Survival','Basal.Resprout')],1,max)
+    indv.data$Topkill <- 0
+    indv.data$Topkill[intersect(which(indv.data$Survival==0),which(indv.data$Basal.Resprout==1))] <- 1
+    indv.data$bSprout <- indv.data$Basal.Resprout
+    indv.data$Epicormic <- indv.data$Epicormic.Resprout
+    indv.data$Apical <- indv.data$Apical.Growth
+    indv.data$gCrown <- apply(indv.data[,c('Epicormic','Apical')],1,max)
+  }
+
+  # get rid of TS rows
+  indv.data<-indv.data[-which(indv.data$Type=="TS"),]
+  
+  if (branches==F)
+    {
+    # Convert to data.table to collapse rows    
     library(data.table)
     indv.data<-data.table(indv.data)
-    indv.data[,Basal.Area:=sum(Basal.Area),by="Num"]
-    if(year==2018) {
-      if(survival==TRUE) indv.data[,Survival:=max(Survival),by="Num"]
-      if(bsprout==TRUE) indv.data[,Basal.Resprout:=max(Basal.Resprout),by="Num"]
-      if(epicormic==TRUE) indv.data[,Epicormic.Resprout:=max(Epicormic.Resprout),by="Num"]
-      if(apical==TRUE) indv.data[,Apical.Growth:=max(Apical.Growth),by="Num"]
-      if(canopy==TRUE) indv.data[,Canopy.Percent:=max(Canopy.Percent),by="Num"] #### BIT OF A FUDGE
+    indv.data[,Basal.Area:=sum(Basal.Area),by="iNum"]
+    allZero <- function(x) if (all(x==0)) return(0) else return(1)
+    if(year>=2018) {
+      indv.data[,Live:=max(Live),by="iNum"]
+      indv.data[,Topkill:=allZero(Topkill),by="iNum"]
+      indv.data[,bSprout:=max(bSprout),by="iNum"]
+      indv.data[,Epicormic:=max(Epicormic),by="iNum"]
+      indv.data[,Apical:=max(Apical),by="iNum"]
+      indv.data[,gCrown:=max(gCrown),by="iNum"]
+      #indv.data[,Canopy.Percent:=max(Canopy.Percent),by="iNum"] #### BIT OF A FUDGE
     }
-    # get rid of duplicated tag numbers (?)
-    indv.data<-indv.data[!duplicated(indv.data$Num,incomparables=NA),] 
+    # Keep only main stem rows
+    indv.data<-indv.data[indv.data$Point==0,] 
     
     # Get rid of the extra columns "DBH_cm", ... 
     indv.data<-as.data.frame(indv.data)
-    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area")]
-  } else {
-    indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Branch.Num"])
-    indv.data[indv.data$Type=="TR", "Basal.Area"]<- (((indv.data[indv.data$Type=="TR","DBH_cm"]/2)^2)*(pi))
-  }
+    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area","Live","bSprout","Topkill","Epicormic","Apical","gCrown")]
+  } 
+  # else {
+  #   indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Stem.Num"])
+  #   indv.data[indv.data$Type=="TR", "Basal.Area"]<- (((indv.data[indv.data$Type=="TR","DBH_cm"]/2)^2)*(pi))
+  # }
+  # 
   
   if (year=="none"){
     indv.data<-subset(indv.data, subset=(indv.data$Dead.Stump=="D" | indv.data$Dead.Stum=="S"))  
   } else {
-    if(year!=2012){
-      indv.data$Year<-year
-      #########
-      # MORTALITY FUNCTIONS SHOULD NOT EVEN BE HERE SHOULD THEY?
-      # MAKE A NEW FUNCTION get.indv.mortality.data()
-      #    year<-2013:year
-      #    dead<-kill.trees(year=year)
-      #    indv.data<-indv.data[!(indv.data$Num %in% dead$Num),]
-      #########
-    }
+    indv.data$Year<-year
+    #########
+    # MORTALITY FUNCTIONS SHOULD NOT EVEN BE HERE SHOULD THEY?
+    # MAKE A NEW FUNCTION get.indv.mortality.data()
+    #    year<-2013:year
+    #    dead<-kill.trees(year=year)
+    #    indv.data<-indv.data[!(indv.data$Num %in% dead$Num),]
+    #########
   }
   
   row.names(indv.data) <- NULL

@@ -1,6 +1,6 @@
 ## LOAD PPW FUNCTIONS
 # clear workspace
-rm(list=ls())
+# rm(list=ls())
 
 # The following packaged need to be installed the following functions to work: "RCurl", "data.table","picante"
 library("RCurl")
