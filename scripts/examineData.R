@@ -4,67 +4,40 @@ rm(list=ls())
 all.id <- readRDS('data/allid.Rdata')
 all.idb <- readRDS('data/allidb.Rdata')
 
-id13 <- all.id[[1]]
-id18 <- all.id[[2]]
-id19 <- all.id[[3]]
-id20 <- all.id[[4]]
-head(id13)
+# id13 <- all.id[[1]]
+# id18 <- all.id[[2]]
+# id19 <- all.id[[3]]
+# id20 <- all.id[[4]]
+# head(id13)
+
+years <- c(2013,2018,2019,2020)
 # etc.
 
-# Check dups
-nNum <- table(id13$Num)
-nNum[which(nNum>1)]
+# Print dups for each year. And for now, remove dups before checking for other problems, e.g. moving between plots, species, etc.
+i=1
+for (i in 1:4)
+{
+  print(years[i])
+  nNum <- table(all.id[[i]]$Num)
+  print(nNum[which(nNum>1)])
+  dups <- as.numeric(names(nNum[which(nNum>1)]))
+  if (length(dups)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dups)]
+}
 
-# repeat above for the other years
-# ...
+for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
-## which numbers were missing in 2013
-head(sort(id13$Num))
-tail(sort(id13$Num))
+### ONE BAD TAG: 39332 in 2018
+all.id[[2]][all.id[[2]]$Num==39332,]
 
-#set manually for quick and dirty
-maxnum.2013 <- 5153
-
-# Setting that one aside, which numbers are missing between 1001 and 5153 in 2013
-allNum13 <- sort(unique(id13$Num))
-length(allNum13) # number of missing tag numbers
-
-
-# Identify new tag numbers in 2018 that weren't in the 2013 data
-
-# Including ones less than 5154 that must have been out
-newtags <- sort(indv.data.2018$Num[!(indv.data.2018$Num %in% indv.data.2013$Num)])
-newtags
-(newtags.lt.maxnum <- newtags[newtags <= maxnum.2013])
-(newtags.gt.maxnum <- newtags[newtags > maxnum.2013])
-(maxnum.2018 <- max(indv.data.2018$Num))
-
-# Identify new tag numbers in 2019 that weren't in the 2018 data
-# Including ones less than 5154 that must have been out
-newtags.19 <- sort(indv.data.2019$Num[!(indv.data.2019$Num %in% indv.data.2018$Num)])
-newtags.19
-(newtags.19[newtags.19 <= maxnum.2018])
-(newtags.19[newtags.19 > maxnum.2018])
-(maxnum.19 <- max(indv.data.2019$Num))
-
-# Identify new tag numbers in 2020 that weren't in the 2019 data
-# Including ones less than 5154 that must have been out
-newtags.20 <- sort(indv.data.2020$Num[!(indv.data.2020$Num %in% indv.data.2019$Num)])
-newtags.20
-(newtags.20[newtags.20 <= maxnum.19])
-(newtags.20[newtags.20 > maxnum.19])
-
-## Now make a list of all numbers that appear across all years
-# The loop here makes this so it will run smoothly if additional years are added
-allNums <- c()
-
-# all.indv.data is the list made above, where each item is one years individual data. How many years does it have:
+# all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
 
 # make an empty variable, and then loop through the individual data files and append all the numbers end to end
 allNums <- c()
-for (i in 1:length(all.indv.data)) allNums <- c(allNums,all.indv.data[[i]]$Num)
-head(allNums)
+for (i in 1:length(all.id)) allNums <- c(allNums,all.id[[i]]$Num)
+head(sort(allNums))
+tail(sort(allNums))
+
 # now reduce to the unique ones
 allNums <- sort(unique(allNums))
 length(allNums)
@@ -78,17 +51,15 @@ allIndv <- data.frame(Num=allNums,P13=NA,P18=NA,P19=NA,P20=NA,S13=NA,S18=NA,S19=
 Pn <- c('P13','P18','P19','P20')
 Sn <- c('S13','S18','S19','S20')
 i=1
-for (i in 1:length(all.indv.data))
+for (i in 1:length(all.id))
 {
-  y2a <- match(allIndv$Num,all.indv.data[[i]]$Num)
-  allIndv[,Pn[i]] <- all.indv.data[[i]]$Plot[y2a]
-  allIndv[,Sn[i]] <- all.indv.data[[i]]$Species[y2a]
+  y2a <- match(allIndv$Num,all.id[[i]]$Num)
+  allIndv[,Pn[i]] <- all.id[[i]]$Plot[y2a]
+  allIndv[,Sn[i]] <- all.id[[i]]$Species[y2a]
 }
 head(allIndv)
 
-## This data.frame may be quite useful for quickly identifying problem individuals. For example, what numbers were present in plot 1345 in 2018 that were missed in 2013. Maybe that's the right number for the -999 individual
-allIndv[which(allIndv$P13=='PPW1345'),c('Num',Pn)]
-# Indv 2276 is missing in 2013 and present in later years. Is that the right number for the one with -999?
+## This data.frame may be quite useful for quickly identifying problem individuals. 
 
 # Now, let's see which numbers were assigned in different plots in different years. To do this we'll use the apply function which can apply a function either across the rows or columns of a matrix or dataframe. We'll make a new function which counts the number of unique entries. So if all three plot IDs were the same for a number, the function returns 1. If it's more than 1, indicates a problem
 lunique <- function(x) 
@@ -101,19 +72,32 @@ allIndv$nP <- apply(allIndv[,Pn],1,lunique)
 head(allIndv$nP)
 (multPlots <- which(allIndv$nP>1))
 
-# OK, 25 individuals that moved between plots! We need to fix those. Here they are:
-allIndv[multPlots,]
+# OK, 19 individuals that moved between plots (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
+allIndv[multPlots,1:9]
 
 # and which ones change species
 allIndv$nSp <- apply(allIndv[,Sn],1,lunique)
 head(allIndv$nSp)
 (multSp <- which(allIndv$nSp>1))
 
+# what did we find?
+table(allIndv$nSp)
+
+
+
+# Oh, interesting - individuals not assigned to any species? And some assigned to different species every year? Let's look at 0, 3
+probs <- which(allIndv$nSp %in% c(0,3,4))
+allIndv[probs,]
+
 # OK, almost 300 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
-allIndv[multSp,c('Num',Sn)]
+head(allIndv[multSp,1:9])
 
 ## how many are the same individuals
 table(allIndv$nP,allIndv$nSp)
+
+#make combined list
+allMults <- allIndv[union(multPlots,multSp),]
+write.csv(allMults[order(allMults$nSp,allMults$nP,decreasing = T),],'data/mult-plots-species.csv')
 
 ## which individuals are missing from 2018 and present in 2013 and 2019
 midNA <- function(x)
