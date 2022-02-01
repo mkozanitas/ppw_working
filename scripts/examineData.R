@@ -1,17 +1,10 @@
-# RUN prepareData again if csv's have been
+# RUN prepareData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 rm(list=ls())
 
 all.id <- readRDS('data/allid.Rdata')
 all.idb <- readRDS('data/allidb.Rdata')
 
-# id13 <- all.id[[1]]
-# id18 <- all.id[[2]]
-# id19 <- all.id[[3]]
-# id20 <- all.id[[4]]
-# head(id13)
-
 years <- c(2013,2018,2019,2020)
-# etc.
 
 # Print dups for each year. And for now, remove dups before checking for other problems, e.g. moving between plots, species, etc.
 dups <- list()
@@ -58,6 +51,7 @@ allIndv <- data.frame(Num=allNums,P13=NA,P18=NA,P19=NA,P20=NA,S13=NA,S18=NA,S19=
 Pn <- c('P13','P18','P19','P20')
 Sn <- c('S13','S18','S19','S20')
 i=1
+
 for (i in 1:length(all.id))
 {
   y2a <- match(allIndv$Num,all.id[[i]]$Num)
@@ -70,6 +64,7 @@ head(allIndv)
 head(allIndv[,c('S13','S18','S19','S20')])
 allNames <- sort(c(allIndv$S13,allIndv$S18,allIndv$S19,allIndv$S20))
 table(allNames)
+write.csv(sort(unique(allNames)),'data/all-spp-names.csv')
 
 ## This data.frame may be quite useful for quickly identifying problem individuals. 
 
@@ -124,6 +119,18 @@ allMults <- allIndv[allprobs,]
 head(allMults)
 write.csv(allMults[order(allMults$nSp,allMults$nP,decreasing = T),],'data/mult-plots-species.csv')
 
+# write entire indvData for use in next steps
+head(allIndv)
+saveRDS(allIndv,'data/allIndv.Rdata')
+
+## Now, go back to the four data frames and match/copy these four flags, so they can be used to eliminate individuals from analysis as needed
+i=1
+for (i in 1:length(all.id))
+{
+  mt <- match(all.id[[i]]$Num,allIndv$Num)
+  all.id[[i]] <- data.frame(all.id[[i]],nP=allIndv$nP[mt],nSp=allIndv$nSp[mt],NA18=allIndv$NA18[mt],NA19=allIndv$NA19[mt])
+}
+saveRDS(all.id,'data/allid-nodups.Rdata')
 
 ########
 # OLD CODE BELOW HERE
