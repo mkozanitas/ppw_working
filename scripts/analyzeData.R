@@ -129,7 +129,7 @@ plotSP <- function(t12,species=NULL)
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t12,'QUEBER')
+plotSP(t12,'QUEGAR')
 
 
 ## Full model with species
