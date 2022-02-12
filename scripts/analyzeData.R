@@ -67,10 +67,12 @@ dim(t12)
 names(t12)
 head(which(is.na(t12$Plot.x)))
 
+# CALC DBH - easier to connect with our field data and knowledge
 t12$dbh <- ba2d(t12$Basal.Area.x)
 summary(t12$dbh)
 plot(log10(t12$dbh),t12$Live.y)
 
+## USE LOG DBH for analysis
 t12$ldbh <- log10(t12$dbh)
 hist(t12$ldbh)
 
