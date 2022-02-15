@@ -26,8 +26,9 @@ dim(dups)
 write.csv(dups,'data/duplicates.csv')
 
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
+
 ### ONE BAD TAG: 39332 in 2018
-all.id[[2]][all.id[[2]]$Num==39332,]
+##all.id[[2]][all.id[[2]]$Num==39332,]
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
