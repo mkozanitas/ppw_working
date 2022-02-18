@@ -6,6 +6,13 @@ ba2d <- function(x) 2*sqrt((x)/pi)
 d2ba <- function(x) pi*(x/2)^2
 d2lba <- function(x) log10(pi*(x/2)^2)
 
+# Load fire severity data
+library("RCurl")
+fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
+head(fs)
+tail(fs)
+####
+
 all.id <- readRDS('data/allid-nodups.Rdata')
 str(all.id)
 
@@ -15,7 +22,8 @@ allIndv <- readRDS('data/allIndv.Rdata')
 head(allIndv)
 
 ## get percent survival by species and type, from 13-18
-fst <- data.frame(Species=rep(spNames$x,each=2),Type=rep(c('SA','TR'),nrow(spNames)),N13=NA,N18=NA,S13.18=NA)
+use.species <- spNames$x[-c(17,19,21,23,25,34,35,36)]
+fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.dead=NA,N18.TKB=NA,N18.BC=NA,N18.C=NA)
 head(fst)                  
 
 # select which individuals to eliminate - this can be done separately for each analysis
@@ -39,18 +47,34 @@ nrow(t2)
 t2 <- t2[order(t1$Num),]
 
 # UNMMERGED - ANALYSES BASED ON SHARED NUMS
-i=1
+i=3
 for (i in 1:nrow(fst))
 {
   sp <- fst$Species[i]
   ty <- fst$Type[i]
   init <- t1$Num[which(t1$Species==sp & t1$Type==ty & t1$Live==1)]
   fst$N13[i] <- length(init)
+  
+  ## If running line by line, look at the initial plants in t2. E.g. for i=3, why so much missing data?
+  t2[t2$Num %in% init,]
+  
   fin <- intersect(init,t2$Num[which(t2$Live==1)])
   # fin is the number of original ty surviving, whether or not they transitioned from SA->TR (or the other way!)
-  fst$N18[i] <- length(fin)
+  fst$N18.dead[i] <- length(init) - length(fin)
+  
+  fin <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$Topkill==1)])
+  fst$N18.TKB[i] <- length(fin) 
+  
+  fin <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$gCrown==1)])
+  fst$N18.BC[i] <- length(fin) 
+  
+  fin <- intersect(init,t2$Num[which(t2$bSprout==0 & t2$gCrown==1)])
+  fst$N18.C[i] <- length(fin) 
 }
+fst <- fst[-which(fst$N13==0),]
 head(fst)
+fst
+
 fst$S13.18[which(fst$N13!=0)] <- fst$N18[which(fst$N13!=0)]/fst$N13[which(fst$N13!=0)]
 fst[order(fst$N13,decreasing = T),]
 
@@ -60,6 +84,10 @@ sum(fst$N18)/sum(fst$N13)
 
 fst
 barplot(t(as.matrix(fst[,c('N13','N18')])))
+
+#### EXPAND ANALYSIS to ALL POST-FIRE FATES
+head(t1)
+table(t1$Live,t1$bSprout)
 
 # NOW MERGE FOR ANALYSES BY INDIV
 t12 <- merge(t1,t2,'Num',all = T)
@@ -137,6 +165,8 @@ plotSP(t12,'QUEGAR')
 ## Full model with species
 t12s <- t12[which(t12$Species.x %in% spA),]
 (N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$Live.y))))
+head(t12s)
+head(fs)
 
 fit <- glm(Live.y~ldbh * Species.x,data=t12s,family='binomial')
 summary(fit)
@@ -146,3 +176,40 @@ nd <- with(t12s,data.frame(ldbh=0.5,Species.x=unique(Species.x)))
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
 barplot(nd$pSurvAll~nd$Species.x)
+
+### MODELS WITH FIRE SEVERITY
+## choose fire severity metric
+fsmet <- 'Tubbs.MTBS.RDNBR.30'
+summary(fs[,fsmet])
+
+f2t <- match(t12s$Plot.x,fs$Plot)
+t12s$FireSev <- fs[f2t,fsmet]
+
+fit <- glm(Live.y~ldbh * FireSev,data=t12s,family='binomial')
+summary(fit)
+
+nvals <- 11
+ldbh.vals <- seq(-0.5,2,length.out=nvals)
+FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
+nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,nvals),FireSev=rep(FireSev.vals,each=nvals)))
+head(nd)
+
+nd$pSurvAll <- predict(fit,newdata=nd,type='response')
+head(nd)
+
+plot(t12s$FireSev,t12s$Live.y)
+i=1
+for (i in 1:nvals) {
+  ndt <- nd[which(nd$ldbh==ldbh.vals[i]),]
+  lines(ndt$FireSev,ndt$pSurvAll)
+  text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
+}
+
+plot(t12s$ldbh,t12s$Live.y)
+i=1
+for (i in 1:nvals) {
+  ndt <- nd[which(nd$FireSev==FireSev.vals[i]),]
+  lines(ndt$ldbh,ndt$pSurvAll)
+  text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
+}
+

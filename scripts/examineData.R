@@ -27,9 +27,6 @@ write.csv(dups,'data/duplicates.csv')
 
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
-### ONE BAD TAG: 39332 in 2018
-##all.id[[2]][all.id[[2]]$Num==39332,]
-
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
 
@@ -65,6 +62,12 @@ head(allIndv)
 head(allIndv[,c('S13','S18','S19','S20')])
 allNames <- sort(c(allIndv$S13,allIndv$S18,allIndv$S19,allIndv$S20))
 table(allNames)
+
+## identify QUEDOUGAR and QUEGAR? individuals
+all.id[[4]][grep('QUEDOUGAR',all.id[[4]]$Species),]
+all.id[[3]][which(all.id[[3]]$Species=='QUEGAR?'),]
+all.id[[1]][grep('QUEAGKE',all.id[[1]]$Species),]
+
 write.csv(sort(unique(allNames)),'data/all-spp-names.csv')
 
 ## This data.frame may be quite useful for quickly identifying problem individuals. 
