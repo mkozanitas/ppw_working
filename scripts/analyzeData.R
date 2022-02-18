@@ -71,8 +71,9 @@ for (i in 1:nrow(fst))
   fin <- intersect(init,t2$Num[which(t2$bSprout==0 & t2$gCrown==1)])
   fst$N18.C[i] <- length(fin) 
 }
-fst <- fst[-which(fst$N13==0),]
 head(fst)
+
+fst <- fst[-which(fst$N13==0),]
 fst
 
 fst$S13.18[which(fst$N13!=0)] <- fst$N18[which(fst$N13!=0)]/fst$N13[which(fst$N13!=0)]
