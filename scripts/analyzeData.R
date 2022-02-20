@@ -1,5 +1,6 @@
 # RUN prepareData and examineData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 rm(list=ls())
+library(lme4)
 
 lba2d <- function(x) 2*sqrt((10^x)/pi)
 ba2d <- function(x) 2*sqrt((x)/pi)
@@ -72,9 +73,13 @@ for (i in 1:nrow(fst))
   fst$N18.C[i] <- length(fin) 
 }
 head(fst)
-
+tail(fst)
 fst <- fst[-which(fst$N13==0),]
 fst
+
+## count missing or double counted indviduals between t1 and t2
+fst$nDiff <- fst$N13-apply(fst[,4:7],1,sum,na.rm=T)
+fst[,c(1,3,8)]
 
 fst$S13.18[which(fst$N13!=0)] <- fst$N18[which(fst$N13!=0)]/fst$N13[which(fst$N13!=0)]
 fst[order(fst$N13,decreasing = T),]
@@ -84,26 +89,33 @@ sum(fst$N18)
 sum(fst$N18)/sum(fst$N13)
 
 fst
-barplot(t(as.matrix(fst[,c('N13','N18')])))
+#barplot(t(as.matrix(fst[,c('N13','N18')])))
 
 #### EXPAND ANALYSIS to ALL POST-FIRE FATES
 head(t1)
 table(t1$Live,t1$bSprout)
 
 # NOW MERGE FOR ANALYSES BY INDIV
+dim(t1)
+dim(t2)
+
 t12 <- merge(t1,t2,'Num',all = T)
 dim(t12)
+head(t12)
 names(t12)
+table(t12$Num)
 head(which(is.na(t12$Plot.x)))
 
 # CALC DBH - easier to connect with our field data and knowledge
 t12$dbh <- ba2d(t12$Basal.Area.x)
 summary(t12$dbh)
-plot(log10(t12$dbh),t12$Live.y)
 
 ## USE LOG DBH for analysis
+hist(t12$dbh)
 t12$ldbh <- log10(t12$dbh)
 hist(t12$ldbh)
+
+plot(t12$ldbh,t12$Live.y)
 
 # **** mixing SA and TR - need to work on diameter conversion to get this right ***
 N <- length(which(!is.na(t12$ldbh) & !is.na(t12$Live.y)))
@@ -121,7 +133,7 @@ abline(h=0.5,lty=2)
 #what is critical basal area to achieve 50% survival?
 ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]]
 abline(v=ld50,lty=2)
-(spRes <- data.frame(species='All',N=N,d50=10^ld50,slp=fit$coefficients[2]))
+(spRes <- data.frame(species='All',N=N,d50=ld50,slp=fit$coefficients[2]))
 
 ## now run by species for species with lots of data
 spN <- table(t12$Species.x)
@@ -145,7 +157,7 @@ for (i in 1:length(spA))
   if (fit$coefficients[2]>0) 
     if (nd[1,ncol(nd)]<0.5) 
       ld50 <- nd$ldbh[which(nd[,ncol(nd)]>=0.5)[1]] 
-  spRes <- rbind(spRes,c(species,N,10^ld50,fit$coefficients[2]))
+  spRes <- rbind(spRes,c(species,N,ld50,fit$coefficients[2]))
 }
 spRes$d50 <- round(as.numeric(spRes$d50),3)
 spRes$slp <- round(as.numeric(spRes$slp),3)
@@ -160,7 +172,7 @@ plotSP <- function(t12,species=NULL)
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t12,'QUEGAR')
+plotSP(t12,'QUEKEL')
 
 
 ## Full model with species
@@ -184,9 +196,13 @@ fsmet <- 'Tubbs.MTBS.RDNBR.30'
 summary(fs[,fsmet])
 
 f2t <- match(t12s$Plot.x,fs$Plot)
+head(f2t)
+tail(f2t)
 t12s$FireSev <- fs[f2t,fsmet]
+dim(t12s)
+tail(t12s)
 
-fit <- glm(Live.y~ldbh * FireSev,data=t12s,family='binomial')
+fit <- glm(Live.y~ldbh + FireSev,data=t12s,family='binomial')
 summary(fit)
 
 nvals <- 11
@@ -214,3 +230,5 @@ for (i in 1:nvals) {
   text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
 }
 
+### full model
+fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
