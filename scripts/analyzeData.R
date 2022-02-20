@@ -230,5 +230,75 @@ for (i in 1:nvals) {
   text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
 }
 
-### full model
+# model with size, fire, species
+fit2 <- glm(Live.y~ldbh + FireSev + Species.x,data=t12s,family='binomial')
+fit1 <- glm(Live.y~ldbh + FireSev + Species.x+ ldbh:Species.x,data=t12s,family='binomial')
+BIC(fit1)
+BIC(fit2)
+summary(fit1)
+
+nvals <- 11
+ldbh.vals <- seq(-0.5,2,length.out=nvals)
+FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
+nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,nvals),FireSev=rep(FireSev.vals,each=nvals)))
+dim(nd)
+head(nd)
+
+nd2 <- data.frame(Species.x=rep(spA,each=121),ldbh=rep(nd$ldbh,11),FireSev=rep(nd$FireSev,11))
+dim(nd2)
+
+nd2$pSurvAll <- predict(fit1,newdata=nd2,type='response')
+head(nd2)
+
+plotSpecies <- function(spname) {
+  tmp <- t12s[which(t12s$Species.x==spname),]
+  #op=par(mfrow=c(1,2))
+  
+  plot(tmp$FireSev,tmp$Live.y,main=spname,xlim=range(t12s$FireSev,na.rm=T))
+  i=1
+  for (i in 1:nvals) {
+    ndt <- nd2[which(nd2$Species.x==spname & nd2$ldbh==ldbh.vals[i]),]
+    lines(ndt$FireSev,ndt$pSurvAll)
+    text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
+  }
+  
+  plot(tmp$ldbh,tmp$Live.y,xlim=range(t12s$ldbh,na.rm=T))
+  i=1
+  for (i in 1:nvals) {
+    ndt <- nd2[which(nd2$Species.x==spname & nd2$FireSev==FireSev.vals[i]),]
+    lines(ndt$ldbh,ndt$pSurvAll)
+    text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
+  }
+  #par(op)
+}
+
+spA
+png('figures/logit1.png',width = 800, height = 1200)
+op=par(mfrow=c(4,2))
+plotSpecies('AMOCAL')
+plotSpecies('ARBMEN')
+plotSpecies('ARCMAN')
+plotSpecies('FRACAL')
+par(op)
+dev.off()
+
+png('figures/logit2.png',width = 800, height = 1200)
+op=par(mfrow=c(4,2))
+plotSpecies('HETARB')
+plotSpecies('PSEMEN')
+plotSpecies('UMBCAL')
+par(op)
+dev.off()
+
+png('figures/logit3.png',width = 800, height = 1200)
+op=par(mfrow=c(4,2))
+plotSpecies('QUEAGR')
+plotSpecies('QUEDOU')
+plotSpecies('QUEGAR')
+plotSpecies('QUEKEL')
+par(op)
+dev.off()
+
+### full model with random plot
 fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
+
