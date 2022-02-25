@@ -106,6 +106,17 @@ names(t12)
 table(t12$Num)
 head(which(is.na(t12$Plot.x)))
 
+## choose fire severity metric
+fsmet <- 'Tubbs.MTBS.RDNBR.30'
+summary(fs[,fsmet])
+
+f2t <- match(t12$Plot.x,fs$Plot)
+head(f2t)
+tail(f2t)
+t12$FireSev <- fs[f2t,fsmet]
+dim(t12)
+tail(t12)
+
 # CALC DBH - easier to connect with our field data and knowledge
 t12$dbh <- ba2d(t12$Basal.Area.x)
 summary(t12$dbh)
@@ -114,6 +125,8 @@ summary(t12$dbh)
 hist(t12$dbh)
 t12$ldbh <- log10(t12$dbh)
 hist(t12$ldbh)
+
+#### SURVIVAL ANALYSIS
 
 plot(t12$ldbh,t12$Live.y)
 
@@ -191,16 +204,6 @@ head(nd)
 barplot(nd$pSurvAll~nd$Species.x)
 
 ### MODELS WITH FIRE SEVERITY
-## choose fire severity metric
-fsmet <- 'Tubbs.MTBS.RDNBR.30'
-summary(fs[,fsmet])
-
-f2t <- match(t12s$Plot.x,fs$Plot)
-head(f2t)
-tail(f2t)
-t12s$FireSev <- fs[f2t,fsmet]
-dim(t12s)
-tail(t12s)
 
 fit <- glm(Live.y~ldbh + FireSev,data=t12s,family='binomial')
 summary(fit)
@@ -300,5 +303,40 @@ par(op)
 dev.off()
 
 ### full model with random plot
-fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
+#fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
 
+######## TOPKILL ANALYSIS
+plot(t12$ldbh,t12$Live.y)
+
+t12a <- t12[which(t12$Live.y==1
+                   & t12$Species.x=='QUEAGR'
+                   & t12$FireSev>100),]
+names(t12a)
+
+op=par(mfrow=c(1,2))
+plot(Topkill.y~ldbh,data=t12a)
+fit <- glm(Topkill.y~ldbh,data=t12a,family='binomial')
+nd <- data.frame(ldbh=seq(min(t12a$ldbh,na.rm=T),max(t12a$ldbh,na.rm=T),length.out=101))
+nd$yPred <- predict(fit,nd)
+lines(yPred~ldbh,data=nd)
+
+plot(gCrown.y~ldbh,data=t12a)
+
+
+
+## logit model and plot
+d=t12
+xcn='ldbh'
+ycn='Live.y'
+## NOT WORKING RIGHT NOW
+logit2Plot <- function(d,xcn,ycn,np=101)
+{
+  dx <- d[,xcn]
+  dy <- d[,ycn]
+  plot(dy~dx)
+  fit <- glm(dy~dx,family='binomial')
+  nd <- data.frame(dx=seq(min(dx,na.rm=T),max(dx,na.rm=T),length.out=np))
+  nd$yPred <- predict(fit,nd)
+  lines(nd$dx,nd$yPred)
+}
+logit2Plot(t12,'ldbh','Live.y')
