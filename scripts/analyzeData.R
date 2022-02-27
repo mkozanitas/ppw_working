@@ -185,7 +185,7 @@ plotSP <- function(t12,species=NULL)
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t12,'QUEKEL')
+plotSP(t12,'QUEAGR')
 
 
 ## Full model with species
@@ -309,15 +309,20 @@ dev.off()
 plot(t12$ldbh,t12$Live.y)
 
 t12a <- t12[which(t12$Live.y==1
-                   & t12$Species.x=='QUEAGR'
                    & t12$FireSev>100),]
+dim(t12a)
 names(t12a)
+head(t12a)
+t12a$ldbh2 <- t12a$ldbh^2
 
 op=par(mfrow=c(1,2))
 plot(Topkill.y~ldbh,data=t12a)
-fit <- glm(Topkill.y~ldbh,data=t12a,family='binomial')
+fit <- glm(Topkill.y~ldbh+ldbh2,data=t12a,family='binomial')
+fit
 nd <- data.frame(ldbh=seq(min(t12a$ldbh,na.rm=T),max(t12a$ldbh,na.rm=T),length.out=101))
-nd$yPred <- predict(fit,nd)
+nd$ldbh2 <- nd$ldbh^2
+head(nd)
+nd$yPred <- predict(fit,nd,type='response')
 lines(yPred~ldbh,data=nd)
 
 plot(gCrown.y~ldbh,data=t12a)
