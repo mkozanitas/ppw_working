@@ -108,6 +108,7 @@ head(which(is.na(t12$Plot.x)))
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
+names(fs)
 summary(fs[,fsmet])
 
 f2t <- match(t12$Plot.x,fs$Plot)
@@ -348,7 +349,99 @@ par(op)
 
 #### NOW TRY MULTINOMIAL
 # First identify individuals who are scored double
+t12$TopkillLive.y <- 0
+t12$TopkillLive.y[which(t12$Live.y==1 & t12$Topkill.y==1)] <- 1
 
+head(t12)
+dim(t12)
+t12$dupStatusCheck <- apply(t12[,c('Dead.y','TopkillLive.y','gCrown.y')],1,sum,na.rm=T)
+table(t12$dupStatusCheck)
+## suggests 523 individuals that are dead, but we missed them as missing from 2018 census?
+
+head(t12[t12$dupStatusCheck==0,])
+t12[t12$dupStatusCheck==0,][1,]
+all.id[[2]][all.id[[2]]$Num==1226,]
+
+head(t12[t12$dupStatusCheck==2,])
+
+#### PROVISIONALLY ASSIGN TO THREE CLASSES
+t12$PFstatus <- (-1)
+t12$PFstatus[which(t12$Live.y==0)] <- 0
+t12$PFstatus[which(t12$Live.y==1 & t12$Topkill.y==1)] <- 1
+t12$PFstatus[which(t12$Topkill.y==0 & t12$gCrown.y==1)] <- 2
+table(t12$PFstatus)
+# now assign all remaing NAs to dead
+t12$PFstatus[which(t12$PFstatus==(-1))] <- 0
+table(t12$PFstatus)
+
+## NOW TRY MULTINOMIAL
+# setup discrete FireSev
+summary(t12$FireSev)
+t12$dFS <- cut(t12$FireSev,breaks = c(-200,35,130,298,1000))
+table(t12$dFS)
+
+require(nnet)
+allNotNA <- function(x) all(!is.na(x))
+
+# Size only
+rComp <- apply(t12[,c('ldbh','PFstatus','Species.x','FireSev')],1,allNotNA)
+table(rComp)
+t12a <- t12[rComp,]
+
+fit1 <- multinom(PFstatus ~ ldbh,data=t12a)
+fit1
+head(round(fitted(fit1),2))
+
+plot(t12a$ldbh,t12a$Live.y)
+points(t12a$ldbh,fitted(fit1)[,1])
+points(t12a$ldbh,fitted(fit1)[,2])
+points(t12a$ldbh,fitted(fit1)[,3])
+
+#Size and Fire Sev 
+fit2 <- multinom(PFstatus ~ ldbh + dFS,data=t12a)
+fit2
+BIC(fit2)
+head(round(fitted(fit2),2))
+
+plot(t12a$ldbh,t12a$Live.y)
+points(t12a$ldbh,fitted(fit2)[,1],col='red')
+points(t12a$ldbh,fitted(fit2)[,2],col='grey')
+points(t12a$ldbh,fitted(fit2)[,3],col='green')
+
+# Add Species
+fit3 <- multinom(PFstatus ~ ldbh + dFS + Species.x,data=t12a)
+fit3
+BIC(fit3)
+head(round(fitted(fit3),2))
+
+plot(t12a$ldbh,t12a$Live.y)
+points(t12a$ldbh,fitted(fit3)[,1],col='red')
+points(t12a$ldbh,fitted(fit3)[,2],col='grey')
+points(t12a$ldbh,fitted(fit3)[,3],col='green')
+
+# Add Species * size interaction
+fit3x <- multinom(PFstatus ~ ldbh + dFS + Species.x + dFS:ldbh,data=t12a)
+fit3x
+BIC(fit3x)
+head(round(fitted(fit3x),2))
+
+plot(t12a$ldbh,t12a$Live.y)
+points(t12a$ldbh,fitted(fit3x)[,1],col='red')
+points(t12a$ldbh,fitted(fit3x)[,2],col='black')
+points(t12a$ldbh,fitted(fit3x)[,3],col='green')
+
+# COMPARE BIC
+BIC(fit1)
+BIC(fit2)
+BIC(fit3)
+BIC(fit3x)
+
+# plot for selected values
+rsel <- which(t12a$Species.x=='PSEMEN' & as.numeric(t12a$dFS)>0)
+plot(t12a$ldbh[rsel],t12a$PFstatus[rsel])
+points(t12a$ldbh[rsel],fitted(fit3x)[rsel,1],col='red',pch=19)
+points(t12a$ldbh[rsel],fitted(fit3x)[rsel,2],col='black',pch=19)
+points(t12a$ldbh[rsel],fitted(fit3x)[rsel,3],col='green',pch=19)
 
 ## logit model and plot
 d=t12
