@@ -27,6 +27,35 @@ write.csv(dups,'data/duplicates.csv')
 
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
+# In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
+for (i in 2:4) {
+  #all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
+  #all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
+  #all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
+  #all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
+  print(c(years[i],'Dead'))
+  print(table(all.id[[i]]$Dead))
+  print(c(''))
+  print(c(years[i],'Topkill'))
+  print(table(all.id[[i]]$Topkill))
+  print(c(''))
+  print(c(years[i],'gCrown'))
+  print(table(all.id[[i]]$gCrown))
+  print(c(''))
+  #print(table(all.id[[i]]$DT))
+  #print(table(all.id[[i]]$TG))
+  #print(table(all.id[[i]]$DG))
+}
+
+which(all.id[[3]]$Dead==(-4))
+all.id[[3]][491,]
+
+which(all.id[[3]]$gCrown==(3))
+all.id[[3]][3596,]
+
+which(all.id[[4]]$Live==(10))
+all.id[[4]][1460,]
+
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
 

@@ -213,12 +213,20 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   } else 
   {
     indv.data$Live <- apply(indv.data[,c('Survival','Basal.Resprout')],1,max)
-    indv.data$Topkill <- 0
-    indv.data$Topkill[intersect(which(indv.data$Survival==0),which(indv.data$Basal.Resprout==1))] <- 1
-    indv.data$bSprout <- indv.data$Basal.Resprout
+    # indv.data$Topkill <- 0
+    # indv.data$Topkill[intersect(which(indv.data$Survival==0),which(indv.data$Basal.Resprout==1))] <- 1
+ 
     indv.data$Epicormic <- indv.data$Epicormic.Resprout
     indv.data$Apical <- indv.data$Apical.Growth
     indv.data$gCrown <- apply(indv.data[,c('Epicormic','Apical')],1,max)
+    
+    indv.data$Topkill <- 1
+    indv.data$Topkill[intersect(which(indv.data$Type=='TR'),which(indv.data$gCrown==1))] <- 0
+    
+    indv.data$Topkill[intersect(which(indv.data$Type=='SA'),which(indv.data$Survival==1))] <- 0
+    indv.data$gCrown[intersect(which(indv.data$Type=='SA'),which(indv.data$Survival==1))] <- 1
+    
+    indv.data$bSprout <- indv.data$Basal.Resprout
   }
 
   # get rid of TS rows
