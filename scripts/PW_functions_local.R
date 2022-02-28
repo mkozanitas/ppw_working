@@ -34,7 +34,7 @@ plants.by.plot <- function(year, type){
 }
 
 ### only for debugging
-year <- 2018
+year <- 2013
 stump <- F
 orig.dead <- F
 survival <- F
@@ -141,12 +141,12 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="QUEARG"), "Species"]<-"QUEAGR"
   indv.data[which(indv.data$Species=="QUERAGR"), "Species"]<-"QUEAGR"
   indv.data[which(indv.data$Species=="QUEBERGAR"), "Species"]<-"QUEBEGA"
-  indv.data[which(indv.data$Species=="QUEBERG"), "Species"]<-"QUEBER" # CHECK?
-  indv.data[which(indv.data$Species=="QUEBAR"), "Species"]<-"QUEBER" # CHECK?
+  indv.data[which(indv.data$Species=="QUEBERG"), "Species"]<-"QUEBER" 
+  indv.data[which(indv.data$Species=="QUEBAR"), "Species"]<-"QUEBER" 
   indv.data[which(indv.data$Species=="QUEDEO"), "Species"]<-"QUEDOU"
   indv.data[which(indv.data$Species=="QUEDO"), "Species"]<-"QUEDOU"
   indv.data[which(indv.data$Species=="QUEGAR "), "Species"]<-"QUEGAR"
-  indv.data[which(indv.data$Species=="QUEGARI"), "Species"]<-"QUEGAR" # CHECK
+  indv.data[which(indv.data$Species=="QUEGARI"), "Species"]<-"QUEGAR" 
   indv.data[which(indv.data$Species=="QUEKEL "), "Species"]<-"QUEKEL"
   indv.data[which(indv.data$Species=="QUEKAL"), "Species"]<-"QUEKEL"
   indv.data[which(indv.data$Species=="QUEKELL"), "Species"]<-"QUEKEL"
@@ -193,16 +193,24 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$Basal.Area[which(indv.data$Type=="TR")] <- (((indv.data$DBH_cm[which(indv.data$Type=="TR")]/2)^2)*(pi))
   
   # CREATE FOUR STATUS VARIABLES AND ASSIGN
+  indv.data$Dead <- NA
   indv.data$Live <- NA
   indv.data$Topkill <- NA
-  indv.data$bSprout <- NA
+  indv.data$gCrown <- NA
+
+  names(indv.data)[which(names(indv.data)=='Basal.Resprout')] <- 'bSprout'
+if (year==2013) {
   indv.data$Epicormic <- NA
   indv.data$Apical <- NA
-  indv.data$gCrown <- NA
+} else {
+  names(indv.data)[which(names(indv.data)=='Epicormic.Resprout')] <- 'Epicormic'
+  names(indv.data)[which(names(indv.data)=='Apical.Growth')] <- 'Apical' 
+}
   
   if (year==2013) 
   {
     indv.data$Live <- 1
+    indv.data$Dead <- 1 - indv.data$Live
     indv.data$Live[!is.na(indv.data$Dead.Stump)] <- 0
     indv.data$gCrown <- indv.data$Live
     
@@ -212,22 +220,17 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data$bSprout[which(indv.data$Num %in% TSlist)] <- 1
   } else 
   {
-    indv.data$Live <- apply(indv.data[,c('Survival','Basal.Resprout')],1,max)
-    # indv.data$Topkill <- 0
-    # indv.data$Topkill[intersect(which(indv.data$Survival==0),which(indv.data$Basal.Resprout==1))] <- 1
+    indv.data$Live <- apply(indv.data[,c('Survival','bSprout')],1,max)
+    indv.data$Dead <- 1 - indv.data$Live
  
-    indv.data$Epicormic <- indv.data$Epicormic.Resprout
-    indv.data$Apical <- indv.data$Apical.Growth
-    indv.data$gCrown <- apply(indv.data[,c('Epicormic','Apical')],1,max)
+    indv.data$gCrown[which(indv.data$Type=='TR')] <- apply(indv.data[which(indv.data$Type=='TR'),c('Epicormic','Apical')],1,max)
     
-    indv.data$Topkill <- 1
-    indv.data$Topkill[intersect(which(indv.data$Type=='TR'),which(indv.data$gCrown==1))] <- 0
+    indv.data$gCrown[which(indv.data$Type=='SA')] <- indv.data$Survival[which(indv.data$Type=='SA')]
     
-    indv.data$Topkill[intersect(which(indv.data$Type=='SA'),which(indv.data$Survival==1))] <- 0
-    indv.data$gCrown[intersect(which(indv.data$Type=='SA'),which(indv.data$Survival==1))] <- 1
-    
-    indv.data$bSprout <- indv.data$Basal.Resprout
+    indv.data$Topkill <- 0
+    indv.data$Topkill[which(indv.data$Survival==0 & indv.data$bSprout==1)] <- 1
   }
+
 
   # get rid of TS rows
   indv.data<-indv.data[-which(indv.data$Type=="TS"),]
@@ -253,7 +256,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     # Get rid of the extra columns "DBH_cm", ... 
     indv.data<-as.data.frame(indv.data)
-    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area","Live","bSprout","Topkill","Epicormic","Apical","gCrown")]
+    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area","Dead","Live","bSprout","Topkill","Epicormic","Apical","gCrown")]
   } 
   # else {
   #   indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Stem.Num"])

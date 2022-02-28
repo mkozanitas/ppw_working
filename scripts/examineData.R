@@ -28,11 +28,22 @@ write.csv(dups,'data/duplicates.csv')
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
 # In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
+# preliminary check on 2018
+TR18 <- all.id[[2]][which(all.id[[2]]$Type=='TR'),]
+SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
+table(TR18$Live,TR18$Topkill)
+table(TR18$Live,TR18$gCrown)
+table(TR18$Topkill,TR18$gCrown)
+
+table(SA18$Live,SA18$Topkill)
+table(SA18$Live,SA18$gCrown)
+table(SA18$Topkill,SA18$gCrown)
+
 for (i in 2:4) {
-  #all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
-  #all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
-  #all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
-  #all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
+  all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
+  all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
+  all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
+  all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
   print(c(years[i],'Dead'))
   print(table(all.id[[i]]$Dead))
   print(c(''))
