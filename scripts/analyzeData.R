@@ -393,9 +393,9 @@ fit1
 head(round(fitted(fit1),2))
 
 plot(t12a$ldbh,t12a$Live.y)
-points(t12a$ldbh,fitted(fit1)[,1])
-points(t12a$ldbh,fitted(fit1)[,2])
-points(t12a$ldbh,fitted(fit1)[,3])
+points(t12a$ldbh,fitted(fit1)[,1],col='red')
+points(t12a$ldbh,fitted(fit1)[,2],col='gray')
+points(t12a$ldbh,fitted(fit1)[,3],col='green')
 
 #Size and Fire Sev 
 fit2 <- multinom(PFstatus ~ ldbh + dFS,data=t12a)
