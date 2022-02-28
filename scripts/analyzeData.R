@@ -346,6 +346,10 @@ lines(pGreen~ldbh,data=nd)
 
 par(op)
 
+#### NOW TRY MULTINOMIAL
+# First identify individuals who are scored double
+
+
 ## logit model and plot
 d=t12
 xcn='ldbh'
