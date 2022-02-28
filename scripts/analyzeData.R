@@ -307,27 +307,44 @@ dev.off()
 
 ######## TOPKILL ANALYSIS
 plot(t12$ldbh,t12$Live.y)
+t12$Dead.y <- 1 - t12$Live.y
 
-t12a <- t12[which(t12$Live.y==1
-                   & t12$FireSev>100),]
+t12a <- t12[which(t12$FireSev>100),]
+#t12a <- t12
+
 dim(t12a)
 names(t12a)
 head(t12a)
 t12a$ldbh2 <- t12a$ldbh^2
 
-op=par(mfrow=c(1,2))
-plot(Topkill.y~ldbh,data=t12a)
-fit <- glm(Topkill.y~ldbh+ldbh2,data=t12a,family='binomial')
-fit
+op=par(mfrow=c(1,1))
+plot(Dead.y~ldbh,data=t12a)
+fitD <- glm(Dead.y~ldbh+ldbh2,data=t12a,family='binomial')
+fitD
 nd <- data.frame(ldbh=seq(min(t12a$ldbh,na.rm=T),max(t12a$ldbh,na.rm=T),length.out=101))
 nd$ldbh2 <- nd$ldbh^2
 head(nd)
-nd$yPred <- predict(fit,nd,type='response')
-lines(yPred~ldbh,data=nd)
+nd$pDead <- predict(fitD,nd,type='response')
+lines(pDead~ldbh,data=nd)
 
-plot(gCrown.y~ldbh,data=t12a)
+#plot(Topkill.y~ldbh,data=t12a)
+fitT <- glm(Topkill.y~ldbh+ldbh2,data=t12a,family='binomial')
+fitT
+nd$pTopKill <- predict(fitT,nd,type='response')
+lines(pTopKill~ldbh,data=nd)
 
+#plot(gCrown.y~ldbh,data=t12a)
+fitG2 <- glm(gCrown.y~ldbh+ldbh2,data=t12a,family='binomial')
+fitG2
+BIC(fitG2)
+fitG1 <- glm(gCrown.y~ldbh,data=t12a,family='binomial')
+fitG1
+BIC(fitG1)
 
+nd$pGreen <- predict(fitG1,nd,type='response')
+lines(pGreen~ldbh,data=nd)
+
+par(op)
 
 ## logit model and plot
 d=t12
