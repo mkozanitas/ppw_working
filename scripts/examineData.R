@@ -28,16 +28,39 @@ write.csv(dups,'data/duplicates.csv')
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
 # In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
-# preliminary check on 2018
-TR18 <- all.id[[2]][which(all.id[[2]]$Type=='TR'),]
-SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
-table(TR18$Live,TR18$Topkill)
-table(TR18$Live,TR18$gCrown)
-table(TR18$Topkill,TR18$gCrown)
 
-table(SA18$Live,SA18$Topkill)
-table(SA18$Live,SA18$gCrown)
-table(SA18$Topkill,SA18$gCrown)
+# catenate values to see patterns
+catVals <- function(x) {
+  res <- c()
+  for (i in 1:length(x)) res <- paste(res,x[i],sep='')
+  return(res)
+}
+
+i=2
+for (i in 2:4) {
+  all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
+  print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
+  print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
+}
+
+# Pull out all individuals with NA for bSprout - this should always be filled out
+bNA <- all.id[[1]][which(is.na(all.id[[1]]$bSprout)),]
+for (i in 2:4) bNA <- rbind(bNA,all.id[[i]][which(is.na(all.id[[i]]$bSprout)),])
+dim(bNA)
+head(bNA)
+write.csv(bNA,'data/bSprout-NAs.csv')
+
+# preliminary check on 2018
+all.id[[2]][which(all.id[[2]]$pattern=='0NANANA0110'),]
+
+# SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
+# table(TR18$Live,TR18$Topkill)
+# table(TR18$Live,TR18$gCrown)
+# table(TR18$Topkill,TR18$gCrown)
+# 
+# table(SA18$Live,SA18$Topkill)
+# table(SA18$Live,SA18$gCrown)
+# table(SA18$Topkill,SA18$gCrown)
 
 for (i in 2:4) {
   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live

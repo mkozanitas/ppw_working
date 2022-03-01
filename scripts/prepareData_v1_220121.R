@@ -1,9 +1,5 @@
 # make demographic distributions for species
 rm(list=ls())
-update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
-
-source('scripts/PWFunctions_load.R')
-#source('scripts/PWfunctions_GitHub_local.R')
 
 source('scripts/PW_functions_local.R')
 

@@ -1,40 +1,10 @@
-### local function versions for trouble shooting
-plants.by.plot <- function(year, type){
-  plot.list<- get.plot()
-  if(type=="SEJU"){
-    seju<-get.seju.data(year=year)
-    seju<-with(seju, aggregate(cbind(Num.Seedlings,Num.Juveniles,Total.Number)~Species+Plot+Year, FUN=sum))        
-    seju<-seju[,c(2,1,3:6)]
-    seju$Year<-year
-    return(seju)                 
-  }
-  else{
-    indv.data<-suppressWarnings(get.indv.data(year=year))
-    if(type!="SA.TR") {
-      count<-with(indv.data[indv.data$Type==type,], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
-      area<-with(indv.data[indv.data$Type==type,], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
-      output<-merge(area,count, by=c("Plot","Species","Type"))
-      output$Year<-year
-      colnames(output)<-c("Plot", "Species", "Type", "Basal.Area","Count","Year")}
-    else{
-      count.sap<-with(indv.data[indv.data$Type=="SA",], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
-      area.sap<-with(indv.data[indv.data$Type=="SA",], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
-      output.sap<-merge(area.sap,count.sap,by=c("Plot","Species","Type"))
-      count.tr<-with(indv.data[indv.data$Type=="TR",], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
-      area.tr<-with(indv.data[indv.data$Type=="TR",], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
-      output.tr<-merge(area.tr,count.tr,by=c("Plot","Species","Type"))
-      output<-merge(output.sap,output.tr,by=c("Plot","Species"),all=T)
-      output<-output[-c(3,6)]
-      output$Year<-year
-      colnames(output)<-c("Plot","Species","SA.Basal.Area","SA.Count","TR.Basal.Area","TR.Count","Year")
-      output[is.na(output)] <- 0
-    }
-    return(output)
-  }   
-}
+rm(list=ls())
+update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
+
+source('scripts/PWFunctions_load.R')
 
 ### only for debugging
-year <- 2013
+year <- 2018
 stump <- F
 orig.dead <- F
 survival <- F
@@ -199,18 +169,21 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$gCrown <- NA
 
   names(indv.data)[which(names(indv.data)=='Basal.Resprout')] <- 'bSprout'
-if (year==2013) {
-  indv.data$Epicormic <- NA
-  indv.data$Apical <- NA
-} else {
-  names(indv.data)[which(names(indv.data)=='Epicormic.Resprout')] <- 'Epicormic'
-  names(indv.data)[which(names(indv.data)=='Apical.Growth')] <- 'Apical' 
-}
+  if (year==2013) {
+    indv.data$Survival <- NA
+    indv.data$Epicormic <- NA
+    indv.data$Apical <- NA
+  } else 
+  {
+    names(indv.data)[which(names(indv.data)=='Epicormic.Resprout')] <- 'Epicormic'
+    names(indv.data)[which(names(indv.data)=='Apical.Growth')] <- 'Apical' 
+    indv.data$Epicormic[which(indv.data$Type=='SA')] <- NA
+    indv.data$Apical[which(indv.data$Type=='SA')] <- NA
+  }
   
   if (year==2013) 
   {
     indv.data$Live <- 1
-    indv.data$Dead <- 1 - indv.data$Live
     indv.data$Live[!is.na(indv.data$Dead.Stump)] <- 0
     indv.data$gCrown <- indv.data$Live
     
@@ -220,10 +193,11 @@ if (year==2013) {
     indv.data$bSprout[which(indv.data$Num %in% TSlist)] <- 1
   } else 
   {
-    indv.data$Live <- apply(indv.data[,c('Survival','bSprout')],1,max)
-    indv.data$Dead <- 1 - indv.data$Live
- 
-    indv.data$gCrown[which(indv.data$Type=='TR')] <- apply(indv.data[which(indv.data$Type=='TR'),c('Epicormic','Apical')],1,max)
+    indv.data$Apical[which(indv.data$Type=='TR' & indv.data$Survival==0)] <- 0
+    indv.data$Epicormic[which(indv.data$Type=='TR' & indv.data$Survival==0)] <- 0
+    indv.data$Live <- apply(indv.data[,c('Survival','bSprout')],1,max,na.rm=T)
+
+    indv.data$gCrown[which(indv.data$Type=='TR')] <- apply(indv.data[which(indv.data$Type=='TR'),c('Epicormic','Apical')],1,max,na.rm=T)
     
     indv.data$gCrown[which(indv.data$Type=='SA')] <- indv.data$Survival[which(indv.data$Type=='SA')]
     
@@ -242,7 +216,10 @@ if (year==2013) {
     indv.data<-data.table(indv.data)
     indv.data[,Basal.Area:=sum(Basal.Area),by="iNum"]
     allZero <- function(x) if (all(x==0)) return(0) else return(1)
+    allOne <- function(x) if (all(x==1)) return(1) else return(0)
+    
     if(year>=2018) {
+      #indv.data[,Dead:=max(Dead),by="iNum"]
       indv.data[,Live:=max(Live),by="iNum"]
       indv.data[,Topkill:=allZero(Topkill),by="iNum"]
       indv.data[,bSprout:=max(bSprout),by="iNum"]
@@ -251,12 +228,15 @@ if (year==2013) {
       indv.data[,gCrown:=max(gCrown),by="iNum"]
       #indv.data[,Canopy.Percent:=max(Canopy.Percent),by="iNum"] #### BIT OF A FUDGE
     }
+    # Set Dead to 1-Live (after step above to allow for effects of collapsing branches)
+    indv.data$Dead <- 1 - indv.data$Live
+    
     # Keep only main stem rows
     indv.data<-indv.data[indv.data$Point==0,] 
     
     # Get rid of the extra columns "DBH_cm", ... 
     indv.data<-as.data.frame(indv.data)
-    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area","Dead","Live","bSprout","Topkill","Epicormic","Apical","gCrown")]
+    indv.data<-indv.data[,c("Plot","Quad","Type","Num","Species","X_cm","Y_cm","Basal.Area","Survival","Dead","Live","bSprout","Topkill","Epicormic","Apical","gCrown")]
   } 
   # else {
   #   indv.data[indv.data$Type=="SA", "Basal.Area" ]<-(((indv.data[indv.data$Type=="SA", "SA.Stump.BD_cm"]/2)^2)*(pi))*(indv.data[indv.data$Type=="SA","SA.Stem.Num"])
@@ -283,4 +263,39 @@ if (year==2013) {
   indv.data<-indv.data[which(!(indv.data$Plot=="PPW1307" & indv.data$Num==1108 | indv.data$Num==1115 |indv.data$Num==1118 |indv.data$Num==1121 | indv.data$Num==1127 | indv.data$Num==1169 | indv.data$Num==1170 |indv.data$Num==1174)),]
   
   return(indv.data)
+}
+
+### local function versions for trouble shooting
+plants.by.plot <- function(year, type){
+  plot.list<- get.plot()
+  if(type=="SEJU"){
+    seju<-get.seju.data(year=year)
+    seju<-with(seju, aggregate(cbind(Num.Seedlings,Num.Juveniles,Total.Number)~Species+Plot+Year, FUN=sum))        
+    seju<-seju[,c(2,1,3:6)]
+    seju$Year<-year
+    return(seju)                 
+  }
+  else{
+    indv.data<-suppressWarnings(get.indv.data(year=year))
+    if(type!="SA.TR") {
+      count<-with(indv.data[indv.data$Type==type,], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
+      area<-with(indv.data[indv.data$Type==type,], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
+      output<-merge(area,count, by=c("Plot","Species","Type"))
+      output$Year<-year
+      colnames(output)<-c("Plot", "Species", "Type", "Basal.Area","Count","Year")}
+    else{
+      count.sap<-with(indv.data[indv.data$Type=="SA",], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
+      area.sap<-with(indv.data[indv.data$Type=="SA",], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
+      output.sap<-merge(area.sap,count.sap,by=c("Plot","Species","Type"))
+      count.tr<-with(indv.data[indv.data$Type=="TR",], aggregate(Num~Species+Plot+Type, FUN=function(x)  length(unique(x))))
+      area.tr<-with(indv.data[indv.data$Type=="TR",], aggregate(Basal.Area~Species+Plot+Type, FUN=sum))
+      output.tr<-merge(area.tr,count.tr,by=c("Plot","Species","Type"))
+      output<-merge(output.sap,output.tr,by=c("Plot","Species"),all=T)
+      output<-output[-c(3,6)]
+      output$Year<-year
+      colnames(output)<-c("Plot","Species","SA.Basal.Area","SA.Count","TR.Basal.Area","TR.Count","Year")
+      output[is.na(output)] <- 0
+    }
+    return(output)
+  }   
 }
