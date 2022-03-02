@@ -116,7 +116,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="QUEDEO"), "Species"]<-"QUEDOU"
   indv.data[which(indv.data$Species=="QUEDO"), "Species"]<-"QUEDOU"
   indv.data[which(indv.data$Species=="QUEGAR "), "Species"]<-"QUEGAR"
-  indv.data[which(indv.data$Species=="QUEGARI"), "Species"]<-"QUEGAR" 
+  indv.data[which(indv.data$Species=="QUEGARI"), "Species"]<-"QUEAGR" 
   indv.data[which(indv.data$Species=="QUEKEL "), "Species"]<-"QUEKEL"
   indv.data[which(indv.data$Species=="QUEKAL"), "Species"]<-"QUEKEL"
   indv.data[which(indv.data$Species=="QUEKELL"), "Species"]<-"QUEKEL"
