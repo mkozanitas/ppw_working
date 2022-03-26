@@ -134,13 +134,15 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="UNKN47"), "Species"]<-"PRUCER"
   
   
+  ##Used to run these lines in order to replace incorrect species ID's in 2013- changed these in the 2013 CSV files during 2022 QC- no need to use AUG_Species csv anymore- some names in that file are incorrect now anyway
+  
   # Change individuals originally identified as "QUEDEC" to species-level indentification 
-  if(year==2013) {
-    AUG.ID<-read.csv(text=getURL(paste(prefix, "2013/OakID2013/AUG_Species.csv", sep=''), followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
-    for(i in 1:dim(AUG.ID)[1]){
-      indv.data[indv.data$Num %in% AUG.ID$Num[i], "Species"] <-AUG.ID$Species[i]
-    }
-  }
+  #if(year==2013) {
+   # AUG.ID<-read.csv(text=getURL(paste(prefix, "2013/OakID2013/AUG_Species.csv", sep=''), followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
+    #for(i in 1:dim(AUG.ID)[1]){
+    #  indv.data[indv.data$Num %in% AUG.ID$Num[i], "Species"] <-AUG.ID$Species[i]
+  #  }
+ # }
   
   # change coordinates to all be positive
   indv.data$Y_cm<-suppressWarnings(as.numeric(indv.data$Y_cm))
