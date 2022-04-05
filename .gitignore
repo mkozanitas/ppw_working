@@ -1,13 +1,15 @@
 .Rproj.user
 .Rhistory
 .RData
-<<<<<<< HEAD
 .Ruserdata
-=======
-.Ruserdata
->>>>>>> c9c78de20e274ff34c9a8988053e0771671839d6
+#
 .DS_Store
 figures/.DS_Store
 data/.DS_Store
 input_data/.DS_Store
 scripts/.DS_Store
+#
+data/
+data
+figures/
+figures
