@@ -36,7 +36,7 @@ catVals <- function(x) {
   return(res)
 }
 
-i=2
+i=4
 for (i in 2:4) {
   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
@@ -51,7 +51,8 @@ head(bNA)
 write.csv(bNA,'data/bSprout-NAs.csv')
 
 # preliminary check on 2018
-all.id[[2]][which(all.id[[2]]$pattern=='0NANANA0110'),]
+i=4
+all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
 
 # SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
 # table(TR18$Live,TR18$Topkill)
@@ -62,6 +63,7 @@ all.id[[2]][which(all.id[[2]]$pattern=='0NANANA0110'),]
 # table(SA18$Live,SA18$gCrown)
 # table(SA18$Topkill,SA18$gCrown)
 
+i=2
 for (i in 2:4) {
   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
@@ -81,14 +83,6 @@ for (i in 2:4) {
   #print(table(all.id[[i]]$DG))
 }
 
-which(all.id[[3]]$Dead==(-4))
-all.id[[3]][491,]
-
-which(all.id[[3]]$gCrown==(3))
-all.id[[3]][3596,]
-
-which(all.id[[4]]$Live==(10))
-all.id[[4]][1460,]
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
@@ -126,11 +120,6 @@ head(allIndv[,c('S13','S18','S19','S20')])
 allNames <- sort(c(allIndv$S13,allIndv$S18,allIndv$S19,allIndv$S20))
 table(allNames)
 
-## identify QUEDOUGAR and QUEGAR? individuals
-all.id[[4]][grep('QUEDOUGAR',all.id[[4]]$Species),]
-all.id[[3]][which(all.id[[3]]$Species=='QUEGAR?'),]
-all.id[[1]][grep('QUEAGKE',all.id[[1]]$Species),]
-
 write.csv(sort(unique(allNames)),'data/all-spp-names.csv')
 
 ## This data.frame may be quite useful for quickly identifying problem individuals. 
@@ -145,8 +134,9 @@ lunique <- function(x)
 allIndv$nP <- apply(allIndv[,Pn],1,lunique)
 head(allIndv$nP)
 (multPlots <- which(allIndv$nP>1))
+allIndv[4891,]
 
-# OK, 19 individuals that moved between plots (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
+# OK, 1 individual that moved between plots (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
 allIndv[multPlots,1:9]
 
 # and which ones change species
@@ -163,11 +153,8 @@ allIndv[probs,]
 
 # a bunch of them are indets seen only once in PPW1330, after the fire
 
-# OK, almost 250 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
+# OK, 160 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
 head(allIndv[multSp,1:9])
-
-## how many are the same individuals
-table(allIndv$nP,allIndv$nSp)
 
 ## which individuals are missing from 2018 and present in 2013 and 2019
 midNA <- function(x)
@@ -188,7 +175,7 @@ write.csv(allMults[order(allMults$nSp,allMults$nP,decreasing = T),],'data/mult-p
 
 # write entire indvData for use in next steps
 head(allIndv)
-saveRDS(allIndv,'data/allIndv.Rdata')
+write.csv(allIndv,'data/allIndv.csv')
 
 ## Now, go back to the four data frames and match/copy these four flags, so they can be used to eliminate individuals from analysis as needed
 i=1
