@@ -14,9 +14,11 @@ for (i in 1:4)
   print(years[i])
   nNum <- table(all.id[[i]]$Num)
   print(nNum[which(nNum>1)])
+  #next line gives you tree numbers that are duplicated
   dN <- as.numeric(names(nNum[which(nNum>1)]))
   dups[[i]] <- all.id[[i]][which(all.id[[i]]$Num %in% dN),]
   dups[[i]] <- dups[[i]][order(dups[[i]]$Num),]
+  #the next line removes duplicated tags
   if (length(dN)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dN)]
 }
 

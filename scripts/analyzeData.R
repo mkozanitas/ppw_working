@@ -19,7 +19,8 @@ str(all.id)
 
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
-allIndv <- readRDS('data/allIndv.Rdata')
+#allIndv <- readRDS('data/allIndv.Rdata')
+allIndv <- read.csv('data/allIndv.csv')
 head(allIndv)
 
 ## get percent survival by species and type, from 13-18
