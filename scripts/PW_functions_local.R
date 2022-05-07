@@ -4,7 +4,7 @@ update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
 source('scripts/PWFunctions_load.R')
 
 ### only for debugging
-year <- 2018
+year <- 2020
 stump <- F
 orig.dead <- F
 survival <- F
@@ -204,16 +204,18 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data$gCrown[which(indv.data$Type=='SA')] <- indv.data$Survival[which(indv.data$Type=='SA')]
     
     indv.data$Topkill <- 0
-    indv.data$Topkill[which(indv.data$Survival==0 & indv.data$bSprout==1)] <- 1
+    indv.data$Topkill[which(indv.data$Survival==0)] <- 1
   }
-
 
   # get rid of TS rows
   indv.data<-indv.data[-which(indv.data$Type=="TS"),]
   
   if (branches==F)
     {
-    # Convert to data.table to collapse rows    
+    # get rid of dead points - DIDN'T WORK
+    # indv.data <- indv.data[-which(indv.data$Survival==0 & indv.data$bSprout==0  & indv.data$Num%%1==0),]
+      
+    # Convert to data.table to collapse rows 
     library(data.table)
     indv.data<-data.table(indv.data)
     indv.data[,Basal.Area:=sum(Basal.Area),by="iNum"]
@@ -222,8 +224,9 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     if(year>=2018) {
       #indv.data[,Dead:=max(Dead),by="iNum"]
+      indv.data[,Survival:=max(Survival),by="iNum"]
       indv.data[,Live:=max(Live),by="iNum"]
-      indv.data[,Topkill:=allZero(Topkill),by="iNum"]
+      indv.data[,Topkill:=min(Topkill),by="iNum"]
       indv.data[,bSprout:=max(bSprout),by="iNum"]
       indv.data[,Epicormic:=max(Epicormic),by="iNum"]
       indv.data[,Apical:=max(Apical),by="iNum"]

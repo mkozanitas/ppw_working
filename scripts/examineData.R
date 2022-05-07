@@ -2,7 +2,7 @@
 rm(list=ls())
 
 all.id <- readRDS('data/allid.Rdata')
-all.idb <- readRDS('data/allidb.Rdata')
+#all.idb <- readRDS('data/allidb.Rdata')
 
 years <- c(2013,2018,2019,2020)
 
@@ -18,13 +18,15 @@ for (i in 1:4)
   dN <- as.numeric(names(nNum[which(nNum>1)]))
   dups[[i]] <- all.id[[i]][which(all.id[[i]]$Num %in% dN),]
   dups[[i]] <- dups[[i]][order(dups[[i]]$Num),]
+  
   #the next line removes duplicated tags
-  if (length(dN)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dN)]
+  if (length(dN)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dN),]
 }
 
 dups[[1]]
 dups <- do.call(rbind,dups)
 dim(dups)
+head(dups)
 write.csv(dups,'data/duplicates.csv')
 
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
@@ -38,11 +40,21 @@ catVals <- function(x) {
   return(res)
 }
 
+## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
+SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
+TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
+
 i=4
 for (i in 2:4) {
   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
+  badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
+  length(badSAs)
+  
   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
+  badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
+  length(badTRs)
+  print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
 }
 
 # Pull out all individuals with NA for bSprout - this should always be filled out
