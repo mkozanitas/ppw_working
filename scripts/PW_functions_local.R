@@ -15,7 +15,7 @@ canopy <- F
 bsprout.height <- F
 bsprout.count <- F
 tag.pulled <- T
-keep.999 <- T
+keep.999 <- F
 branches <- F
 prefix <- 'https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/'
 plot.list <- NA
@@ -32,7 +32,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list # assigns a name to each item of the list
   
-  i=45
+  i=1 
   for (i in 1:length(mega.data)) 
   {
     Plot<-plot.list[i]
