@@ -9,7 +9,5 @@ data/.DS_Store
 input_data/.DS_Store
 scripts/.DS_Store
 #
-data/
-data
-figures/
-figures
+data/*
+figures/*
