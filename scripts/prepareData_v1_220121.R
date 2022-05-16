@@ -1,4 +1,4 @@
-# make demographic distributions for species
+# Extract plot data for 2013, 2018, 2019, 2020 and prepare for analysis
 rm(list=ls())
 
 source('scripts/PW_functions_local.R')
@@ -63,4 +63,8 @@ all.id <- list(id13,id18,id19,id20)
 saveRDS(all.id,'data/allid.Rdata')
 #saveRDS(all.idb,'data/allidb.Rdata')
 
+# there are lines of code that generate warnings, but they aren't errors. 
+# This one is fine: In if (is.na(plot.list)) plot.list <- get.plot(year = year) :the condition has length > 1 and only the first element will be used
+# the warnings about no non-missing arguments may require further examination
+warnings()
 

@@ -1,10 +1,14 @@
 # RUN prepareData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
+# data files are not synced by git, so prepareData does need to be run locally
 rm(list=ls())
 
+# read in list of 4 items, each item with the full data file for all trees in a given year
+years <- c(2013,2018,2019,2020)
 all.id <- readRDS('data/allid.Rdata')
+
+# these are data files with 'points' (branches) output individually. Not currently being used, and the lines to create these files may be commented out in prepareData
 #all.idb <- readRDS('data/allidb.Rdata')
 
-years <- c(2013,2018,2019,2020)
 
 # Print dups for each year. And for now, remove dups before checking for other problems, e.g. moving between plots, species, etc.
 dups <- list()
@@ -29,7 +33,26 @@ dim(dups)
 head(dups)
 write.csv(dups,'data/duplicates.csv')
 
+# check that the maximum numbers from each year of survey don't have typos or bad values
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
+
+# Pull out all individuals with NA for bSprout - this should always be filled out. As of 5/15/22, no problems identified at this step!!
+bNA <- all.id[[1]][which(is.na(all.id[[1]]$bSprout)),]
+for (i in 2:4) bNA <- rbind(bNA,all.id[[i]][which(is.na(all.id[[i]]$bSprout)),])
+dim(bNA)
+head(bNA)
+write.csv(bNA,'data/bSprout-NAs.csv')
+
+## Seems there are problems with gCrown - checking here
+summary(all.id[[1]]$gCrown) # GOOD
+summary(all.id[[2]]$gCrown) # GOOD
+summary(all.id[[3]]$gCrown) # WHO is -Inf?
+rsel <- which(all.id[[3]]$gCrown==-Inf)
+all.id[[3]][rsel,]
+
+summary(all.id[[4]]$gCrown) # Character! Let's make it numeric
+all.id[[4]]$gCrown <- as.numeric(all.id[[4]]$gCrown)
+summary(all.id[[4]]$gCrown) # Good!
 
 # In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
 
@@ -41,6 +64,7 @@ catVals <- function(x) {
 }
 
 ## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
+# These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error requiring further investigation. As of 5/15/22 there are no problem saplings, and just 7 and 24 problem trees in 2018 and 2019. But there are >1000 in 2020, so there's some deeper problem we need to figure out.
 SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
 TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
 
@@ -57,17 +81,11 @@ for (i in 2:4) {
   print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
 }
 
-# Pull out all individuals with NA for bSprout - this should always be filled out
-bNA <- all.id[[1]][which(is.na(all.id[[1]]$bSprout)),]
-for (i in 2:4) bNA <- rbind(bNA,all.id[[i]][which(is.na(all.id[[i]]$bSprout)),])
-dim(bNA)
-head(bNA)
-write.csv(bNA,'data/bSprout-NAs.csv')
-
-# preliminary check on 2018
+# examine trees with particular problem patterns
 i=4
 all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
 
+# more troubleshooting code - commented out for now
 # SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
 # table(TR18$Live,TR18$Topkill)
 # table(TR18$Live,TR18$gCrown)
@@ -77,7 +95,8 @@ all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
 # table(SA18$Live,SA18$gCrown)
 # table(SA18$Topkill,SA18$gCrown)
 
-i=2
+# Now create some combined states, again to look for 'illegal' data combinations. Need to revisit this - some of the '2s' may suggest problems, but not sure.
+i=4
 for (i in 2:4) {
   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
@@ -91,10 +110,12 @@ for (i in 2:4) {
   print(c(''))
   print(c(years[i],'gCrown'))
   print(table(all.id[[i]]$gCrown))
-  print(c(''))
-  #print(table(all.id[[i]]$DT))
-  #print(table(all.id[[i]]$TG))
-  #print(table(all.id[[i]]$DG))
+  print(c(years[i],'DT'))
+  print(table(all.id[[i]]$DT))
+  print(c(years[i],'TG'))
+  print(table(all.id[[i]]$TG))
+  print(c(years[i],'DG'))
+  print(table(all.id[[i]]$DG))
 }
 
 
@@ -104,8 +125,6 @@ length(all.id)
 # make an empty variable, and then loop through the individual data files and append all the numbers end to end
 allNums <- c()
 for (i in 1:length(all.id)) allNums <- c(allNums,all.id[[i]]$Num)
-head(sort(allNums))
-tail(sort(allNums))
 
 # now reduce to the unique ones
 allNums <- sort(unique(allNums))
@@ -119,8 +138,8 @@ allIndv <- data.frame(Num=allNums,P13=NA,P18=NA,P19=NA,P20=NA,S13=NA,S18=NA,S19=
 # now use the match command to match up the plot for each number in each year, and assign it to the right row
 Pn <- c('P13','P18','P19','P20')
 Sn <- c('S13','S18','S19','S20')
-i=1
 
+i=1
 for (i in 1:length(all.id))
 {
   y2a <- match(allIndv$Num,all.id[[i]]$Num)
@@ -148,7 +167,6 @@ lunique <- function(x)
 allIndv$nP <- apply(allIndv[,Pn],1,lunique)
 head(allIndv$nP)
 (multPlots <- which(allIndv$nP>1))
-allIndv[4891,]
 
 # OK, 1 individual that moved between plots (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
 allIndv[multPlots,1:9]
@@ -161,14 +179,14 @@ head(allIndv$nSp)
 # what did we find?
 table(allIndv$nSp)
 
-# Oh, interesting - individuals not assigned to any species? And some assigned to different species every year? Let's look at 0, 3
-probs <- which(allIndv$nSp %in% c(0,3,4))
-allIndv[probs,]
+# Oh, interesting - individuals not assigned to any species? But none assigned to more than 2! (as of 5/15/22)
+probs <- which(allIndv$nSp %in% c(0,2))
+length(probs)
 
 # a bunch of them are indets seen only once in PPW1330, after the fire
 
-# OK, 160 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
-head(allIndv[multSp,1:9])
+# OK, 162 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
+head(allIndv[probs,1:9])
 
 ## which individuals are missing from 2018 and present in 2013 and 2019
 midNA <- function(x)
@@ -200,28 +218,3 @@ for (i in 1:length(all.id))
 }
 saveRDS(all.id,'data/allid-nodups.Rdata')
 
-########
-# OLD CODE BELOW HERE
-# 
-# # THe following lines identify which plots dupolicated numbers are in
-# 
-# # Check to see if tag numbers are duplicated in a particular year
-# length(unique(indv.data$Num)) # How many UNIQUE tag numbers
-# length(indv.data$Num) # How many TOTAL tag numbers
-# # Make tables with the duplicated number and which plot it's in
-# first <- data.frame(onetag=indv.data$Num[duplicated(indv.data$Num,fromLast=TRUE)],oneplot=indv.data$Plot[duplicated(indv.data$Num,fromLast=TRUE)])
-# second <- data.frame(twotag=indv.data$Num[duplicated(indv.data$Num)],twoplot=indv.data$Plot[duplicated(indv.data$Num)])
-# # Sort the tables so that the numbers are in the same order
-# first <- first[order(first$onetag),]
-# second <- second[order(second$twotag),]
-# # Bind the first and sxwecond dup tables
-# dups <- cbind(first,second)
-# # Add a check to see if duplicates are in the same plot
-# dups$sameplot <- apply(dups, 1, FUN=function(x) x[2] == x[4])
-# dups[order(dups$sameplot),]
-# 
-# 
-# grep("DUP",indv.data.2018$Notes)
-# indv.data.2018[1559,]
-# indv.data.2018[37,]
-# 
