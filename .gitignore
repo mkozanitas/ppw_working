@@ -15,3 +15,6 @@ data/
 figures/
 data
 figures
+data/allIndv.csv
+data/allid-nodups.Rdata
+data/mult-plots-species.csv
