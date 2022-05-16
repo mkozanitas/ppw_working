@@ -11,3 +11,7 @@ scripts/.DS_Store
 #
 data/*
 figures/*
+data/
+figures/
+data
+figures
