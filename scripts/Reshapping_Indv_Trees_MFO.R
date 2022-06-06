@@ -17,16 +17,20 @@ colnames(all.id[[1]]) # 21
 colnames(all.id[[2]]) # 25
 colnames(all.id[[3]])
 colnames(all.id[[4]])
-# the latter list elements (not 2018) have the columns "pattern, DT, TG, DG --> can we add this columns into 2018 as we only tagged certain types of individuals? Let's just guess and say they are all 1 for those columns in 2018
+# the latter list elements (not 2013) have the columns "pattern, DT, TG, DG --> can we add this columns into 2013 as we only tagged certain types of individuals? Let's just guess and say they are all 1 for those columns in 2013
 
 # create data frame to play with
 indivs <- all.id
 
-# add in missing 2018 columns with all ones 
-indivs[[1]]$pattern <- "11111111"
-indivs[[1]]$DT <- 1
-indivs[[1]]$TG <- 1
-indivs[[1]]$DG <- 1
+# add in missing 2013 columns with all ones 
+indivs[[1]]$pattern <- NA
+indivs[[1]]$DT <- NA
+indivs[[1]]$TG <- NA
+indivs[[1]]$DG <- NA
+
+# DT = dead + topkill
+# TG = topkill + green crown
+# DG = dead + green crown
 
 # rearrange so columns are in the in same order as later years
 indivs[[1]] <- indivs[[1]][c(1:17,22:25, 18:21)]
@@ -39,3 +43,16 @@ indivs_all_years
 # reshape data so the columns are years
 indivs_all_years %>% 
   pivot_wider(id_cols = Num, names_from = Year, values_from = "pattern")
+
+indivs_all_years %>% 
+  pivot_wider(id_cols = Num, names_from = Year, values_from = "Live")
+
+indivs_all_years %>% 
+  pivot_wider(id_cols = Num, names_from = Year, values_from = "Topkill")
+
+# How many indivs were topkilled in each year? Need to take into account the reaeted meaaure of topkill (wil be dead in subsequent year?)
+indivs_all_years %>% 
+  pivot_wider(id_cols = Num, names_from = Year, values_from = "Topkill") 
+  
+
+
