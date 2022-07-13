@@ -9,7 +9,12 @@ data/.DS_Store
 input_data/.DS_Store
 scripts/.DS_Store
 #
+data/*
+figures/*
 data/
-data
 figures/
+data
 figures
+data/allIndv.csv
+data/allid-nodups.Rdata
+data/mult-plots-species.csv

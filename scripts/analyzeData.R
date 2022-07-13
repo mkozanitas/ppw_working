@@ -23,10 +23,8 @@ head(spNames)
 allIndv <- read.csv('data/allIndv.csv')
 head(allIndv)
 
-## get percent survival by species and type, from 13-18
-use.species <- spNames$x[-c(17,19,21,23,25,34,35,36)]
-fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.dead=NA,N18.TKB=NA,N18.BC=NA,N18.C=NA)
-head(fst)                  
+#### First round of analysis of post-fire fates, 2013-2018
+## get percent survival by species and type
 
 # select which individuals to eliminate - this can be done separately for each analysis
 # take any individuals where plot and species match for the first two years
@@ -35,77 +33,101 @@ plot.ok <- allIndv$Num[which(allIndv$P13==allIndv$P18)]
 spec.ok <- allIndv$Num[which(allIndv$S13==allIndv$S18)] 
 ps.ok <- intersect(plot.ok,spec.ok)
 length(ps.ok)
+head(ps.ok)
+tail(ps.ok)
 
-# not missed in 2018 survey
-nm <- all.id[[1]]$Num[which(all.id[[1]]$NA18==0)]
-head(nm)
-length(nm)
+# were any individuals missed in 2018 included in list above? (NA18=1 if Num is present in 13 and 19, and missing in 18)
+na18 <- all.id[[1]]$Num[which(all.id[[1]]$NA18==1)]
+length(na18)
+na18[which(na18 %in% ps.ok)]
+# none of them captured in ps.ok, so we can ignore them for this analysis
 
-t1 <- all.id[[1]][which(intersect(ps.ok,nm) %in% all.id[[1]]$Num),]
-t1 <- t1[order(t1$Num),]
+t1 <- all.id[[1]][which(all.id[[1]]$Num %in% ps.ok),]
 nrow(t1)
-t2 <- all.id[[2]][which(intersect(ps.ok,nm) %in% all.id[[2]]$Num),]
+t2 <- all.id[[2]][which(all.id[[2]]$Num %in% ps.ok),]
 nrow(t2)
-t2 <- t2[order(t1$Num),]
 
-# UNMMERGED - ANALYSES BASED ON SHARED NUMS
-i=3
+# check the two dataframes have same Nums
+all(sort(t1$Num)==sort(t2$Num))
+
+# And merge!
+t12 <- merge(t1,t2,by = 'Num',all = T)
+dim(t12)
+head(t12)
+
+#plot(t12$Basal.Area.x,t12$Basal.Area.y)
+#summary(t12$Basal.Area.y/t12$Basal.Area.x)
+#abline(0,1)
+
+# ANALYZE BY SPECIES AND TYPE
+use.species <- spNames$x
+fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.dead=NA,N18.TKB=NA,N18.BC=NA,N18.C=NA,nMissing=NA)
+head(fst)                  
+tail(fst)
+
+i=24
 for (i in 1:nrow(fst))
 {
   sp <- fst$Species[i]
   ty <- fst$Type[i]
-  init <- t1$Num[which(t1$Species==sp & t1$Type==ty & t1$Live==1)]
+  init <- t12$Num[which(t12$Species.x==sp & t12$Type.x==ty & t12$Live.x==1)]
   fst$N13[i] <- length(init)
   
-  ## If running line by line, look at the initial plants in t2. E.g. for i=3, why so much missing data?
-  t2[t2$Num %in% init,]
+  fin1 <- intersect(init,t12$Num[which(t12$Live.y==0)])
+  # fin1 is the number of original ty surviving, whether or not they transitioned from SA->TR (or the other way!)
   
-  fin <- intersect(init,t2$Num[which(t2$Live==1)])
-  # fin is the number of original ty surviving, whether or not they transitioned from SA->TR (or the other way!)
-  fst$N18.dead[i] <- length(init) - length(fin)
+  fst$N18.dead[i] <- length(fin1)
   
-  fin <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$Topkill==1)])
-  fst$N18.TKB[i] <- length(fin) 
+  #fin2 is topkill and basal sprouting
+  fin2 <- intersect(init,t12$Num[which(t12$bSprout.y==1 & t12$Topkill.y==1)])
+  fst$N18.TKB[i] <- length(fin2) 
   
-  fin <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$gCrown==1)])
-  fst$N18.BC[i] <- length(fin) 
+  # fin3 is basal sprouting and green crown
+  fin3 <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$gCrown==1)])
+  fst$N18.BC[i] <- length(fin3) 
   
-  fin <- intersect(init,t2$Num[which(t2$bSprout==0 & t2$gCrown==1)])
-  fst$N18.C[i] <- length(fin) 
+  # fin4 is green crown only
+  fin4 <- intersect(init,t2$Num[which(t2$bSprout==0 & t2$gCrown==1)])
+  fst$N18.C[i] <- length(fin4) 
+  
+  missed <- init[which (!init %in% c(fin1,fin2,fin3,fin4))]
+  fst$nMissing[i] <- length(missed)
 }
 head(fst)
 tail(fst)
-fst <- fst[-which(fst$N13==0),]
-fst
+sum(fst$nMissing)
+#5/15/24 - just 2 individuals that were alive post-fire but their scores don't make sense
+t12[t12$Num==3415,] # basal sprout but not topkill or green crown
+t12[t12$Num==4437,] # alive but not bsprout, topkill or green crown
 
-## count missing or double counted indviduals between t1 and t2
-fst$nDiff <- fst$N13-apply(fst[,4:7],1,sum,na.rm=T)
-fst[,c(1,3,8)]
 
-fst$S13.18[which(fst$N13!=0)] <- fst$N18[which(fst$N13!=0)]/fst$N13[which(fst$N13!=0)]
-fst[order(fst$N13,decreasing = T),]
+fst$percSurv <- 1 - fst$N18.dead/fst$N13
+fst$percSurv[fst$N13==0] <- NA
+
+## What percent died in Tubbs, overall and by Type?
+SArows <- which(fst$Type=='SA')
+TRrows <- which(fst$Type=='TR')
 
 sum(fst$N13)
-sum(fst$N18)
-sum(fst$N18)/sum(fst$N13)
+sum(fst$N18.dead)
+sum(fst$N18.dead)/sum(fst$N13)
+sum(fst$N18.dead[SArows])/sum(fst$N13[SArows])
+sum(fst$N18.dead[TRrows])/sum(fst$N13[TRrows])
 
-fst
-#barplot(t(as.matrix(fst[,c('N13','N18')])))
+## Abundant species only
+AbSp <- c('AMOCAL','ARBMEN','ARCMAN','FRACAL','HETARB','PSEMEN','QUEAGR','QUEBER','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+fsta <- fst[which(fst$Species %in% AbSp),]
+fsta[fsta$Type=='TR',][order(fsta$percSurv[fsta$Type=='TR']),]
+fsta[fsta$Type=='SA',][order(fsta$percSurv[fsta$Type=='SA']),]
+
+plot(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],xlim=c(0,1),ylim=c(0,1),type='n',xlab='Survival, trees',ylab='Survival, saplings')
+text(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],labels = fsta[fsta$Type=='TR','Species'])
+abline(0,1)
 
 #### EXPAND ANALYSIS to ALL POST-FIRE FATES
-head(t1)
-table(t1$Live,t1$bSprout)
-
-# NOW MERGE FOR ANALYSES BY INDIV
-dim(t1)
-dim(t2)
-
-t12 <- merge(t1,t2,'Num',all = T)
 dim(t12)
 head(t12)
 names(t12)
-table(t12$Num)
-head(which(is.na(t12$Plot.x)))
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
@@ -129,7 +151,6 @@ t12$ldbh <- log10(t12$dbh)
 hist(t12$ldbh)
 
 #### SURVIVAL ANALYSIS
-
 plot(t12$ldbh,t12$Live.y)
 
 # **** mixing SA and TR - need to work on diameter conversion to get this right ***
@@ -187,7 +208,7 @@ plotSP <- function(t12,species=NULL)
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t12,'QUEAGR')
+plotSP(t12,'QUEKEL')
 
 
 ## Full model with species
@@ -206,7 +227,6 @@ head(nd)
 barplot(nd$pSurvAll~nd$Species.x)
 
 ### MODELS WITH FIRE SEVERITY
-
 fit <- glm(Live.y~ldbh + FireSev,data=t12s,family='binomial')
 summary(fit)
 
@@ -219,6 +239,7 @@ head(nd)
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
 
+# Plot survival as a function of fire severity, with isoclines as a function ldbh. Lines are declining - survival is lower at higher fire severity, but larger trees have higher values
 plot(t12s$FireSev,t12s$Live.y)
 i=1
 for (i in 1:nvals) {
@@ -227,6 +248,7 @@ for (i in 1:nvals) {
   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
 }
 
+# Plot survival as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
 plot(t12s$ldbh,t12s$Live.y)
 i=1
 for (i in 1:nvals) {
@@ -308,11 +330,15 @@ dev.off()
 #fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
 
 ######## TOPKILL ANALYSIS
-plot(t12$ldbh,t12$Live.y)
-t12$Dead.y <- 1 - t12$Live.y
+# current scoring has dead trees as topkilled. Change so topkill is only for those that are alive
+t12$TopkillLive.y <- 0
+t12$TopkillLive.y[which(t12$Topkill.y==1 & t12$Live.y==1)] <- 1
+
+table(t12$Dead.y,t12$TopkillLive.y,t12$gCrown.y)
+t12[which(t12$gCrown.y==0 & t12$TopkillLive.y==0 & t12$Dead.y==0),]
+# TWO INDIVIDUALS WITH PROBLEM DATA: 3415, 4437 (already identifie those above - if they've been fixed and don't show up at this point, delete this line)
 
 t12a <- t12[which(t12$FireSev>100),]
-#t12a <- t12
 
 dim(t12a)
 names(t12a)
@@ -327,13 +353,13 @@ nd <- data.frame(ldbh=seq(min(t12a$ldbh,na.rm=T),max(t12a$ldbh,na.rm=T),length.o
 nd$ldbh2 <- nd$ldbh^2
 head(nd)
 nd$pDead <- predict(fitD,nd,type='response')
-lines(pDead~ldbh,data=nd)
+lines(pDead~ldbh,data=nd,lwd=2,col='black')
 
 #plot(Topkill.y~ldbh,data=t12a)
-fitT <- glm(Topkill.y~ldbh+ldbh2,data=t12a,family='binomial')
+fitT <- glm(TopkillLive.y~ldbh+ldbh2,data=t12a,family='binomial')
 fitT
 nd$pTopKill <- predict(fitT,nd,type='response')
-lines(pTopKill~ldbh,data=nd)
+lines(pTopKill~ldbh,data=nd,lwd=2,col='red')
 
 #plot(gCrown.y~ldbh,data=t12a)
 fitG2 <- glm(gCrown.y~ldbh+ldbh2,data=t12a,family='binomial')
@@ -344,34 +370,26 @@ fitG1
 BIC(fitG1)
 
 nd$pGreen <- predict(fitG1,nd,type='response')
-lines(pGreen~ldbh,data=nd)
+lines(pGreen~ldbh,data=nd,lwd=2,col='green')
 
 par(op)
 
 #### NOW TRY MULTINOMIAL
-# First identify individuals who are scored double
-t12$TopkillLive.y <- 0
-t12$TopkillLive.y[which(t12$Live.y==1 & t12$Topkill.y==1)] <- 1
 
 head(t12)
 dim(t12)
 t12$dupStatusCheck <- apply(t12[,c('Dead.y','TopkillLive.y','gCrown.y')],1,sum,na.rm=T)
 table(t12$dupStatusCheck)
-## suggests 523 individuals that are dead, but we missed them as missing from 2018 census?
-
-head(t12[t12$dupStatusCheck==0,])
-t12[t12$dupStatusCheck==0,][1,]
-all.id[[2]][all.id[[2]]$Num==1226,]
-
-head(t12[t12$dupStatusCheck==2,])
+## same 2 as above
 
 #### PROVISIONALLY ASSIGN TO THREE CLASSES
 t12$PFstatus <- (-1)
 t12$PFstatus[which(t12$Live.y==0)] <- 0
-t12$PFstatus[which(t12$Live.y==1 & t12$Topkill.y==1)] <- 1
+t12$PFstatus[which(t12$TopkillLive.y==1)] <- 1
 t12$PFstatus[which(t12$Topkill.y==0 & t12$gCrown.y==1)] <- 2
 table(t12$PFstatus)
-# now assign all remaing NAs to dead
+
+# now assign all remaing NAs to dead - TEMP STEP
 t12$PFstatus[which(t12$PFstatus==(-1))] <- 0
 table(t12$PFstatus)
 
@@ -460,3 +478,4 @@ logit2Plot <- function(d,xcn,ycn,np=101)
   lines(nd$dx,nd$yPred)
 }
 logit2Plot(t12,'ldbh','Live.y')
+
