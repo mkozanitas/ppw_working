@@ -17,6 +17,7 @@ colnames(all.id[[1]]) # 21
 colnames(all.id[[2]]) # 25
 colnames(all.id[[3]])
 colnames(all.id[[4]])
+
 # the latter list elements (not 2013) have the columns "pattern, DT, TG, DG --> can we add this columns into 2013 as we only tagged certain types of individuals? Let's just guess and say they are all 1 for those columns in 2013
 
 # create data frame to play with

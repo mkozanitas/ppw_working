@@ -33,6 +33,11 @@ plot.ok <- allIndv$Num[which(allIndv$P13==allIndv$P18)]
 spec.ok <- allIndv$Num[which(allIndv$S13==allIndv$S18)] 
 ps.ok <- intersect(plot.ok,spec.ok)
 length(ps.ok)
+
+# include trees from new plots
+ps.ok <- c(ps.ok,allIndv$Num[which(allIndv$P18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))])
+length(ps.ok)
+
 head(ps.ok)
 tail(ps.ok)
 
@@ -47,20 +52,35 @@ nrow(t1)
 t2 <- all.id[[2]][which(all.id[[2]]$Num %in% ps.ok),]
 nrow(t2)
 
-# check the two dataframes have same Nums
-all(sort(t1$Num)==sort(t2$Num))
-
 # And merge!
 t12 <- merge(t1,t2,by = 'Num',all = T)
 dim(t12)
 head(t12)
+tail(t12)
+
+# create 'fake 2013 data'
+# rownums for new 2018 individuals from new plots
+newIndvs <- which(is.na(t12$Plot.x))
+length(newIndvs)
+
+t12[4042:4043,]
+t12$Plot.x[newIndvs] <- t12$Plot.y[newIndvs]
+t12$Quad.x[newIndvs] <- t12$Quad.y[newIndvs]
+t12$Type.x[newIndvs] <- t12$Type.y[newIndvs]
+t12$Species.x[newIndvs] <- t12$Species.y[newIndvs]
+
+# This introduces error because 2018 basal areas reflect 5 more years of growth
+t12$Basal.Area.x[newIndvs] <- t12$Basal.Area.y[newIndvs]
+t12$Dead.x[newIndvs] <- 0
+t12$Live.x[newIndvs] <- 1
+t12$gCrown.x[newIndvs] <- 1
 
 #plot(t12$Basal.Area.x,t12$Basal.Area.y)
 #summary(t12$Basal.Area.y/t12$Basal.Area.x)
 #abline(0,1)
 
 # ANALYZE BY SPECIES AND TYPE
-use.species <- spNames$x
+(use.species <- spNames$x)
 fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.dead=NA,N18.TKB=NA,N18.BC=NA,N18.C=NA,nMissing=NA)
 head(fst)                  
 tail(fst)
@@ -96,10 +116,6 @@ for (i in 1:nrow(fst))
 head(fst)
 tail(fst)
 sum(fst$nMissing)
-#5/15/24 - just 2 individuals that were alive post-fire but their scores don't make sense
-t12[t12$Num==3415,] # basal sprout but not topkill or green crown
-t12[t12$Num==4437,] # alive but not bsprout, topkill or green crown
-
 
 fst$percSurv <- 1 - fst$N18.dead/fst$N13
 fst$percSurv[fst$N13==0] <- NA
@@ -115,11 +131,17 @@ sum(fst$N18.dead[SArows])/sum(fst$N13[SArows])
 sum(fst$N18.dead[TRrows])/sum(fst$N13[TRrows])
 
 ## Abundant species only
-AbSp <- c('AMOCAL','ARBMEN','ARCMAN','FRACAL','HETARB','PSEMEN','QUEAGR','QUEBER','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+#AbSp <- c('AMOCAL','ARBMEN','ARCMAN','FRACAL','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+
+# dropping QUEBER, FRACAL, AMOCAL for now
+AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
 fsta <- fst[which(fst$Species %in% AbSp),]
+
+#examine data
 fsta[fsta$Type=='TR',][order(fsta$percSurv[fsta$Type=='TR']),]
 fsta[fsta$Type=='SA',][order(fsta$percSurv[fsta$Type=='SA']),]
 
+# plot sapling vs. tree survival
 plot(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],xlim=c(0,1),ylim=c(0,1),type='n',xlab='Survival, trees',ylab='Survival, saplings')
 text(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],labels = fsta[fsta$Type=='TR','Species'])
 abline(0,1)
@@ -133,6 +155,8 @@ names(t12)
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
 names(fs)
 summary(fs[,fsmet])
+hist(fs[,fsmet])
+sort(fs[,fsmet])
 
 f2t <- match(t12$Plot.x,fs$Plot)
 head(f2t)
@@ -140,6 +164,18 @@ tail(f2t)
 t12$FireSev <- fs[f2t,fsmet]
 dim(t12)
 tail(t12)
+table(t12$Plot.x)
+
+# RDNBR fire severity levels
+# Unburned
+# Low <170, but burned
+# Medium 170-700
+# High: >700
+# unburned: 1308, 1309, 1311, 1312, 1327, 1344, 1347
+
+fs.breaks <- c(-100,170,700,1000)
+t12$fsCat <- cut(t12$FireSev,fs.breaks)
+summary(t12$fsCat)
 
 # CALC DBH - easier to connect with our field data and knowledge
 t12$dbh <- ba2d(t12$Basal.Area.x)
