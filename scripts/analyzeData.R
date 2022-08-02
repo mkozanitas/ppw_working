@@ -307,8 +307,7 @@ nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,nvals),FireSev=rep(FireSev.vals,eac
 dim(nd)
 head(nd)
 
-nd2 <- data.frame(Species.x=rep(spA,each=121),ldbh=rep(nd$ldbh,11),FireSev=rep(nd$FireSev,11))
-dim(nd2)
+nd2 <- data.frame(Species.x=rep(spA,each=121),ldbh=rep(nd$ldbh,length(spA)),FireSev=rep(nd$FireSev,length(spA)))
 
 nd2$pSurvAll <- predict(fit1,newdata=nd2,type='response')
 head(nd2)
