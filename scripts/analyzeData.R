@@ -198,6 +198,7 @@ summary(t12$dbh)
 hist(t12$dbh)
 t12$ldbh <- log10(t12$dbh)
 hist(t12$ldbh)
+t12$ldbh2 <- t12$ldbh^2
 
 #### SURVIVAL ANALYSIS
 plot(t12$ldbh,t12$Live.y)
@@ -268,54 +269,61 @@ plotSP <- function(t12,species=NULL)
   lines(nd$ldbh,pval)  
 }
 plotSP(t12,'ARCMAN')
-
+plotSP(t12,'QUEAGR')
+plotSP(t12,'QUEDOU')
 
 ## Full model with species
 t12s <- t12[which(t12$Species.x %in% spA),]
 (N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$Live.y))))
 head(t12s)
-head(fs)
 
 fit <- glm(Live.y~ldbh * Species.x,data=t12s,family='binomial')
 summary(fit)
 
-nd <- with(t12s,data.frame(ldbh=seq(-0.5,2,length.out=101)))
-nd <- with(t12s,data.frame(ldbh=0.5,Species.x=unique(Species.x)))
+#nd <- with(t12s,data.frame(ldbh=seq(min(t12s$ldbh,na.rm=T),max(t12s$ldbh,na.rm=T),length.out=101)))
+summary(t12s$ldbh)
+
+nd <- with(t12s,data.frame(ldbh=log10(2),Species.x=sort(unique(Species.x))))
+nd
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-head(nd)
 barplot(nd$pSurvAll~nd$Species.x)
 
-### MODELS WITH FIRE SEVERITY
-fit <- glm(Live.y~ldbh + FireSev,data=t12s,family='binomial')
+### MODELS WITH FIRE SEVERITY - use 4 levels as factors
+fit <- glm(Live.y~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
 
 nvals <- 11
 ldbh.vals <- seq(-0.5,2,length.out=nvals)
-FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
-nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,nvals),FireSev=rep(FireSev.vals,each=nvals)))
+#FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
+FireLevel.vals <- sort(unique(t12s$fsLevel))
+nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(FireLevel.vals)),fsLevel=rep(FireLevel.vals,each=nvals)))
 head(nd)
 
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
+tail(nd)
 
+#### THIS WON'T WORK NOW AS MODEL ABOVE WAS CHANGED TO USE FIRE SEVERITY LEVELS
 # Plot survival as a function of fire severity, with isoclines as a function ldbh. Lines are declining - survival is lower at higher fire severity, but larger trees have higher values
-plot(t12s$FireSev,t12s$Live.y)
-i=1
-for (i in 1:nvals) {
-  ndt <- nd[which(nd$ldbh==ldbh.vals[i]),]
-  lines(ndt$FireSev,ndt$pSurvAll)
-  text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
-}
+# plot(t12s$FireSev,t12s$Live.y)
+# i=1
+# for (i in 1:nvals) {
+#   ndt <- nd[which(nd$ldbh==ldbh.vals[i]),]
+#   lines(ndt$FireSev,ndt$pSurvAll)
+#   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
+# }
+### END COMMENT OUT
 
 # Plot survival as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
 plot(t12s$ldbh,t12s$Live.y)
 i=1
-for (i in 1:nvals) {
-  ndt <- nd[which(nd$FireSev==FireSev.vals[i]),]
+for (i in 1:length(FireLevel.vals)) {
+  ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
   lines(ndt$ldbh,ndt$pSurvAll)
-  text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
+  text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireLevel.vals[i])
 }
 
+## NEED TO RECODE HERE WITH FIRE LEVELS
 # model with size, fire, species
 fit2 <- glm(Live.y~ldbh + FireSev + Species.x,data=t12s,family='binomial')
 fit1 <- glm(Live.y~ldbh + FireSev + Species.x+ ldbh:Species.x,data=t12s,family='binomial')
@@ -356,6 +364,74 @@ plotSpecies <- function(spname) {
   }
   #par(op)
 }
+## END RECODE HERE (from line 325)
+
+table(t12$Dead.y)
+table(t12$Live.y)
+table(t12$TB)
+table(t12$gCrown.y)
+table(t12$Live.y,t12$TB)
+table(t12$Live.y,t12$gCrown.y)
+
+## ANALYSIS FOR ONE SPECIES
+t12sp <- t12[which(t12$Species.x=='QUEAGR'),]
+dim(t12sp)
+t12sp <- t12sp[which(!is.na(t12sp$ldbh)),]
+dim(t12sp)
+
+# code to run a binomial model and plot response curve with data
+# MORTALITY
+nd <- with(t12sp,data.frame(ldbh=seq(min(t12sp$ldbh,na.rm=T),max(t12sp$ldbh,na.rm=T),length.out=101)))
+nd$ldbh2 <- nd$ldbh^2
+
+plot(t12sp$ldbh,t12sp$Dead.y)
+fit <- glm(Dead.y~ldbh+ldbh2,data=t12sp,family='binomial')
+nd$pMortality <- predict(fit,newdata=nd,type='response')
+lines(nd$ldbh,nd$pMortality)
+
+#TOPKILL WITH RESPROUT
+plot(t12sp$ldbh,t12sp$TB)
+fit <- glm(TB~ldbh + ldbh2,data=t12sp,family='binomial')
+summary(fit)
+nd$pTB <- predict(fit,newdata=nd,type='response')
+lines(nd$ldbh,nd$pTB)
+
+#GREEN CROWN
+plot(t12sp$ldbh,t12sp$gCrown.y)
+fit <- glm(gCrown.y~ldbh+ldbh2,data=t12sp,family='binomial')
+summary(fit)
+nd$pGCrown <- predict(fit,newdata=nd,type='response')
+lines(nd$ldbh,nd$pGCrown)
+
+#plot all three
+plot(t12sp$ldbh,t12sp$gCrown.y)
+lines(nd$ldbh,nd$pGCrown,col='green')
+lines(nd$ldbh,nd$pTB,col='red')
+lines(nd$ldbh,nd$pMortality)
+nd$pTOT <- apply(nd[,c('pGCrown','pTB','pMortality')],1,sum)
+summary(nd$pTOT)
+
+# NOW FIT MULTINOMIAL
+t12sp$PFstatus <- (-1)
+t12sp$PFstatus[which(t12sp$Live.y==0)] <- 0
+t12sp$PFstatus[which(t12sp$TB==1)] <- 1
+t12sp$PFstatus[which(t12sp$gCrown.y==1)] <- 2
+table(t12sp$PFstatus)
+
+require(nnet)
+
+# MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ldbh2' - changes results some
+fit1 <- multinom(as.factor(PFstatus) ~ ldbh,data=t12sp)
+fit1
+head(round(fitted(fit1),2))
+dim(fitted(fit1))
+
+plot(t12sp$ldbh,t12sp$Live.y)
+points(t12sp$ldbh,fitted(fit1)[,1],col='black')
+points(t12sp$ldbh,fitted(fit1)[,2],col='red')
+points(t12sp$ldbh,fitted(fit1)[,3],col='green')
+summary(apply(fitted(fit1)[,1:3],1,sum))
+#######################
 
 spA
 png('figures/logit1.png',width = 800, height = 1200)
@@ -433,7 +509,25 @@ lines(pGreen~ldbh,data=nd,lwd=2,col='green')
 par(op)
 
 #### NOW TRY MULTINOMIAL
+require(nnet)
+allNotNA <- function(x) all(!is.na(x))
 
+# Size only
+rComp <- apply(t12[,c('ldbh','PFstatus','Species.x','FireSev')],1,allNotNA)
+table(rComp)
+t12a <- t12[rComp,]
+
+fit1 <- multinom(PFstatus ~ ldbh,data=t12a)
+fit1
+head(round(fitted(fit1),2))
+
+plot(t12a$ldbh,t12a$Live.y)
+points(t12a$ldbh,fitted(fit1)[,1],col='red')
+points(t12a$ldbh,fitted(fit1)[,2],col='gray')
+points(t12a$ldbh,fitted(fit1)[,3],col='green')
+
+
+##########
 head(t12)
 dim(t12)
 t12$dupStatusCheck <- apply(t12[,c('Dead.y','TopkillLive.y','gCrown.y')],1,sum,na.rm=T)
