@@ -136,6 +136,7 @@ sum(fst$N18.dead[TRrows])/sum(fst$N13[TRrows])
 
 # dropping QUEBER, FRACAL, AMOCAL for now
 AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+length(AbSp)
 fsta <- fst[which(fst$Species %in% AbSp),]
 
 #examine data
@@ -174,9 +175,20 @@ table(t12$Plot.x)
 # High: >700
 # unburned: 1308, 1309, 1311, 1312, 1327, 1344, 1347
 
-fs.breaks <- c(-100,170,700,1000)
+summary(t12$FireSev)
+hist(t12$FireSev,breaks=c(-100,0,50,100,150,200,300,400,500,600,700,800,1000))
+fs.breaks <- c(-100,135,430,1000) # Based on Parks et al. 2014, but not using intermediate split at 304
 t12$fsCat <- cut(t12$FireSev,fs.breaks)
-summary(t12$fsCat)
+table(t12$fsCat)
+t12$fsLevel <- as.numeric(t12$fsCat)
+table(t12$fsLevel)
+
+# manually code unburned as 0
+unburned.plots <- c('PPW1308','PPW1309','PPW1311','PPW1312','PPW1327','PPW1344','PPW1347')
+t12$fsLevel[which(t12$Plot.x %in% unburned.plots)] <- 0
+table(t12$fsLevel)
+
+table(t12$Plot.x[which(t12$fsLevel==3)])
 
 # CALC DBH - easier to connect with our field data and knowledge
 t12$dbh <- ba2d(t12$Basal.Area.x)
@@ -191,11 +203,13 @@ hist(t12$ldbh)
 plot(t12$ldbh,t12$Live.y)
 
 # **** mixing SA and TR - need to work on diameter conversion to get this right ***
-N <- length(which(!is.na(t12$ldbh) & !is.na(t12$Live.y)))
+(N <- length(which(!is.na(t12$ldbh) & !is.na(t12$Live.y))))
 fit <- glm(Live.y~ldbh,data=t12,family='binomial')
 summary(fit)
 
-nd <- with(t12,data.frame(ldbh=seq(-0.5,2,length.out=1001)))
+summary(t12$ldbh)
+nd <- with(t12,data.frame(ldbh=seq(min(t12$ldbh,na.rm=T),max(t12$ldbh,na.rm=T),length.out=1000)))
+head(nd)
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
 
@@ -204,15 +218,21 @@ lines(nd$ldbh,nd$pSurvAll,lwd=4)
 abline(h=0.5,lty=2)
 
 #what is critical basal area to achieve 50% survival?
-ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]]
+(ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]])
 abline(v=ld50,lty=2)
-(spRes <- data.frame(species='All',N=N,d50=ld50,slp=fit$coefficients[2]))
+
+(spRes <- data.frame(species='All',N=N,ld50=ld50,slp=fit$coefficients[2]))
+spRes
 
 ## now run by species for species with lots of data
 spN <- table(t12$Species.x)
 spN[order(spN)]
-(spA <- names(spN)[which(spN>=25)])
-spA <- spA[-which(spA=='QUEBER')] # drop QUEBER - none died!
+
+#(spA <- names(spN)[which(spN>=25)])
+#spA <- spA[-which(spA=='QUEBER')] # drop QUEBER - none died!
+
+# use abundant species identified above for ESA
+(spA <- AbSp)
 
 i <- 3
 for (i in 1:length(spA))
@@ -232,7 +252,9 @@ for (i in 1:length(spA))
       ld50 <- nd$ldbh[which(nd[,ncol(nd)]>=0.5)[1]] 
   spRes <- rbind(spRes,c(species,N,ld50,fit$coefficients[2]))
 }
-spRes$d50 <- round(as.numeric(spRes$d50),3)
+spRes$ld50 <- as.numeric(spRes$ld50)
+spRes$d50 <- round(10^spRes$ld50,3)
+spRes$ld50 <- round(as.numeric(spRes$ld50),3)
 spRes$slp <- round(as.numeric(spRes$slp),3)
 spRes
 
@@ -245,7 +267,7 @@ plotSP <- function(t12,species=NULL)
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t12,'QUEKEL')
+plotSP(t12,'ARCMAN')
 
 
 ## Full model with species
