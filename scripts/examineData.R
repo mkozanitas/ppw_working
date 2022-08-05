@@ -102,6 +102,8 @@ for (i in 2:4) {
   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
   all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
   all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
+  all.id[[i]]$TB <- 0
+  all.id[[i]]$TB[which(all.id[[i]]$bSprout==1 & all.id[[i]]$Topkill==1)] <- 1
   print(c(years[i],'Dead'))
   print(table(all.id[[i]]$Dead))
   print(c(''))
