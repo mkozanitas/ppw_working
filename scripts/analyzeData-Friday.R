@@ -289,7 +289,9 @@ nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 barplot(nd$pSurvAll~nd$Species.x)
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
-fit <- glm(Live.y~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
+# Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
+t12s$rVar <- t12s$gCrown.y 
+fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
 
 nvals <- 11
@@ -299,9 +301,18 @@ FireLevel.vals <- sort(unique(t12s$fsLevel))
 nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(FireLevel.vals)),fsLevel=rep(FireLevel.vals,each=nvals)))
 head(nd)
 
-nd$pSurvAll <- predict(fit,newdata=nd,type='response')
+nd$rVarPred <- predict(fit,newdata=nd,type='response')
 head(nd)
 tail(nd)
+
+# Plot response variable as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
+plot(t12s$ldbh,t12s$rVar)
+i=1
+for (i in 1:length(FireLevel.vals)) {
+  ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
+  lines(ndt$ldbh,ndt$rVarPred)
+  text(ldbh.vals[5],ndt$rVarPred[which(ndt$ldbh==ldbh.vals[5])],FireLevel.vals[i])
+}
 
 #### THIS WON'T WORK NOW AS MODEL ABOVE WAS CHANGED TO USE FIRE SEVERITY LEVELS
 # Plot survival as a function of fire severity, with isoclines as a function ldbh. Lines are declining - survival is lower at higher fire severity, but larger trees have higher values
@@ -313,15 +324,6 @@ tail(nd)
 #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
 # }
 ### END COMMENT OUT
-
-# Plot survival as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
-plot(t12s$ldbh,t12s$Live.y)
-i=1
-for (i in 1:length(FireLevel.vals)) {
-  ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
-  lines(ndt$ldbh,ndt$pSurvAll)
-  text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireLevel.vals[i])
-}
 
 ## NEED TO RECODE HERE WITH FIRE LEVELS
 # model with size, fire, species
