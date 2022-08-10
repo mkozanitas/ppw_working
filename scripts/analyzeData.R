@@ -292,7 +292,8 @@ summary(t12s$ldbh)
 nd <- with(t12s,data.frame(ldbh=log10(2),Species.x=sort(unique(Species.x))))
 nd
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-barplot(nd$pSurvAll~nd$Species.x)
+##nd$Sp.Names <- c("A.ARCMAN")- then use Sp.names
+barplot(nd$pSurvAll~nd$Species.x,ylim=c(0,0.8))
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
@@ -301,7 +302,7 @@ t12s$rVar <- t12s$gCrown.y
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
 
-nvals <- 11
+nvals <- 101
 ldbh.vals <- seq(-0.5,2,length.out=nvals)
 #FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
 FireLevel.vals <- sort(unique(t12s$fsLevel))
@@ -313,12 +314,12 @@ head(nd)
 tail(nd)
 
 # Plot response variable as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
-plot(t12s$ldbh,t12s$rVar)
+plot(t12s$ldbh,t12s$rVar,type="n", xlab="log10DBH", ylab = "CrownSurvival")
 i=1
 for (i in 1:length(FireLevel.vals)) {
   ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
-  lines(ndt$ldbh,ndt$rVarPred)
-  text(ldbh.vals[5],ndt$rVarPred[which(ndt$ldbh==ldbh.vals[5])],FireLevel.vals[i])
+  lines(ndt$ldbh,ndt$rVarPred,col="red")
+  text(ldbh.vals[50],ndt$rVarPred[which(ndt$ldbh==ldbh.vals[50])],FireLevel.vals[i])
 }
 
 #### THIS WON'T WORK NOW AS MODEL ABOVE WAS CHANGED TO USE FIRE SEVERITY LEVELS
@@ -334,20 +335,21 @@ for (i in 1:length(FireLevel.vals)) {
 
 ## NEED TO RECODE HERE WITH FIRE LEVELS
 # model with size, fire, species
-fit2 <- glm(Live.y~ldbh + FireSev + Species.x,data=t12s,family='binomial')
-fit1 <- glm(Live.y~ldbh + FireSev + Species.x+ ldbh:Species.x,data=t12s,family='binomial')
+fit2 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
+fit1 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
 BIC(fit1)
 BIC(fit2)
 summary(fit1)
+summary(fit2)
 
 nvals <- 11
 ldbh.vals <- seq(-0.5,2,length.out=nvals)
-FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
-nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,nvals),FireSev=rep(FireSev.vals,each=nvals)))
+fsLevels.vals <- c(0:3)
+nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
 dim(nd)
 head(nd)
 
-nd2 <- data.frame(Species.x=rep(spA,each=121),ldbh=rep(nd$ldbh,length(spA)),FireSev=rep(nd$FireSev,length(spA)))
+nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA)),fsLevel=rep(nd$fsLevels,length(spA)))
 
 nd2$pSurvAll <- predict(fit1,newdata=nd2,type='response')
 head(nd2)
