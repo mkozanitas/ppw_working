@@ -333,8 +333,9 @@ for (i in 1:length(FireLevel.vals)) {
 # }
 ### END COMMENT OUT
 
-## NEED TO RECODE HERE WITH FIRE LEVELS
-# model with size, fire, species
+## RECODED WITH FIRE LEVELS
+# model with size, fire, species, predicting survival
+{
 fit2 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
 fit1 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
 BIC(fit1)
@@ -351,31 +352,115 @@ head(nd)
 
 nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA)),fsLevel=rep(nd$fsLevels,length(spA)))
 
-nd2$pSurvAll <- predict(fit1,newdata=nd2,type='response')
+nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
 head(nd2)
 
-plotSpecies <- function(spname) {
+spname='QUEAGR'
+plotSpecies <- function(spname,nd.tmp=nd2) {
   tmp <- t12s[which(t12s$Species.x==spname),]
   #op=par(mfrow=c(1,2))
   
-  plot(tmp$FireSev,tmp$Live.y,main=spname,xlim=range(t12s$FireSev,na.rm=T))
-  i=1
-  for (i in 1:nvals) {
-    ndt <- nd2[which(nd2$Species.x==spname & nd2$ldbh==ldbh.vals[i]),]
-    lines(ndt$FireSev,ndt$pSurvAll)
-    text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
-  }
+  # plot(tmp$FireSev,tmp$Live.y,main=spname,xlim=range(t12s$FireSev,na.rm=T))
+  # i=1
+  # for (i in 1:nvals) {
+  #   ndt <- nd2[which(nd2$Species.x==spname & nd2$ldbh==ldbh.vals[i]),]
+  #   lines(ndt$FireSev,ndt$pSurvAll)
+  #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
+  # }
   
   plot(tmp$ldbh,tmp$Live.y,xlim=range(t12s$ldbh,na.rm=T))
-  i=1
-  for (i in 1:nvals) {
-    ndt <- nd2[which(nd2$Species.x==spname & nd2$FireSev==FireSev.vals[i]),]
+  i=2
+  for (i in 1:length(unique(nd.tmp$fsLevel))) {
+    ndt <- nd.tmp[which(nd2$Species.x==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
     lines(ndt$ldbh,ndt$pSurvAll)
-    text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],FireSev.vals[i])
+    text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],fsLevels.vals[i])
   }
   #par(op)
 }
-## END RECODE HERE (from line 325)
+plotSpecies('QUEGAR')
+
+# obtain predicted main effects of fire severity for each species at a common size
+nvals <- 1
+ldbh.vals <- log10(2)
+fsLevels.vals <- c(0:3)
+nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+dim(nd)
+head(nd)
+
+nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA)),fsLevel=rep(nd$fsLevels,length(spA)))
+
+nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
+head(nd2)
+
+barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==0),],ylim=c(0,1))
+barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==1),],ylim=c(0,1))
+barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==2),],ylim=c(0,1))
+barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
+}
+# same code, with gCrown.y replace Live.y
+{
+  fit2 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
+  fit1 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
+  BIC(fit1)
+  BIC(fit2)
+  summary(fit1)
+  summary(fit2)
+  
+  nvals <- 11
+  ldbh.vals <- seq(-0.5,2,length.out=nvals)
+  fsLevels.vals <- c(0:3)
+  nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  dim(nd)
+  head(nd)
+  
+  nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA)),fsLevel=rep(nd$fsLevels,length(spA)))
+  
+  nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
+  head(nd2)
+  
+  spname='QUEAGR'
+  plotSpecies <- function(spname,nd.tmp=nd2) {
+    tmp <- t12s[which(t12s$Species.x==spname),]
+    #op=par(mfrow=c(1,2))
+    
+    # plot(tmp$FireSev,tmp$Live.y,main=spname,xlim=range(t12s$FireSev,na.rm=T))
+    # i=1
+    # for (i in 1:nvals) {
+    #   ndt <- nd2[which(nd2$Species.x==spname & nd2$ldbh==ldbh.vals[i]),]
+    #   lines(ndt$FireSev,ndt$pSurvAll)
+    #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
+    # }
+    
+    plot(tmp$ldbh,tmp$Live.y,xlim=range(t12s$ldbh,na.rm=T))
+    i=2
+    for (i in 1:length(unique(nd.tmp$fsLevel))) {
+      ndt <- nd.tmp[which(nd2$Species.x==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
+      lines(ndt$ldbh,ndt$pSurvAll)
+      text(ldbh.vals[5],ndt$pSurvAll[which(ndt$ldbh==ldbh.vals[5])],fsLevels.vals[i])
+    }
+    #par(op)
+  }
+  plotSpecies('QUEGAR')
+  
+  # obtain predicted main effects of fire severity for each species at a common size
+  nvals <- 1
+  ldbh.vals <- log10(2)
+  fsLevels.vals <- c(0:3)
+  nd <- with(t12,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  dim(nd)
+  head(nd)
+  
+  nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA)),fsLevel=rep(nd$fsLevels,length(spA)))
+  
+  nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
+  head(nd2)
+  
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==0),],ylim=c(0,1))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==1),],ylim=c(0,1))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==2),],ylim=c(0,1))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
+}
+## END RECODE HERE
 
 table(t12$Dead.y)
 table(t12$Live.y)
@@ -385,7 +470,13 @@ table(t12$Live.y,t12$TB)
 table(t12$Live.y,t12$gCrown.y)
 
 ## ANALYSIS FOR ONE SPECIES
-t12sp <- t12[which(t12$Species.x=='QUEAGR'),]
+spA
+
+# pick one of these!
+t12sp <- t12[which(t12$Species.x %in% c('QUEAGR')),]
+t12sp <- t12[which(t12$Species.x %in% spA),]
+t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),]
+
 dim(t12sp)
 t12sp <- t12sp[which(!is.na(t12sp$ldbh)),]
 dim(t12sp)
@@ -402,7 +493,7 @@ lines(nd$ldbh,nd$pMortality)
 
 #TOPKILL WITH RESPROUT
 plot(t12sp$ldbh,t12sp$TB)
-fit <- glm(TB~ldbh + ldbh2,data=t12sp,family='binomial')
+fit <- glm(TB~ldbh+ldbh2 ,data=t12sp,family='binomial')
 summary(fit)
 nd$pTB <- predict(fit,newdata=nd,type='response')
 lines(nd$ldbh,nd$pTB)
@@ -432,7 +523,7 @@ table(t12sp$PFstatus)
 require(nnet)
 
 # MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ldbh2' - changes results some
-fit1 <- multinom(as.factor(PFstatus) ~ ldbh,data=t12sp)
+fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2 ,data=t12sp)
 fit1
 head(round(fitted(fit1),2))
 dim(fitted(fit1))
@@ -443,6 +534,9 @@ points(t12sp$ldbh,fitted(fit1)[,2],col='red')
 points(t12sp$ldbh,fitted(fit1)[,3],col='green')
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
+
+# END CLEAN CODE HERE!!!
+
 
 ###old figures- this doesn't work anymore###
 
