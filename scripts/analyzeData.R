@@ -296,6 +296,7 @@ barplot(nd$pSurvAll~nd$Species.x)
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
+#t12s$rVar <- t12s$Live.y 
 t12s$rVar <- t12s$gCrown.y 
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
@@ -441,32 +442,34 @@ points(t12sp$ldbh,fitted(fit1)[,3],col='green')
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
 
-spA
-png('figures/logit1.png',width = 800, height = 1200)
-op=par(mfrow=c(4,2))
-plotSpecies('AMOCAL')
-plotSpecies('ARBMEN')
-plotSpecies('ARCMAN')
-plotSpecies('FRACAL')
-par(op)
-dev.off()
+###old figures- this doesn't work anymore###
 
-png('figures/logit2.png',width = 800, height = 1200)
-op=par(mfrow=c(4,2))
-plotSpecies('HETARB')
-plotSpecies('PSEMEN')
-plotSpecies('UMBCAL')
-par(op)
-dev.off()
-
-png('figures/logit3.png',width = 800, height = 1200)
-op=par(mfrow=c(4,2))
-plotSpecies('QUEAGR')
-plotSpecies('QUEDOU')
-plotSpecies('QUEGAR')
-plotSpecies('QUEKEL')
-par(op)
-dev.off()
+# spA
+# png('figures/logit1.png',width = 800, height = 1200)
+# op=par(mfrow=c(4,2))
+# plotSpecies('AMOCAL')
+# plotSpecies('ARBMEN')
+# plotSpecies('ARCMAN')
+# plotSpecies('FRACAL')
+# par(op)
+# dev.off()
+# 
+# png('figures/logit2.png',width = 800, height = 1200)
+# op=par(mfrow=c(4,2))
+# plotSpecies('HETARB')
+# plotSpecies('PSEMEN')
+# plotSpecies('UMBCAL')
+# par(op)
+# dev.off()
+# 
+# png('figures/logit3.png',width = 800, height = 1200)
+# op=par(mfrow=c(4,2))
+# plotSpecies('QUEAGR')
+# plotSpecies('QUEDOU')
+# plotSpecies('QUEGAR')
+# plotSpecies('QUEKEL')
+# par(op)
+# dev.off()
 
 ### full model with random plot
 #fit <- glmer(Live.y~ldbh + FireSev + Species.x + (1 |Plot.x),data=t12s,family='binomial')
@@ -478,7 +481,7 @@ t12$TopkillLive.y[which(t12$Topkill.y==1 & t12$Live.y==1)] <- 1
 
 table(t12$Dead.y,t12$TopkillLive.y,t12$gCrown.y)
 t12[which(t12$gCrown.y==0 & t12$TopkillLive.y==0 & t12$Dead.y==0),]
-# TWO INDIVIDUALS WITH PROBLEM DATA: 3415, 4437 (already identifie those above - if they've been fixed and don't show up at this point, delete this line)
+# TWO INDIVIDUALS WITH PROBLEM DATA: 3415, 4437 (already identified those above - if they've been fixed and don't show up at this point, delete this line)
 
 t12a <- t12[which(t12$FireSev>100),]
 
@@ -516,7 +519,7 @@ lines(pGreen~ldbh,data=nd,lwd=2,col='green')
 
 par(op)
 
-#### NOW TRY MULTINOMIAL
+#### NOW TRY MULTINOMIAL### SKIP THIS SECTION-###
 require(nnet)
 allNotNA <- function(x) all(!is.na(x))
 
@@ -541,6 +544,8 @@ dim(t12)
 t12$dupStatusCheck <- apply(t12[,c('Dead.y','TopkillLive.y','gCrown.y')],1,sum,na.rm=T)
 table(t12$dupStatusCheck)
 ## same 2 as above
+
+###end skip section ###
 
 #### PROVISIONALLY ASSIGN TO THREE CLASSES
 t12$PFstatus <- (-1)
