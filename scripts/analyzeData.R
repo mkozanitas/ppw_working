@@ -292,8 +292,9 @@ summary(t12s$ldbh)
 nd <- with(t12s,data.frame(ldbh=log10(2),Species.x=sort(unique(Species.x))))
 nd
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-##nd$Sp.Names <- c("A.ARCMAN")- then use Sp.names
+##nd$Sp.Names <- c("A.ARCMAN","B.PSEMEN", "C.QUEDOU", "E.QUEKEL", "F.ARBMEN", "G.QUEGAR", "E.UMBCAL", "HETARB", "QUEAGR")- then use Sp.names instead of Species.x- below
 barplot(nd$pSurvAll~nd$Species.x,ylim=c(0,0.8))
+# this barplot would look alot different if we used gCrown instead of survival- hetarb for example would change dramatically from 70% to like 5%
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
@@ -399,8 +400,8 @@ barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
 }
 # same code, with gCrown.y replace Live.y
 {
-  fit2 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
-  fit1 <- glm(Live.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
+  fit2 <- glm(gCrown.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
+  fit1 <- glm(gCrown.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
   BIC(fit1)
   BIC(fit2)
   summary(fit1)
@@ -431,7 +432,7 @@ barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
     #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
     # }
     
-    plot(tmp$ldbh,tmp$Live.y,xlim=range(t12s$ldbh,na.rm=T))
+    plot(tmp$ldbh,tmp$gCrown.y,xlim=range(t12s$ldbh,na.rm=T))
     i=2
     for (i in 1:length(unique(nd.tmp$fsLevel))) {
       ndt <- nd.tmp[which(nd2$Species.x==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
@@ -456,9 +457,9 @@ barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
   head(nd2)
   
   barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==0),],ylim=c(0,1))
-  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==1),],ylim=c(0,1))
-  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==2),],ylim=c(0,1))
-  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==1),],ylim=c(0,.5))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==2),],ylim=c(0,.25))
+  barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,.05))
 }
 ## END RECODE HERE
 
@@ -473,9 +474,9 @@ table(t12$Live.y,t12$gCrown.y)
 spA
 
 # pick one of these!
-t12sp <- t12[which(t12$Species.x %in% c('QUEAGR')),]
-t12sp <- t12[which(t12$Species.x %in% spA),]
-t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),]
+#t12sp <- t12[which(t12$Species.x %in% c('QUEAGR')),] #individual species?
+#t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
+t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
 
 dim(t12sp)
 t12sp <- t12sp[which(!is.na(t12sp$ldbh)),]
