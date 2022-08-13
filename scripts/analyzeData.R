@@ -282,7 +282,7 @@ plotSP(t12,'UMBCAL')
 ########### Starting with Models########
 
 ## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in mode-change back to c(0:3 to expand to all fslevels) to generate curves
-t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(0:3)),]
+t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(2:3)),]
 
 # assign dependent variable to rVar
 names(t12s)
@@ -325,6 +325,8 @@ par(op)
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
+t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(0:3)),]
+#can do a fix here to set variable like we did above selVar..
 #t12s$rVar <- t12s$Live.y 
 t12s$rVar <- t12s$gCrown.y 
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
@@ -383,7 +385,6 @@ nd2 <- data.frame(Species.x=rep(spA,each=nrow(nd)),ldbh=rep(nd$ldbh,length(spA))
 nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
 head(nd2)
 
-spname='QUEAGR'
 plotSpecies <- function(spname,nd.tmp=nd2) {
   tmp <- t12s[which(t12s$Species.x==spname),]
   #op=par(mfrow=c(1,2))
@@ -405,7 +406,7 @@ plotSpecies <- function(spname,nd.tmp=nd2) {
   }
   #par(op)
 }
-plotSpecies('QUEGAR')
+plotSpecies('UMBCAL')
 
 # obtain predicted main effects of fire severity for each species at a common size
 nvals <- 1
