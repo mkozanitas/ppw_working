@@ -279,26 +279,48 @@ plotSP(t12,'QUEGAR')
 plotSP(t12,'QUEKEL')
 plotSP(t12,'UMBCAL')
 
+###########
 ## Full model with species (subsetting out data with fslevel>1 for visualization only - not in model)
-t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),]
-#t12s <- t12[which(t12$Species.x %in% spA),] #w/o fire level set to >1
-#choose response variable (Live.y, gCrown or TB)
-(N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$gCrown.y))))
+t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(2:3)),]
+
+# assign dependent variable to rVar
+names(t12s)
+selVar <- 'gCrown.y'
+t12s$rVar <- t12s[,selVar]
+
+(N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$rVar))))
+table(t12s$Species.x)
 head(t12s)
-#always change response here ariable to match line above
-fit <- glm(gCrown.y~ldbh * Species.x,data=t12s,family='binomial')
+fit <- glm(rVar~ldbh + ldbh2 + Species.x,data=t12s,family='binomial')
 summary(fit)
 
-#nd <- with(t12s,data.frame(ldbh=seq(min(t12s$ldbh,na.rm=T),max(t12s$ldbh,na.rm=T),length.out=101)))
 summary(t12s$ldbh)
-#choose size threshold here log10(2) for 2cmDBH / log 10(10) for 10cmDBH (to exculde shrubs)
-nd <- with(t12s,data.frame(ldbh=log10(2),Species.x=sort(unique(Species.x))))
+#choose sizes here at which predicted values will be calculated
+predSizes <- c(10,30,80)
+nd <- with(t12s,data.frame(ldbh=rep(log10(predSizes),length(spA)),Species.x=rep(spA,each=length(predSizes))))
+nd$ldbh2 <- nd$ldbh^2
 nd
-nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-##use nd$Sp.Names <- c("A.ARCMAN","B.PSEMEN", "C.QUEDOU", "E.QUEKEL", "F.ARBMEN", "G.QUEGAR", "E.UMBCAL", "HETARB", "QUEAGR")- then use Sp.names instead of Species.x- below to reorder for barplot
-barplot(nd$pSurvAll~nd$Species.x,ylim=c(0,1))
-#to remove shrubs
-barplot(pSurvAll~Species.x,data=nd[-c(2:3),],ylim=c(0,1))
+nd$pValue <- round(predict(fit,newdata=nd,type='response'),4)
+#- then use Sp.names instead of Species.x- below to reorder for barplot
+nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR", "gUMBCAL", "hHETARB", "iQUEAGR")
+
+
+# with shrubs
+barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[1])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[1],' cm dbh'))
+
+# remove shrubs for larger sizes cm plot
+op=par(mfrow=c(1,3))
+selSize <- 1
+barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.x %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+
+selSize <- 2
+barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.x %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+
+selSize <- 3
+barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.x %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+
+par(op)
+
 # this barplot looks alot different if we use gCrown or TB (TK+B) instead of survival- hetarb for example will change dramatically 
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
