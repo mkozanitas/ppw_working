@@ -216,11 +216,12 @@ head(nd)
 
 plot(t12$ldbh,t12$Live.y)
 lines(nd$ldbh,nd$pSurvAll,lwd=4)
-abline(h=0.5,lty=2)
+#abline(h=0.5,lty=2) 
+#h draws horizontal line at .5, lty -dashed or solid, lwd is line width
 
 #what is critical basal area to achieve 50% survival?
 (ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]])
-abline(v=ld50,lty=2)
+abline(v=log10(2),lty=2)
 
 (spRes <- data.frame(species='All',N=N,ld50=ld50,slp=fit$coefficients[2]))
 spRes
@@ -278,23 +279,27 @@ plotSP(t12,'QUEGAR')
 plotSP(t12,'QUEKEL')
 plotSP(t12,'UMBCAL')
 
-## Full model with species
-t12s <- t12[which(t12$Species.x %in% spA),]
-(N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$Live.y))))
+## Full model with species (subsetting out data with fslevel>1 for visualization only - not in model)
+t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),]
+#t12s <- t12[which(t12$Species.x %in% spA),] #w/o fire level set to >1
+#choose response variable (Live.y, gCrown or TB)
+(N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$gCrown.y))))
 head(t12s)
-
-fit <- glm(Live.y~ldbh * Species.x,data=t12s,family='binomial')
+#always change response here ariable to match line above
+fit <- glm(gCrown.y~ldbh * Species.x,data=t12s,family='binomial')
 summary(fit)
 
 #nd <- with(t12s,data.frame(ldbh=seq(min(t12s$ldbh,na.rm=T),max(t12s$ldbh,na.rm=T),length.out=101)))
 summary(t12s$ldbh)
-
+#choose size threshold here log10(2) for 2cmDBH / log 10(10) for 10cmDBH (to exculde shrubs)
 nd <- with(t12s,data.frame(ldbh=log10(2),Species.x=sort(unique(Species.x))))
 nd
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-##nd$Sp.Names <- c("A.ARCMAN","B.PSEMEN", "C.QUEDOU", "E.QUEKEL", "F.ARBMEN", "G.QUEGAR", "E.UMBCAL", "HETARB", "QUEAGR")- then use Sp.names instead of Species.x- below
-barplot(nd$pSurvAll~nd$Species.x,ylim=c(0,0.8))
-# this barplot would look alot different if we used gCrown instead of survival- hetarb for example would change dramatically from 70% to like 5%
+##use nd$Sp.Names <- c("A.ARCMAN","B.PSEMEN", "C.QUEDOU", "E.QUEKEL", "F.ARBMEN", "G.QUEGAR", "E.UMBCAL", "HETARB", "QUEAGR")- then use Sp.names instead of Species.x- below to reorder for barplot
+barplot(nd$pSurvAll~nd$Species.x,ylim=c(0,1))
+#to remove shrubs
+barplot(pSurvAll~Species.x,data=nd[-c(2:3),],ylim=c(0,1))
+# this barplot looks alot different if we use gCrown or TB (TK+B) instead of survival- hetarb for example will change dramatically 
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
@@ -536,7 +541,7 @@ points(t12sp$ldbh,fitted(fit1)[,3],col='green')
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
 
-# END CLEAN CODE HERE!!!
+# END CLEAN CODE HERE!!! redundant stuff happening below
 
 
 ###old figures- this doesn't work anymore###
