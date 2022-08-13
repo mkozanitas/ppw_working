@@ -279,9 +279,10 @@ plotSP(t12,'QUEGAR')
 plotSP(t12,'QUEKEL')
 plotSP(t12,'UMBCAL')
 
-###########
-## Full model with species (subsetting out data with fslevel>1 for visualization only - not in model)
-t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(2:3)),]
+########### Starting with Models########
+
+## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in mode-change back to c(0:3 to expand to all fslevels) to generate curves
+t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(0:3)),]
 
 # assign dependent variable to rVar
 names(t12s)
@@ -321,7 +322,6 @@ barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd
 
 par(op)
 
-# this barplot looks alot different if we use gCrown or TB (TK+B) instead of survival- hetarb for example will change dramatically 
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
@@ -425,7 +425,7 @@ barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==1),],ylim=c(0,1))
 barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==2),],ylim=c(0,1))
 barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
 }
-# same code, with gCrown.y replace Live.y
+# same code, with gCrown.y instead of Live.y
 {
   fit2 <- glm(gCrown.y~ldbh + as.factor(fsLevel) + Species.x,data=t12s,family='binomial')
   fit1 <- glm(gCrown.y~ldbh + as.factor(fsLevel) + Species.x+ as.factor(fsLevel):Species.x,data=t12s,family='binomial')
@@ -501,7 +501,7 @@ table(t12$Live.y,t12$gCrown.y)
 spA
 
 # pick one of these!
-#t12sp <- t12[which(t12$Species.x %in% c('QUEAGR')),] #individual species?
+#t12sp <- t12[which(t12$Species.x %in% c('ARBMEN')),] #individual species?
 #t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
 t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
 
