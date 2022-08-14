@@ -1,7 +1,7 @@
 # Extract plot data for 2013, 2018, 2019, 2020 and prepare for analysis
 rm(list=ls())
 
-source('scripts/PW_functions_local.R')
+source('scripts/PW_functions_local-test.R')
 
 ## FOR NOW CODE TO EXPORT DATA WITH BRANCHES ALL COMMENTED OUT
 
@@ -11,11 +11,10 @@ dim(id13)
 head(id13)
 head(sort(id13$Num))
 
-
-# id13b <- get.indv.data(year = 2013,branches=T)
-# dim(id13b)
-# head(id13b)
-# head(sort(id13b$Num))
+#id13b <- get.indv.data(year = 2013,branches=T)
+#dim(id13b)
+#head(id13b)
+#head(sort(id13b$Num))
 
 # sloppy coding to be able to turn a code snippet on and off
 if (FALSE) 

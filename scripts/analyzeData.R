@@ -72,6 +72,7 @@ t12$Species.x[newIndvs] <- t12$Species.y[newIndvs]
 
 # This introduces error because 2018 basal areas reflect 5 more years of growth
 t12$Basal.Area.x[newIndvs] <- t12$Basal.Area.y[newIndvs]
+t12$dbh.x[newIndvs] <- t12$dbh.y[newIndvs]
 t12$Dead.x[newIndvs] <- 0
 t12$Live.x[newIndvs] <- 1
 t12$gCrown.x[newIndvs] <- 1
@@ -190,13 +191,12 @@ table(t12$fsLevel)
 
 table(t12$Plot.x[which(t12$fsLevel==3)])
 
-# CALC DBH - easier to connect with our field data and knowledge
-t12$dbh <- ba2d(t12$Basal.Area.x)
-summary(t12$dbh)
+# Use dbh for largest stem
+summary(t12$dbh.x)
 
 ## USE LOG DBH for analysis
-hist(t12$dbh)
-t12$ldbh <- log10(t12$dbh)
+hist(t12$dbh.x)
+t12$ldbh <- log10(t12$dbh.x)
 hist(t12$ldbh)
 t12$ldbh2 <- t12$ldbh^2
 
@@ -327,8 +327,8 @@ par(op)
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
 t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(0:3)),]
 #can do a fix here to set variable like we did above selVar..
-#t12s$rVar <- t12s$Live.y 
-t12s$rVar <- t12s$gCrown.y 
+selVar <- 'Live.y'
+t12s$rVar <- t12s[,selVar]
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
 
@@ -344,7 +344,7 @@ head(nd)
 tail(nd)
 
 # Plot response variable as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
-plot(t12s$ldbh,t12s$rVar,type="n", xlab="log10DBH", ylab = "CrownSurvival")
+plot(t12s$ldbh,t12s$rVar,type="n", xlab="log10DBH", ylab = selVar)
 i=1
 for (i in 1:length(FireLevel.vals)) {
   ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
@@ -498,61 +498,88 @@ table(t12$gCrown.y)
 table(t12$Live.y,t12$TB)
 table(t12$Live.y,t12$gCrown.y)
 
+t12$PFstatus <- (-1)
+t12$PFstatus[which(t12$Live.y==0)] <- 0
+t12$PFstatus[which(t12$TB==1)] <- 1
+t12$PFstatus[which(t12$gCrown.y==1)] <- 2
+table(t12$PFstatus)
+
+(PFstatusLevels <- 0:2)
+(PFsPlotVals <- c(0.95,1,1.05))
+(PFsPlotCols <- c('black','red','green'))
+
+t12$PFsPlotVals <- PFsPlotVals[match(t12$PFstatus,PFstatusLevels)]
+t12$PFsPlotCols <- PFsPlotCols[match(t12$PFstatus,PFstatusLevels)]
+
+# range of ldbh for abundant species
+spArows <- which(t12$Species.x %in% spA)
+(t12ldbh.range <- c(min(t12$ldbh[spArows],na.rm=T),max(t12$ldbh[spArows],na.rm=T)))
+
+# head(t12$fsLevel)
+# head(match(t12$fsLevel,PFstatusLevels))
+# head(t12$PFsPlotVals)
 ## ANALYSIS FOR ONE SPECIES
 spA
 
 # pick one of these!
-#t12sp <- t12[which(t12$Species.x %in% c('ARBMEN')),] #individual species?
-#t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
-t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
+selSpecies <- 'ARBMEN' # use spA for all abundant species, rather than one
+FireLevels <- c('Mod+High')
+t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(2:3)),] #individual species?
+{
+  #t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
+  #t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
+  
+  dim(t12sp)
+  t12sp <- t12sp[which(!is.na(t12sp$ldbh)),]
+  dim(t12sp)
+  
+  # code to run a binomial model and plot response curve with data
+  # MORTALITY
+  nd <- with(t12sp,data.frame(ldbh=seq(min(t12sp$ldbh,na.rm=T),max(t12sp$ldbh,na.rm=T),length.out=101)))
+  nd$ldbh2 <- nd$ldbh^2
+  
+  #plot(t12sp$ldbh,t12sp$Dead.y,xlim=t12ldbh.range)
+  fit1 <- glm(Dead.y~ldbh,data=t12sp,family='binomial')
+  fit2 <- glm(Dead.y~ldbh+ldbh2,data=t12sp,family='binomial')
+  BIC(fit1)
+  BIC(fit2)
+  nd$pMortality <- predict(fit1,newdata=nd,type='response')
+  #lines(nd$ldbh,nd$pMortality)
+  
+  #TOPKILL WITH RESPROUT
+  #plot(t12sp$ldbh,t12sp$TB,xlim=t12ldbh.range)
+  fit <- glm(TB~ldbh+ldbh2 ,data=t12sp,family='binomial')
+  summary(fit)
+  nd$pTB <- predict(fit,newdata=nd,type='response')
+  #lines(nd$ldbh,nd$pTB)
+  
+  #GREEN CROWN
+  #plot(t12sp$ldbh,t12sp$gCrown.y,xlim=t12ldbh.range)
+  fit1 <- glm(gCrown.y~ldbh,data=t12sp,family='binomial')
+  fit2 <- glm(gCrown.y~ldbh+ldbh2,data=t12sp,family='binomial')
+  summary(fit1)
+  nd$pGCrown <- predict(fit1,newdata=nd,type='response')
+  #lines(nd$ldbh,nd$pGCrown)
+  
+  #plot all three
+  plot(t12sp$ldbh,t12sp$PFsPlotVals,col=t12sp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=t12ldbh.range,main=paste(selSpecies,FireLevels))
+  points(t12sp$ldbh,rep(-0.05,length(t12sp$ldbh)))
+  lines(nd$ldbh,nd$pGCrown,col='green')
+  lines(nd$ldbh,nd$pTB,col='red')
+  lines(nd$ldbh,nd$pMortality)
+  
+  # does the sum of the three binomials for these three exclusive fates sum to 1?
+  nd$pTOT <- apply(nd[,c('pGCrown','pTB','pMortality')],1,sum)
+  summary(nd$pTOT)
+}
 
-dim(t12sp)
-t12sp <- t12sp[which(!is.na(t12sp$ldbh)),]
-dim(t12sp)
-
-# code to run a binomial model and plot response curve with data
-# MORTALITY
-nd <- with(t12sp,data.frame(ldbh=seq(min(t12sp$ldbh,na.rm=T),max(t12sp$ldbh,na.rm=T),length.out=101)))
-nd$ldbh2 <- nd$ldbh^2
-
-plot(t12sp$ldbh,t12sp$Dead.y)
-fit <- glm(Dead.y~ldbh+ldbh2,data=t12sp,family='binomial')
-nd$pMortality <- predict(fit,newdata=nd,type='response')
-lines(nd$ldbh,nd$pMortality)
-
-#TOPKILL WITH RESPROUT
-plot(t12sp$ldbh,t12sp$TB)
-fit <- glm(TB~ldbh+ldbh2 ,data=t12sp,family='binomial')
-summary(fit)
-nd$pTB <- predict(fit,newdata=nd,type='response')
-lines(nd$ldbh,nd$pTB)
-
-#GREEN CROWN
-plot(t12sp$ldbh,t12sp$gCrown.y)
-fit <- glm(gCrown.y~ldbh+ldbh2,data=t12sp,family='binomial')
-summary(fit)
-nd$pGCrown <- predict(fit,newdata=nd,type='response')
-lines(nd$ldbh,nd$pGCrown)
-
-#plot all three
-plot(t12sp$ldbh,t12sp$gCrown.y)
-lines(nd$ldbh,nd$pGCrown,col='green')
-lines(nd$ldbh,nd$pTB,col='red')
-lines(nd$ldbh,nd$pMortality)
-nd$pTOT <- apply(nd[,c('pGCrown','pTB','pMortality')],1,sum)
-summary(nd$pTOT)
-
+#reset plotting window with one panel
+par(mfrow=c(1,1))
 # NOW FIT MULTINOMIAL
-t12sp$PFstatus <- (-1)
-t12sp$PFstatus[which(t12sp$Live.y==0)] <- 0
-t12sp$PFstatus[which(t12sp$TB==1)] <- 1
-t12sp$PFstatus[which(t12sp$gCrown.y==1)] <- 2
-table(t12sp$PFstatus)
-
 require(nnet)
 
 # MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ldbh2' - changes results some
-fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2 ,data=t12sp)
+fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2, data=t12sp)
 fit1
 head(round(fitted(fit1),2))
 dim(fitted(fit1))
