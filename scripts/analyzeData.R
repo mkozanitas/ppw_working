@@ -281,12 +281,12 @@ plotSP(t12,'UMBCAL')
 
 ########### Starting with Models########
 
-## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in mode-change back to c(0:3 to expand to all fslevels) to generate curves
+## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in model-change back to c(0:3 to expand to all fslevels) to generate curves
 t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(2:3)),]
 
 # assign dependent variable to rVar
 names(t12s)
-selVar <- 'gCrown.y'
+selVar <- 'Live.y'
 t12s$rVar <- t12s[,selVar]
 
 (N <- length(which(!is.na(t12s$ldbh) & !is.na(t12s$rVar))))
@@ -310,7 +310,8 @@ nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR"
 barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[1])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[1],' cm dbh'))
 
 # remove shrubs for larger sizes cm plot
-op=par(mfrow=c(1,3))
+# op=par will stack 3 figures (1,3) for horizontal & (3,1) for vertical
+op=par(mfrow=c(1,3)) 
 selSize <- 1
 barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.x %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
 
@@ -320,14 +321,16 @@ barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd
 selSize <- 3
 barplot(pValue~Species.x,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.x %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
 
+
+#run to reset to single figure 
 par(op)
 
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.y or Live.y to analyze crown survival
 t12s <- t12[which(t12$Species.x %in% spA & t12$fsLevel %in% c(0:3)),]
-#can do a fix here to set variable like we did above selVar..
-selVar <- 'Live.y'
+#did a fix here to set variable like we did above using selVar..
+selVar <- 'gCrown.y'
 t12s$rVar <- t12s[,selVar]
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t12s,family='binomial')
 summary(fit)
@@ -406,8 +409,10 @@ plotSpecies <- function(spname,nd.tmp=nd2) {
   }
   #par(op)
 }
-plotSpecies('UMBCAL')
+#This will plot isoclines of survival at each fire severity for any indv species 
+plotSpecies('PSEMEN')
 
+#using data from model w/ fire sev included- not subsetted out for visualization as above
 # obtain predicted main effects of fire severity for each species at a common size
 nvals <- 1
 ldbh.vals <- log10(2)
@@ -471,7 +476,7 @@ barplot(pSurvAll ~ Species.x,data=nd2[which(nd2$fsLevel==3),],ylim=c(0,1))
   }
   plotSpecies('QUEGAR')
   
-  # obtain predicted main effects of fire severity for each species at a common size
+  # obtain predicted main effects of fire severity for each species at a common size (2CM)
   nvals <- 1
   ldbh.vals <- log10(2)
   fsLevels.vals <- c(0:3)
@@ -522,9 +527,10 @@ spArows <- which(t12$Species.x %in% spA)
 spA
 
 # pick one of these!
-selSpecies <- 'ARBMEN' # use spA for all abundant species, rather than one
+selSpecies <- spA # use spA for all abundant species, rather than one
 FireLevels <- c('Mod+High')
-t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(2:3)),] #individual species?
+#FireLevels <- c('ANY LEVEL') #then change range in line below c(1:3)
+t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(1:3)),] #individual species?
 {
   #t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
   #t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
@@ -561,8 +567,8 @@ t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(2:3)),]
   nd$pGCrown <- predict(fit1,newdata=nd,type='response')
   #lines(nd$ldbh,nd$pGCrown)
   
-  #plot all three
-  plot(t12sp$ldbh,t12sp$PFsPlotVals,col=t12sp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=t12ldbh.range,main=paste(selSpecies,FireLevels))
+  #plot all three (change main from selSpecies to ".." to alter main title)
+  plot(t12sp$ldbh,t12sp$PFsPlotVals,col=t12sp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=t12ldbh.range,main=paste("Allsp",FireLevels))
   points(t12sp$ldbh,rep(-0.05,length(t12sp$ldbh)))
   lines(nd$ldbh,nd$pGCrown,col='green')
   lines(nd$ldbh,nd$pTB,col='red')
