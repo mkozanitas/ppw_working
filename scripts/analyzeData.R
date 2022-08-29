@@ -411,6 +411,9 @@ plotSpecies <- function(spname,nd.tmp=nd2) {
 }
 #This will plot isoclines of survival at each fire severity for any indv species 
 plotSpecies('PSEMEN')
+plotSpecies('ARBMEN')
+plotSpecies('QUEAGR')
+plotSpecies('UMBCAL')
 
 #using data from model w/ fire sev included- not subsetted out for visualization as above
 # obtain predicted main effects of fire severity for each species at a common size
@@ -534,7 +537,7 @@ spA
 selSpecies <- spA # use spA for all abundant species, rather than one
 FireLevels <- c('Mod+High')
 #FireLevels <- c('ANY LEVEL') #then change range in line below c(1:3)
-t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(1:3)),] #individual species?
+t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(2:3)),] #individual species?
 {
   #t12sp <- t12[which(t12$Species.x %in% spA),] #abundant species?
   #t12sp <- t12[which(t12$Species.x %in% spA & t12$fsLevel>1),] #abundant sp with fs level of 1 or more?
