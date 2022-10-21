@@ -132,6 +132,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Species=="UNKN30"), "Species"]<-"UNK"
   indv.data[which(indv.data$Species=="QUEDEC"), "Species"]<-"QUEdec"
   indv.data[which(indv.data$Species=="UNKN47"), "Species"]<-"PRUCER"
+  indv.data[which(indv.data$Species=="CEATHY"), "Species"]<-"CEAPAR"
   
   
   ##Used to run these lines in order to replace incorrect species ID's in 2013- changed these in the 2013 CSV files during 2022 QC- no need to use AUG_Species csv anymore- some names in that file are incorrect now anyway
