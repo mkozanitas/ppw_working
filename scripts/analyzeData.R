@@ -17,6 +17,24 @@ tail(fs)
 
 all.id <- readRDS('data/allid-nodups.Rdata')
 str(all.id)
+length(all.id)
+
+## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression
+i=1
+for (i in 1:length(all.id)) {
+  SArows <- which(all.id[[i]]$Type=='SA')
+  print(tail(sort(all.id[[i]]$dbh[SArows])))
+  sdbh <- all.id[[i]]$dbh[SArows]
+  sdbh <- sdbh * 0.64426 - 0.06439
+  all.id[[i]]$dbh[SArows] <- sdbh
+}
+
+# Examine basal diameter of SAs
+sap13 <- all.id[[1]]
+sap13 <- sap13[which(sap13$Type=='SA'),]
+dim(sap13)
+hist(sap13$dbh,xlim=c(0,5),breaks=c(0,1,2,3,4,5,1000))
+summary(sap13$dbh)
 
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
