@@ -35,6 +35,7 @@ sap13 <- sap13[which(sap13$Type=='SA'),]
 dim(sap13)
 hist(sap13$dbh,xlim=c(0,5),breaks=c(0,1,2,3,4,5,1000))
 summary(sap13$dbh)
+# end examine basal diameter
 
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
@@ -52,11 +53,12 @@ plot.ok <- allIndv$Num[which(allIndv$P13==allIndv$P18)]
 spec.ok <- allIndv$Num[which(allIndv$S13==allIndv$S18)] 
 ps.ok <- intersect(plot.ok,spec.ok)
 length(ps.ok)
+head(ps.ok)
+tail(ps.ok)
 
 # include trees from new plots
 ps.ok <- c(ps.ok,allIndv$Num[which(allIndv$P18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))])
 length(ps.ok)
-
 head(ps.ok)
 tail(ps.ok)
 
