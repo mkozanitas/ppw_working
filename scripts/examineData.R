@@ -31,6 +31,9 @@ dups[[1]]
 dups <- do.call(rbind,dups)
 dim(dups)
 head(dups)
+tail(dups)
+
+dups
 write.csv(dups,'data/duplicates.csv')
 
 # check that the maximum numbers from each year of survey don't have typos or bad values

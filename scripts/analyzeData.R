@@ -3,6 +3,7 @@
 rm(list=ls())
 library(lme4)
 
+# Functions to convert basal area to diameter and log-diameter, and back
 lba2d <- function(x) 2*sqrt((10^x)/pi)
 ba2d <- function(x) 2*sqrt((x)/pi)
 d2ba <- function(x) pi*(x/2)^2
@@ -15,9 +16,11 @@ head(fs)
 tail(fs)
 ####
 
+# load up all individual data (id) - list of 4 data.frames, one per year (133, 18, 19, 20)
 all.id <- readRDS('data/allid-nodups.Rdata')
 str(all.id)
 length(all.id)
+head(all.id[[1]])
 
 ## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression
 i=1
@@ -96,6 +99,10 @@ t12$dbh.x[newIndvs] <- t12$dbh.y[newIndvs]
 t12$Dead.x[newIndvs] <- 0
 t12$Live.x[newIndvs] <- 1
 t12$gCrown.x[newIndvs] <- 1
+
+# ignore these individuals for basal area growth
+t12$UseForBAGrowth <- T
+t12$UseForBAGrowth[newIndvs] <- F
 
 #plot(t12$Basal.Area.x,t12$Basal.Area.y)
 #summary(t12$Basal.Area.y/t12$Basal.Area.x)
