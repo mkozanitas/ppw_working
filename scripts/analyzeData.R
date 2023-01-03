@@ -150,6 +150,7 @@ fst$percSurv <- 1 - fst$N18.dead/fst$N13
 fst$percSurv[fst$N13==0] <- NA
 
 ## What percent died in Tubbs, overall and by Type?
+## lTXNJV9X2df1
 SArows <- which(fst$Type=='SA')
 TRrows <- which(fst$Type=='TR')
 
