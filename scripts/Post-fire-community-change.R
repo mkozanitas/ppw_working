@@ -8,6 +8,11 @@ ba2d <- function(x) 2*sqrt((x)/pi)
 d2ba <- function(x) pi*(x/2)^2
 d2lba <- function(x) log10(pi*(x/2)^2)
 
+## pull up plot info
+plotclim <- read.csv('data/clim_pts.csv')
+head(plotclim)
+tail(plotclim)
+
 # Load fire severity data
 library("RCurl")
 fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
@@ -65,10 +70,11 @@ for (i in 1:length(all.id))
 # ATRL type==TR
 
 CWD_plot_mean <- data.frame(
-  plot=sort(unique(all.id[[4]]$Plot)),
-  Tubbs.MTBS.RDNBR.30 = fs$Tubbs.MTBS.RDNBR.30[match(CWD_plot_mean$plot,fs$Plot)],
-  Tubbs.Tukman.CanDam.10 = fs$Tubbs.Tukman.CanDam.10[match(CWD_plot_mean$plot,fs$Plot)],
+  plot=plotclim$Plot,
+  Tubbs.MTBS.RDNBR.30 = fs$Tubbs.MTBS.RDNBR.30[1:50],
+  Tubbs.Tukman.CanDam.10 = fs$Tubbs.Tukman.CanDam.10[1:50],
   SAP2013=NA,STR2013=NA,LTR2013=NA,ATR2013=NA,SAP2018=NA,STR2018=NA,LTR2018=NA,ATR2018=NA,SAP2019=NA,STR2019=NA,LTR2019=NA,ATR2019=NA,SAP2020=NA,STR2020=NA,LTR2020=NA,ATR2020=NA)
+dim(CWD_plot_mean)
 
 i=1
 for (i in 1:length(all.id))
@@ -115,7 +121,10 @@ plot(CWD_plot_mean$ATR.delta1318~CWD_plot_mean$Tubbs.Tukman.CanDam.10)
 plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$Tubbs.MTBS.RDNBR.30)
 plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$Tubbs.Tukman.CanDam.10)
 
+plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$ATR.delta1318)
 
+plot(CWD_plot_mean$ATR2013~plotclim$CWD)
+abline(lm(CWD_plot_mean$ATR2013~plotclim$CWD))
 
 ####### BELOW HERE FROM analyzeData.R ############
 #### First round of analysis of post-fire fates, 2013-2018
