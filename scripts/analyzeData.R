@@ -847,11 +847,12 @@ library(dplyr)
 #t12mini <- t12 %>% subset(select = c(Num, Plot.x, Species.x, DT, TG, DG, TB, FireSev))
 #t12mini <- t12mini %>% count(DT, TG, DG, TB)
 
+View(t12)
+
 t12mini <- t12 %>% subset(select = c(Num, Plot.x, Species.x, Type.x, dbh.x, Dead.y, Live.y, bSprout.y, gCrown.y, FireSev))
 t12mini <- t12mini %>% group_by(Species.x, Type.x, FireSev)
 t12mini <- t12mini %>% count(Dead.y, Live.y, bSprout.y, gCrown.y)
 t12mini <- t12mini %>% filter(Species.x=="AMOCAL")
 
-View(t12)
 View(t12mini)
 
