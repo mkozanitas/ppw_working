@@ -837,3 +837,21 @@ logit2Plot <- function(d,xcn,ycn,np=101)
 }
 logit2Plot(t12,'ldbh','Live.y')
 
+#######pulling out AMOCAL data for Marin lady #######
+
+library(tidyr)
+library(plyr)
+library(dplyr)
+
+#this didin't work using these columns -> see examineData Line 101 for why there are 2's in the pattern
+#t12mini <- t12 %>% subset(select = c(Num, Plot.x, Species.x, DT, TG, DG, TB, FireSev))
+#t12mini <- t12mini %>% count(DT, TG, DG, TB)
+
+t12mini <- t12 %>% subset(select = c(Num, Plot.x, Species.x, Type.x, dbh.x, Dead.y, Live.y, bSprout.y, gCrown.y, FireSev))
+t12mini <- t12mini %>% group_by(Species.x, Type.x, FireSev)
+t12mini <- t12mini %>% count(Dead.y, Live.y, bSprout.y, gCrown.y)
+t12mini <- t12mini %>% filter(Species.x=="AMOCAL")
+
+View(t12)
+View(t12mini)
+
