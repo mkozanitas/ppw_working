@@ -1,4 +1,4 @@
-#analyzeData-t23 is to compare 2018 vs. 2019 for delayed mortality and other changes in fate
+#analyzeData-t23 is to compare 2018 vs. 2019 for delayed mortality and other changes in state
 
 # RUN prepareData and examineData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 
@@ -48,7 +48,7 @@ head(spNames)
 allIndv <- read.csv('data/allIndv.csv')
 head(allIndv)
 
-#### First round of analysis of post-fire fates, 2013-2018
+#### First round of analysis of post-fire states, 2013-2018
 ## get percent survival by species and type
 
 # select which individuals to eliminate - this can be done separately for each analysis
@@ -79,27 +79,27 @@ head(t23)
 tail(t23)
 
 
-t23$fate.x <- NA
-t23$fate.x[which(t23$Topkill.x==1 & t23$bSprout.x==0)] <- 'DN'
-t23$fate.x[which(t23$Topkill.x==1 & t23$bSprout.x==1)] <- 'DR'
-t23$fate.x[which(t23$gCrown.x==1 & t23$bSprout.x==0)] <- 'LN'
-t23$fate.x[which(t23$gCrown.x==1 & t23$bSprout.x==1)] <- 'LR'
-t23$fate.y[which(is.na(t23$fate.y))] <- 'UN'
-table(t23$fate.x)
-sum(table(t23$fate.x))
+t23$state.x <- NA
+t23$state.x[which(t23$Topkill.x==1 & t23$bSprout.x==0)] <- 'DN'
+t23$state.x[which(t23$Topkill.x==1 & t23$bSprout.x==1)] <- 'DR'
+t23$state.x[which(t23$gCrown.x==1 & t23$bSprout.x==0)] <- 'LN'
+t23$state.x[which(t23$gCrown.x==1 & t23$bSprout.x==1)] <- 'LR'
+t23$state.y[which(is.na(t23$state.y))] <- 'UN'
+table(t23$state.x)
+sum(table(t23$state.x))
 nrow(t23)
 
-t23$fate.y <- NA
-t23$fate.y[which(t23$Topkill.y==1 & t23$bSprout.y==0)] <- 'DN'
-t23$fate.y[which(t23$Topkill.y==1 & t23$bSprout.y==1)] <- 'DR'
-t23$fate.y[which(t23$gCrown.y==1 & t23$bSprout.y==0)] <- 'LN'
-t23$fate.y[which(t23$gCrown.y==1 & t23$bSprout.y==1)] <- 'LR'
-t23$fate.y[which(is.na(t23$fate.y))] <- 'UN'
-table(t23$fate.y)
-sum(table(t23$fate.y))
+t23$state.y <- NA
+t23$state.y[which(t23$Topkill.y==1 & t23$bSprout.y==0)] <- 'DN'
+t23$state.y[which(t23$Topkill.y==1 & t23$bSprout.y==1)] <- 'DR'
+t23$state.y[which(t23$gCrown.y==1 & t23$bSprout.y==0)] <- 'LN'
+t23$state.y[which(t23$gCrown.y==1 & t23$bSprout.y==1)] <- 'LR'
+t23$state.y[which(is.na(t23$state.y))] <- 'UN'
+table(t23$state.y)
+sum(table(t23$state.y))
 nrow(t23)
 
-table(t23$fate.x,t23$fate.y)
+table(t23$state.x,t23$state.y)
 
 ### COMMENTS ON TABLE ABOVE
 # DN = dead; DR = topkill+resprouting; LN = green crown, no sprouting; LR = live crown, resprouting
@@ -109,10 +109,10 @@ table(t23$fate.x,t23$fate.y)
 #  col 1, below row 1: delayed mortality of individuals that were alive in 18
 #  what jumps out is DR/LN - 665 individuals went from topkill + resprouting in 18 to live crown and no resprouting in 19? 
 
-head(t23[which(t23$fate.x=='DR' & t23$fate.y=='LN'),])
+head(t23[which(t23$state.x=='DR' & t23$state.y=='LN'),])
 # it looks like these are small individuals, recorded as topkilled crown in 18, and then they are vigorously regrowing in 19, and recorded as live crown?
 
-# continue looking at individuals in other off diagonal combinations by copying line 112 and changing selected fates.
+# continue looking at individuals in other off diagonal combinations by copying line 112 and changing selected states.
 
 ### STOP HERE
 
@@ -187,7 +187,7 @@ plot(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],xlim=c(0,
 text(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],labels = fsta[fsta$Type=='TR','Species'])
 abline(0,1)
 
-#### EXPAND ANALYSIS to ALL POST-FIRE FATES
+#### EXPAND ANALYSIS to ALL POST-FIRE STATES
 dim(t12)
 head(t12)
 names(t12)
@@ -619,7 +619,7 @@ t12sp <- t12[which(t12$Species.x %in% c(selSpecies) & t12$fsLevel %in% c(2:3)),]
   lines(nd$ldbh,nd$pTB,col='red')
   lines(nd$ldbh,nd$pMortality)
   
-  # does the sum of the three binomials for these three exclusive fates sum to 1?
+  # does the sum of the three binomials for these three exclusive states sum to 1?
   nd$pTOT <- apply(nd[,c('pGCrown','pTB','pMortality')],1,sum)
   summary(nd$pTOT)
 }
