@@ -84,7 +84,7 @@ t23$state.x[which(t23$Topkill.x==1 & t23$bSprout.x==0)] <- 'DN'
 t23$state.x[which(t23$Topkill.x==1 & t23$bSprout.x==1)] <- 'DR'
 t23$state.x[which(t23$gCrown.x==1 & t23$bSprout.x==0)] <- 'LN'
 t23$state.x[which(t23$gCrown.x==1 & t23$bSprout.x==1)] <- 'LR'
-t23$state.y[which(is.na(t23$state.y))] <- 'UN'
+t23$state.x[which(is.na(t23$state.x))] <- 'UN'
 table(t23$state.x)
 sum(table(t23$state.x))
 nrow(t23)
@@ -100,6 +100,14 @@ sum(table(t23$state.y))
 nrow(t23)
 
 table(t23$state.x,t23$state.y)
+
+rsel <- which(t23$Type.x=='SA')
+table(t23$state.x[rsel],t23$state.y[rsel])
+
+probs <- which(t23$Type.x=='SA' & t23$state.x=='DR' & t23$state.y=='DR')
+table(t23$Plot.x[probs])
+head(t23[probs,])
+tail(t23[probs,])
 
 ### COMMENTS ON TABLE ABOVE
 # DN = dead; DR = topkill+resprouting; LN = green crown, no sprouting; LR = live crown, resprouting
