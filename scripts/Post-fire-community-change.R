@@ -62,6 +62,8 @@ for (i in 1:length(all.id))
   head(all.id[[i]])
   all.id[[i]]$cwdNiche <- cntmp$cwd[match(all.id[[i]]$Species,cntmp$spcode)]
 }
+head(all.id[[1]])
+tail(all.id[[1]])
 
 # calculate cwd niche by plot, and by size class
 # SAP: type==SA
@@ -75,6 +77,7 @@ CWD_plot_mean <- data.frame(
   Tubbs.Tukman.CanDam.10 = fs$Tubbs.Tukman.CanDam.10[1:50],
   SAP2013=NA,STR2013=NA,LTR2013=NA,ATR2013=NA,SAP2018=NA,STR2018=NA,LTR2018=NA,ATR2018=NA,SAP2019=NA,STR2019=NA,LTR2019=NA,ATR2019=NA,SAP2020=NA,STR2020=NA,LTR2020=NA,ATR2020=NA)
 dim(CWD_plot_mean)
+head(CWD_plot_mean)
 
 i=1
 for (i in 1:length(all.id))
@@ -88,19 +91,22 @@ for (i in 1:length(all.id))
   LTRcwd <- tapply(LTRsel$cwdNiche,LTRsel$Plot,mean,na.rm=T)
   ATRcwd <- tapply(ATRsel$cwdNiche,ATRsel$Plot,mean,na.rm=T)
   
-  cols <- ((i*4)-2):((i*4)+1)
+  cols <- ((i*4)):((i*4)+3)
   CWD_plot_mean[,cols[1]] <- SAPcwd[match(CWD_plot_mean$plot,names(SAPcwd))]
   CWD_plot_mean[,cols[2]] <- STRcwd[match(CWD_plot_mean$plot,names(STRcwd))]
   CWD_plot_mean[,cols[3]] <- LTRcwd[match(CWD_plot_mean$plot,names(LTRcwd))]
   CWD_plot_mean[,cols[4]] <- ATRcwd[match(CWD_plot_mean$plot,names(ATRcwd))]
 }
 head(CWD_plot_mean)
+hisev <- c(40,41,42)
 
 plot(CWD_plot_mean$SAP2018~CWD_plot_mean$SAP2013)
+points(CWD_plot_mean$SAP2018[hisev]~CWD_plot_mean$SAP2013[hisev],pch=19)
 abline(lm(CWD_plot_mean$SAP2018~CWD_plot_mean$SAP2013))
 abline(0,1,lty=2)
 
 plot(CWD_plot_mean$STR2018~CWD_plot_mean$STR2013)
+points(CWD_plot_mean$STR2018[hisev]~CWD_plot_mean$STR2013[hisev],pch=19)
 abline(lm(CWD_plot_mean$STR2018~CWD_plot_mean$STR2013))
 abline(0,1,lty=2)
 
@@ -113,17 +119,19 @@ abline(lm(CWD_plot_mean$ATR2018~CWD_plot_mean$ATR2013))
 abline(0,1,lty=2)
 
 CWD_plot_mean$SAP.delta1318 <- CWD_plot_mean$SAP2018 - CWD_plot_mean$SAP2013
+CWD_plot_mean$STR.delta1318 <- CWD_plot_mean$STR2018 - CWD_plot_mean$STR2013
 
-CWD_plot_mean$ATR.delta1318 <- CWD_plot_mean$ATR2018 - CWD_plot_mean$ATR2013
-
-plot(CWD_plot_mean$ATR.delta1318~CWD_plot_mean$Tubbs.MTBS.RDNBR.30)
-plot(CWD_plot_mean$ATR.delta1318~CWD_plot_mean$Tubbs.Tukman.CanDam.10)
+plot(CWD_plot_mean$STR.delta1318~CWD_plot_mean$Tubbs.MTBS.RDNBR.30)
+plot(CWD_plot_mean$STR.delta1318~CWD_plot_mean$Tubbs.Tukman.CanDam.10)
 plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$Tubbs.MTBS.RDNBR.30)
 plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$Tubbs.Tukman.CanDam.10)
 
-plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$ATR.delta1318)
+plot(CWD_plot_mean$SAP.delta1318~CWD_plot_mean$STR.delta1318)
 
 plot(CWD_plot_mean$ATR2013~plotclim$CWD)
+plot(CWD_plot_mean$LTR2013~plotclim$CWD)
+plot(CWD_plot_mean$STR2013~plotclim$CWD)
+plot(CWD_plot_mean$SAP2013~plotclim$CWD)
 abline(lm(CWD_plot_mean$ATR2013~plotclim$CWD))
 
 ####### BELOW HERE FROM analyzeData.R ############
