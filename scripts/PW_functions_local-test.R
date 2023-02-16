@@ -39,9 +39,9 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     mega.data[[i]]<-cbind(Plot=Plot, mega.data[[i]]) 
     
     if(year>=2018) {
-      if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
+      #if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
       nm <- colnames(mega.data[[i]])
-      nm$SOD.on.Bay <- NA
+      #nm$SOD.on.Bay <- NA
       replace(nm,grep('X..cm',nm),'X_cm')
       replace(nm,grep('Y..cm',nm),'Y_cm')
       replace(nm,grep('Tree.Tag.No.',nm),'Num')
@@ -64,7 +64,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
         "Notes","Survival", "Basal.Resprout",
         "Epicormic.Resprout","Apical.Growth",
         "Canopy.Percent", "Basal.Resprout.Height_cm",
-        "Basal.Resprout.Count", "Tag.Pulled", "SOD.on.Bay")
+        "Basal.Resprout.Count", "Tag.Pulled", "SOD.on.Bay", "Notes")
       
       #if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
       #if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
