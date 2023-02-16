@@ -57,7 +57,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       colnames(mega.data[[i]]) <- nm
       rm('nm')
       #mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
-      colnames(mega.data[[i]])<-c(
+      #colnames(mega.data[[i]])<-c(
         "Plot", "Quad", "Type", "Num", "Species",
         "SA.Stump.Height_cm","SA.Stump.BD_cm",
         "SA.Stem.Num","DBH_cm", "X_cm", "Y_cm",
