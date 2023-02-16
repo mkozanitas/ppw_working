@@ -101,13 +101,26 @@ nrow(t23)
 
 table(t23$state.x,t23$state.y)
 
-rsel <- which(t23$Type.x=='SA')
+rsel <- which(t23$Type.x=='TR')
 table(t23$state.x[rsel],t23$state.y[rsel])
 
 probs <- which(t23$Type.x=='SA' & t23$state.x=='DR' & t23$state.y=='DR')
 table(t23$Plot.x[probs])
 head(t23[probs,])
 tail(t23[probs,])
+write.csv(t23[probs,],"probs.csv")
+
+(t23[which(t23$state.x=='DR' & t23$state.y=='LN'&t23$Plot.x=="PPW1303"),])
+change.state <- which(t23$state.x != t23$state.y)
+head(t23[change.state,])
+
+change.type <- which(t23$Type.x=="TR" & t23$Type.y=="SA")
+length(change.type)
+head(t23[change.type,])
+write.csv(t23[change.type,],"TRtoSA.csv")
+
+probs <- which(t23$Type.x=='SA' & t23$state.x=='LR' & t23$state.y=='DR')
+write.csv(t23[probs,],"probsLR->DR.csv")
 
 ### COMMENTS ON TABLE ABOVE
 # DN = dead; DR = topkill+resprouting; LN = green crown, no sprouting; LR = live crown, resprouting

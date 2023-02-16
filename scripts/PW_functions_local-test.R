@@ -32,7 +32,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list # assigns a name to each item of the list
   #print(names(mega.data[[1]]))
-  i=35
+  i=1
   for (i in 1:length(mega.data)) 
   {
     Plot<-plot.list[i]
@@ -40,7 +40,23 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     
     if(year>=2018) {
       if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
-      mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
+      nm <- colnames(mega.data[[i]])
+      nm$SOD.on.Bay <- NA
+      replace(nm,grep('X..cm',nm),'X_cm')
+      replace(nm,grep('Y..cm',nm),'Y_cm')
+      replace(nm,grep('Tree.Tag.No.',nm),'Num')
+      replace(nm,grep('Basal',nm),'Basal.Resprout')
+      replace(nm,grep('Epicormic',nm),'Epicormic.Resprout')
+      replace(nm,grep('Apical',nm),'Apical.Growth')
+      replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
+      replace(nm,grep('Basal.resrpout..height.',nm),'Basal.Resprout.Height_cm')
+      replace(nm,grep('Basal.Resprout.count',nm),'Basal.Resprout.Count')
+      replace(nm,grep('Tag.pulled',nm),'Tag.Pulled')
+      
+      # more replacements
+      colnames(mega.data[[i]]) <- nm
+      rm('nm')
+      #mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
       colnames(mega.data[[i]])<-c(
         "Plot", "Quad", "Type", "Num", "Species",
         "SA.Stump.Height_cm","SA.Stump.BD_cm",
@@ -49,6 +65,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
         "Epicormic.Resprout","Apical.Growth",
         "Canopy.Percent", "Basal.Resprout.Height_cm",
         "Basal.Resprout.Count", "Tag.Pulled", "SOD.on.Bay")
+      
       #if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
       #if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
       #if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
@@ -61,8 +78,9 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       # in 2018 only, newly killed trees were measured in 1851:1854 to recreate pre fire stands - these are numbered with 5 digits: 99###; so they are not removed by keep.999=F
       if(keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
-      mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Dead.Stump", 
+      #mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
+      # CLEAN UP COLUMN NAMES - 2013 COLUMNS CAN **NEVER** BE REORDERED, OR THIS LINE NEEDS TO BE EDITED!
+      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Confidence", "Dead.Stump", 
                                   "SA.Stump.Height_cm", "SA.Stump.BD_cm", 
                                   "SA.Stem.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
       mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
