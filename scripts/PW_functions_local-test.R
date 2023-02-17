@@ -4,7 +4,7 @@ update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
 source('scripts/PWFunctions_load.R')
 
 ### only for debugging
-year <- 2018
+year <- 2013
 stump <- F
 orig.dead <- F
 survival <- F
@@ -47,10 +47,14 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       nm <-replace(nm,grep('X..cm',nm),'X_cm')
       nm <-replace(nm,grep('Y..cm',nm),'Y_cm')
       nm <-replace(nm,grep('Tree.Tag.No.',nm),'Num')
+      nm <-replace(nm,grep('DBH..cm.',nm),'DBH_cm')
       nm <-replace(nm,which(names(nm)=='Basal'),'Basal.Resprout')
       nm <-replace(nm,grep('Epicormic',nm),'Epicormic.Resprout')
       nm <-replace(nm,grep('Apical',nm),'Apical.Growth')
       nm <-replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
+      nm <-replace(nm,grep('SA.or.Stump.Height..cm.',nm),'SA.Height_cm') 
+      nm <-replace(nm,grep('SA.or.Stump.BD..cm.',nm),'SA.BD_cm') 
+      nm <-replace(nm,grep('SA..Stem.',nm),'SA.Stems.') 
       nm <-replace(nm,grep('Basal.resrpout..height.',nm),'Basal.Resprout.Height_cm')
       nm <- replace(nm,grep('Basal.Resprout.count',nm),'Basal.Resprout.Count')
       nm <-replace(nm,grep('Tag.pulled',nm),'Tag.Pulled')
