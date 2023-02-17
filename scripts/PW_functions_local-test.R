@@ -21,7 +21,8 @@ prefix <- 'https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/
 plot.list <- NA
 ###
 
-get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/',plot.list=NA){
+get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/',plot.list=NA)
+  {
   require(RCurl)
   options(stringsAsFactors=FALSE) 
   #getURL('https://github.com/dackerly/PepperwoodVegPlots/tree/master/2020/Woody2020/Data/OriginalCSV/Woody')
@@ -38,24 +39,27 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     Plot<-plot.list[i]
     mega.data[[i]]<-cbind(Plot=Plot, mega.data[[i]]) 
     
-    if(year>=2018) {
+    if(year>=2018) 
+      {
       #if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
       nm <- colnames(mega.data[[i]])
       #nm$SOD.on.Bay <- NA
-      replace(nm,grep('X..cm',nm),'X_cm')
-      replace(nm,grep('Y..cm',nm),'Y_cm')
-      replace(nm,grep('Tree.Tag.No.',nm),'Num')
-      replace(nm,grep('Basal',nm),'Basal.Resprout')
-      replace(nm,grep('Epicormic',nm),'Epicormic.Resprout')
-      replace(nm,grep('Apical',nm),'Apical.Growth')
-      replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
-      replace(nm,grep('Basal.resrpout..height.',nm),'Basal.Resprout.Height_cm')
-      replace(nm,grep('Basal.Resprout.count',nm),'Basal.Resprout.Count')
-      replace(nm,grep('Tag.pulled',nm),'Tag.Pulled')
+      nm <-replace(nm,grep('X..cm',nm),'X_cm')
+      nm <-replace(nm,grep('Y..cm',nm),'Y_cm')
+      nm <-replace(nm,grep('Tree.Tag.No.',nm),'Num')
+      nm <-replace(nm,which(names(nm)=='Basal'),'Basal.Resprout')
+      nm <-replace(nm,grep('Epicormic',nm),'Epicormic.Resprout')
+      nm <-replace(nm,grep('Apical',nm),'Apical.Growth')
+      nm <-replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
+      nm <-replace(nm,grep('Basal.resrpout..height.',nm),'Basal.Resprout.Height_cm')
+      nm <- replace(nm,grep('Basal.Resprout.count',nm),'Basal.Resprout.Count')
+      nm <-replace(nm,grep('Tag.pulled',nm),'Tag.Pulled')
       
-      # more replacements
+ 
       colnames(mega.data[[i]]) <- nm
       rm('nm')
+      
+      # more replacements
       #mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
       # #colnames(mega.data[[i]])<-c(
       #   "Plot", "Quad", "Type", "Num", "Species",
