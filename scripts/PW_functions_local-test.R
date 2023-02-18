@@ -38,8 +38,11 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   {
     Plot<-plot.list[i]
     mega.data[[i]]<-cbind(Plot=Plot, mega.data[[i]]) 
-    
-    if(year>=2018) 
+    print(c(i,length(colnames(mega.data[[i]]))))
+  }
+  ### I've closed the loop above to just output the number of columns while we trouble shoot. All the code below will come back, once we figure this out. The if (FALSE) is a way to effectively comment out a bunch of code without using #
+  if (FALSE) {
+      if(year>=2018) 
       {
       #if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
       nm <- colnames(mega.data[[i]])
