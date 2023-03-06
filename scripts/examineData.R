@@ -49,9 +49,7 @@ write.csv(bNA,'data/bSprout-NAs.csv')
 ## Seems there are problems with gCrown - checking here
 summary(all.id[[1]]$gCrown) # GOOD
 summary(all.id[[2]]$gCrown) # GOOD
-summary(all.id[[3]]$gCrown) # WHO is -Inf?
-rsel <- which(all.id[[3]]$gCrown==-Inf)
-all.id[[3]][rsel,]
+summary(all.id[[3]]$gCrown) # GOOD
 
 summary(all.id[[4]]$gCrown) # Character! Let's make it numeric
 all.id[[4]]$gCrown <- as.numeric(all.id[[4]]$gCrown)

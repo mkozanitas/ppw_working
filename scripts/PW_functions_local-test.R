@@ -4,7 +4,7 @@ update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
 source('scripts/PWFunctions_load.R')
 
 ### only for debugging
-year <- 2013
+year <- 2020
 stump <- F
 orig.dead <- F
 survival <- F
@@ -28,7 +28,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   #getURL('https://github.com/dackerly/PepperwoodVegPlots/tree/master/2020/Woody2020/Data/OriginalCSV/Woody')
   #dir.list <- dir(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/",sep=''))
   file.list <-(paste(prefix,year,"/Woody",year,"/Data/OriginalCSV/Woody/WoodySurvey",year,"_", sep='')) 
-  if (is.na(plot.list)) plot.list<-get.plot(year=year)
+  if (is.na(plot.list[1])) plot.list<-get.plot(year=year)
   
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list # assigns a name to each item of the list
@@ -50,9 +50,9 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       nm <-replace(nm,grep('Y..cm',nm),'Y_cm')
       nm <-replace(nm,grep('Tree.Tag.No.',nm),'Num')
       nm <-replace(nm,grep('DBH..cm.',nm),'DBH_cm')
-      nm <-replace(nm,which(names(nm)=='Basal'),'Basal.Resprout')
-      nm <-replace(nm,grep('Epicormic',nm),'Epicormic.Resprout')
-      nm <-replace(nm,grep('Apical',nm),'Apical.Growth')
+      nm <-replace(nm,which(nm=='Basal'),'bSprout')
+      nm <-replace(nm,grep('Epicormic',nm),'Epicormic')
+      nm <-replace(nm,grep('Apical',nm),'Apical')
       nm <-replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
       nm <-replace(nm,grep('SA.or.Stump.Height..cm.',nm),'SA.Height_cm') 
       nm <-replace(nm,grep('SA.or.Stump.BD..cm.',nm),'SA.BD_cm') 
@@ -65,26 +65,6 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       colnames(mega.data[[i]]) <- nm
       rm('nm')
       
-      # more replacements
-      #mega.data[[i]] <- mega.data[[i]][,c(1:4,7,13:16,5:6,21,8:12,17:20)]
-      # #colnames(mega.data[[i]])<-c(
-      #   "Plot", "Quad", "Type", "Num", "Species",
-      #   "SA.Stump.Height_cm","SA.Stump.BD_cm",
-      #   "SA.Stem.Num","DBH_cm", "X_cm", "Y_cm",
-      #   "Notes","Survival", "Basal.Resprout",
-      #   "Epicormic.Resprout","Apical.Growth",
-      #   "Canopy.Percent", "Basal.Resprout.Height_cm",
-      #   "Basal.Resprout.Count", "Tag.Pulled", "SOD.on.Bay", "Notes")
-      
-      #if(tag.pulled==F) mega.data[[i]] <- mega.data[[i]][,-20]
-      #if(bsprout.count==F) mega.data[[i]] <- mega.data[[i]][,-19]
-      #if(bsprout.height==F) mega.data[[i]] <- mega.data[[i]][,-18]
-      #if(canopy==F) mega.data[[i]] <- mega.data[[i]][,-17]
-      #if(apical==F) mega.data[[i]] <- mega.data[[i]][,-16]
-      #if(epicormic==F) mega.data[[i]] <- mega.data[[i]][,-15]
-      #if(bsprout==F) mega.data[[i]] <- mega.data[[i]][,-14]
-      #if(survival==F) mega.data[[i]] <- mega.data[[i]][,-13]    
-      
       # in 2018 only, newly killed trees were measured in 1851:1854 to recreate pre fire stands - these are numbered with 5 digits: 99###; so they are not removed by keep.999=F
       if (keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
@@ -93,8 +73,8 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       # CLEAN UP COLUMN NAMES - 2013 COLUMNS CAN **NEVER** BE REORDERED, OR THIS LINE NEEDS TO BE EDITED!
       colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Confidence",
                                   "Dead.Stump", 
-                                  "SA.Stump.Height_cm", "SA.Stump.BD_cm", 
-                                  "SA.Stem.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
+                                  "SA.Height_cm", "SA.BD_cm", 
+                                  "SA.Stems", "DBH_cm", "X_cm", "Y_cm", "Notes") 
       mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
 
       # subset no stumps and original dead
@@ -116,8 +96,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   if (year>=2018) indv.data<-indv.data[which(!is.na(indv.data$Num)),]
   
   # change SA.Stump.BD_cm into numeric
-  if (year==2013) 
-    indv.data$SA.Stump.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.Stump.BD_cm))
+  indv.data$SA.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.BD_cm))
   indv.data$DBH_cm <- suppressWarnings(as.numeric(indv.data$DBH_cm))
   # make indv.data$TreeNum numeric
   indv.data$Num<-as.numeric(indv.data$Num)
@@ -167,7 +146,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   
   ##Used to run these lines in order to replace incorrect species ID's in 2013- changed these in the 2013 CSV files during 2022 QC- no need to use AUG_Species csv anymore- some names in that file are incorrect now anyway
   
-  # Change individuals originally identified as "QUEDEC" to species-level indentification 
+  # Change individuals originally identified as "QUEDEC" to species-level identification 
   #if(year==2013) {
   # AUG.ID<-read.csv(text=getURL(paste(prefix, "2013/OakID2013/AUG_Species.csv", sep=''), followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
   #for(i in 1:dim(AUG.ID)[1]){
@@ -181,24 +160,22 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data[which(indv.data$Y_cm<0),"Y_cm"]<-indv.data[which(indv.data$Y_cm<0),"Y_cm"]+500
   
   # condense each individual into a single row 
-  indv.data$Point <- indv.data$Num %% 1
+  #indv.data$Point <- indv.data$Num %% 1
   indv.data$iNum<-floor(indv.data$Num) #strips away decimal point values
+  indv.data$Point <- indv.data$Num - indv.data$iNum
   
-  # convert TS which were main stems to SA
-  indv.data$Type[indv.data$Type == 'TS' & indv.data$Point == 0] <- "SA"
-  
-  # indv.data$SA.Stem.Num[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num)] <- 0
-  # indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] <- indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] + 1
+  # For saplings, change NAs for stem number to 0, and then add 1 to all - CHECK 2013 question for the possibility that main stem was included in stem number
+  indv.data$SA.Stems[indv.data$Type=="SA" & is.na(indv.data$SA.Stems)] <- 0
+  indv.data$SA.Stems[which(indv.data$Type=="SA")] <- indv.data$SA.Stems[which(indv.data$Type=="SA")] + 1
   
   indv.data$dbh <- NA
-  indv.data$dbh[which(indv.data$Type=="SA")] <- indv.data$SA.Stump.BD_cm[which(indv.data$Type=="SA")]
+  indv.data$dbh[which(indv.data$Type=="SA")] <- indv.data$SA.BD_cm[which(indv.data$Type=="SA")]
   indv.data$dbh[which(indv.data$Type=="TR")] <- indv.data$DBH_cm[which(indv.data$Type=="TR")]
   
   indv.data$Basal.Area <- ((indv.data$dbh/2)^2)*(pi)
-  #indv.data$Basal.Area <- NA
-  #indv.data$Basal.Area[which(indv.data$Type=="SA")] <-(((indv.data$SA.Stump.BD_cm[which(indv.data$Type=="SA")]/2)^2)*(pi))*(indv.data$SA.Stem.Num[which(indv.data$Type=="SA")])
-  
-  #indv.data$Basal.Area[which(indv.data$Type=="TR")] <- (((indv.data$DBH_cm[which(indv.data$Type=="TR")]/2)^2)*(pi))
+
+  # For saplings adjust basal area by number of stems < 10cm. As done here it overestimates by multiplying by stem number, and the other stems are smaller than main stem
+  #indv.data$Basal.Area[which(indv.data$Type=="SA")] <-(indv.data$Basal.Area[which(indv.data$Type=="SA")])*(indv.data$SA.Stems[which(indv.data$Type=="SA")])
   
   # CREATE FOUR STATUS VARIABLES AND ASSIGN
   indv.data$Dead <- NA
@@ -206,23 +183,19 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$Topkill <- NA
   indv.data$gCrown <- NA
   
-  names(indv.data)[which(names(indv.data)=='Basal.Resprout')] <- 'bSprout'
   if (year==2013) {
     indv.data$Survival <- NA
     indv.data$Epicormic <- NA
     indv.data$Apical <- NA
   } else 
   {
-    names(indv.data)[which(names(indv.data)=='Epicormic.Resprout')] <- 'Epicormic'
-    names(indv.data)[which(names(indv.data)=='Apical.Growth')] <- 'Apical' 
     indv.data$Epicormic[which(indv.data$Type=='SA')] <- NA
     indv.data$Apical[which(indv.data$Type=='SA')] <- NA
   }
   
-  # this code isn't working yet - maybe SA.Stem.Num changes names in 2013 and later years
-  indv.data$Npoints <- NA
-  # indv.data$NPoints[which(indv.data$Type=='SA')] <- indv.data$SA.Stem.Num[which(indv.data$Type=='SA')]
-  # indv.data$NPoints[which(indv.data$Type=='TR')] <- 1
+  indv.data$NPoints <- NA
+  indv.data$NPoints[which(indv.data$Type=='SA')] <- indv.data$SA.Stems[which(indv.data$Type=='SA')]
+  indv.data$NPoints[which(indv.data$Type=='TR')] <- 1
   
   if (year==2013) 
   {
@@ -248,8 +221,8 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data$Topkill[which(indv.data$Survival==0)] <- 1
   }
   
-  # get rid of TS rows
-  indv.data<-indv.data[-which(indv.data$Type=="TS"),]
+  # convert TS which were main stems to SA. If not main stem, get collapsed in next step (if branches==F)
+  indv.data$Type[which(indv.data$Type == 'TS' & indv.data$Point == 0)] <- "SA"
   
   if (branches==F)
   {
@@ -259,14 +232,12 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     # Convert to data.table to collapse rows 
     library(data.table)
     indv.data<-data.table(indv.data)
-    #indv.data[,NPoints:=sum(NPoints),by="iNum"]
     indv.data[,dbh:=max(dbh),by="iNum"]
     indv.data[,Basal.Area:=sum(Basal.Area),by="iNum"]
     allZero <- function(x) if (all(x==0)) return(0) else return(1)
     allOne <- function(x) if (all(x==1)) return(1) else return(0)
     
     if(year>=2018) {
-      #indv.data[,Dead:=max(Dead),by="iNum"]
       indv.data[,Survival:=max(Survival),by="iNum"]
       indv.data[,Live:=max(Live),by="iNum"]
       indv.data[,Topkill:=min(Topkill),by="iNum"]
@@ -296,18 +267,11 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data<-subset(indv.data, subset=(indv.data$Dead.Stump=="D" | indv.data$Dead.Stum=="S"))  
   } else {
     indv.data$Year<-year
-    #########
-    # MORTALITY FUNCTIONS SHOULD NOT EVEN BE HERE SHOULD THEY?
-    # MAKE A NEW FUNCTION get.indv.mortality.data()
-    #    year<-2013:year
-    #    dead<-kill.trees(year=year)
-    #    indv.data<-indv.data[!(indv.data$Num %in% dead$Num),]
-    #########
   }
   
   row.names(indv.data) <- NULL
   
-  # remove PSEMEN trees that were accidentaly removed by chainsaw crews in winter 2017 in plot PPW1307 
+  # remove PSEMEN trees that were accidentally removed by chainsaw crews in winter 2017 in plot PPW1307 
   indv.data<-indv.data[which(!(indv.data$Plot=="PPW1307" & indv.data$Num==1108 | indv.data$Num==1115 |indv.data$Num==1118 |indv.data$Num==1121 | indv.data$Num==1127 | indv.data$Num==1169 | indv.data$Num==1170 |indv.data$Num==1174)),]
   
   return(indv.data)
