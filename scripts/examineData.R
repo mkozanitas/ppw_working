@@ -69,12 +69,13 @@ catVals <- function(x) {
 SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
 TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
 
-i=4
+i=2
 for (i in 2:4) {
   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
   badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
   length(badSAs)
+  print(all.id[[i]][badSAs,c('Plot','Num','pattern')])
   
   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
   badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
