@@ -22,7 +22,7 @@ plot.list <- NA
 ###
 
 get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epicormic=F, apical=F, canopy=F, bsprout.height=F, bsprout.count=F, tag.pulled=F, keep.999=F, branches=F, prefix='https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/',plot.list=NA)
-  {
+{
   require(RCurl)
   options(stringsAsFactors=FALSE) 
   #getURL('https://github.com/dackerly/PepperwoodVegPlots/tree/master/2020/Woody2020/Data/OriginalCSV/Woody')
@@ -38,13 +38,12 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   {
     Plot<-plot.list[i]
     mega.data[[i]]<-cbind(Plot=Plot, mega.data[[i]]) 
-    print(c(i,length(colnames(mega.data[[i]]))))
-  }
-  ### I've closed the loop above to just output the number of columns while we trouble shoot. All the code below will come back, once we figure this out. The if (FALSE) is a way to effectively comment out a bunch of code without using #
-  if (FALSE) {
-      if(year>=2018) 
-      {
-      #if (year==2018) mega.data[[i]] <- data.frame(mega.data[[i]][,1:19],SOD.on.Bay=NA,Notes=mega.data[[i]][,20])
+    #print(c(i,length(colnames(mega.data[[i]]))))
+    
+    if(year>=2018) 
+    {
+      # remove any excess columns created by excel
+      mega.data[[i]] <- mega.data[[i]][,1:21]
       nm <- colnames(mega.data[[i]])
       #nm$SOD.on.Bay <- NA
       nm <-replace(nm,grep('X..cm',nm),'X_cm')
@@ -57,12 +56,12 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       nm <-replace(nm,grep('X..Living.Canopy',nm),'Canopy.Percent') 
       nm <-replace(nm,grep('SA.or.Stump.Height..cm.',nm),'SA.Height_cm') 
       nm <-replace(nm,grep('SA.or.Stump.BD..cm.',nm),'SA.BD_cm') 
-      nm <-replace(nm,grep('SA..Stem.',nm),'SA.Stems.') 
+      nm <-replace(nm,grep('SA..Stem.',nm),'SA.Stems') 
       nm <-replace(nm,grep('Basal.resrpout..height.',nm),'Basal.Resprout.Height_cm')
       nm <- replace(nm,grep('Basal.Resprout.count',nm),'Basal.Resprout.Count')
       nm <-replace(nm,grep('Tag.pulled',nm),'Tag.Pulled')
+      nm <-replace(nm,grep('SOD.on.Bay',nm),'SOD.on.Bay')
       
- 
       colnames(mega.data[[i]]) <- nm
       rm('nm')
       
@@ -87,11 +86,13 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
       #if(survival==F) mega.data[[i]] <- mega.data[[i]][,-13]    
       
       # in 2018 only, newly killed trees were measured in 1851:1854 to recreate pre fire stands - these are numbered with 5 digits: 99###; so they are not removed by keep.999=F
-      if(keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
+      if (keep.999==F) mega.data[[i]] <- mega.data[[i]][mega.data[[i]]$Num>=1000,]
     } else {
-      #mega.data[[i]]<-mega.data[[i]][,c(1:5,7:14)] 
+      # THIS SECTION FOR 2013
+      mega.data[[i]]<-mega.data[[i]][,1:14] 
       # CLEAN UP COLUMN NAMES - 2013 COLUMNS CAN **NEVER** BE REORDERED, OR THIS LINE NEEDS TO BE EDITED!
-      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Confidence", "Dead.Stump", 
+      colnames(mega.data[[i]])<-c("Plot", "Quad", "Type", "Num", "Species", "Confidence",
+                                  "Dead.Stump", 
                                   "SA.Stump.Height_cm", "SA.Stump.BD_cm", 
                                   "SA.Stem.Num", "DBH_cm", "X_cm", "Y_cm", "Notes") 
       mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
@@ -110,13 +111,13 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   
   # turn list of dataframes into a single large dataframe called indv.data for easier manipulations
   indv.data<-do.call(rbind, mega.data)
-
   # get rid of extra rows - 2013 only
   if (year==2013) indv.data<-indv.data[!is.na(indv.data$Type),]
   if (year>=2018) indv.data<-indv.data[which(!is.na(indv.data$Num)),]
   
   # change SA.Stump.BD_cm into numeric
-  indv.data$SA.Stump.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.Stump.BD_cm))
+  if (year==2013) 
+    indv.data$SA.Stump.BD_cm <- suppressWarnings(as.numeric(indv.data$SA.Stump.BD_cm))
   indv.data$DBH_cm <- suppressWarnings(as.numeric(indv.data$DBH_cm))
   # make indv.data$TreeNum numeric
   indv.data$Num<-as.numeric(indv.data$Num)
@@ -168,11 +169,11 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   
   # Change individuals originally identified as "QUEDEC" to species-level indentification 
   #if(year==2013) {
-   # AUG.ID<-read.csv(text=getURL(paste(prefix, "2013/OakID2013/AUG_Species.csv", sep=''), followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
-    #for(i in 1:dim(AUG.ID)[1]){
-    #  indv.data[indv.data$Num %in% AUG.ID$Num[i], "Species"] <-AUG.ID$Species[i]
+  # AUG.ID<-read.csv(text=getURL(paste(prefix, "2013/OakID2013/AUG_Species.csv", sep=''), followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
+  #for(i in 1:dim(AUG.ID)[1]){
+  #  indv.data[indv.data$Num %in% AUG.ID$Num[i], "Species"] <-AUG.ID$Species[i]
   #  }
- # }
+  # }
   
   # change coordinates to all be positive
   indv.data$Y_cm<-suppressWarnings(as.numeric(indv.data$Y_cm))
@@ -182,12 +183,12 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   # condense each individual into a single row 
   indv.data$Point <- indv.data$Num %% 1
   indv.data$iNum<-floor(indv.data$Num) #strips away decimal point values
-
+  
   # convert TS which were main stems to SA
   indv.data$Type[indv.data$Type == 'TS' & indv.data$Point == 0] <- "SA"
   
-  indv.data$SA.Stem.Num[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num)] <- 0
-  indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] <- indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] + 1
+  # indv.data$SA.Stem.Num[indv.data$Type=="SA" & is.na(indv.data$SA.Stem.Num)] <- 0
+  # indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] <- indv.data$SA.Stem.Num[which(indv.data$Type=="SA")] + 1
   
   indv.data$dbh <- NA
   indv.data$dbh[which(indv.data$Type=="SA")] <- indv.data$SA.Stump.BD_cm[which(indv.data$Type=="SA")]
@@ -204,7 +205,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$Live <- NA
   indv.data$Topkill <- NA
   indv.data$gCrown <- NA
-
+  
   names(indv.data)[which(names(indv.data)=='Basal.Resprout')] <- 'bSprout'
   if (year==2013) {
     indv.data$Survival <- NA
@@ -238,7 +239,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data$Apical[which(indv.data$Type=='TR' & indv.data$Survival==0)] <- 0
     indv.data$Epicormic[which(indv.data$Type=='TR' & indv.data$Survival==0)] <- 0
     indv.data$Live <- apply(indv.data[,c('Survival','bSprout')],1,max,na.rm=T)
-
+    
     indv.data$gCrown[which(indv.data$Type=='TR')] <- apply(indv.data[which(indv.data$Type=='TR'),c('Epicormic','Apical')],1,max,na.rm=T)
     
     indv.data$gCrown[which(indv.data$Type=='SA')] <- indv.data$Survival[which(indv.data$Type=='SA')]
@@ -246,15 +247,15 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
     indv.data$Topkill <- 0
     indv.data$Topkill[which(indv.data$Survival==0)] <- 1
   }
-
+  
   # get rid of TS rows
   indv.data<-indv.data[-which(indv.data$Type=="TS"),]
   
   if (branches==F)
-    {
+  {
     # get rid of dead points - DIDN'T WORK
     # indv.data <- indv.data[-which(indv.data$Survival==0 & indv.data$bSprout==0  & indv.data$Num%%1==0),]
-      
+    
     # Convert to data.table to collapse rows 
     library(data.table)
     indv.data<-data.table(indv.data)
@@ -306,7 +307,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   
   row.names(indv.data) <- NULL
   
-  # remove PSEMEN trees that were accidently removed by chainsaw crews in winter 2017 in plot PPW1307 
+  # remove PSEMEN trees that were accidentaly removed by chainsaw crews in winter 2017 in plot PPW1307 
   indv.data<-indv.data[which(!(indv.data$Plot=="PPW1307" & indv.data$Num==1108 | indv.data$Num==1115 |indv.data$Num==1118 |indv.data$Num==1121 | indv.data$Num==1127 | indv.data$Num==1169 | indv.data$Num==1170 |indv.data$Num==1174)),]
   
   return(indv.data)

@@ -28,6 +28,7 @@ if (FALSE)
 #indv.data.2013.B <- get.indv.data(year = 2013,branches=T)
 #dim(indv.data.2013.B)
 #head(indv.data.2013.B)
+
 id18 <- get.indv.data(year = 2018,branches=F,keep.999 = T)
 dim(id18)
 head(id18)
