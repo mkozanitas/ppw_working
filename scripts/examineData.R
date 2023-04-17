@@ -122,6 +122,34 @@ for (i in 2:4) {
   print(table(all.id[[i]]$DG))
 }
 
+## CREATE FOUR FATES
+i=4
+for (i in 2:4) {
+  all.id[[i]]$DN <- 0
+  all.id[[i]]$DR <- 0
+  all.id[[i]]$LN <- 0
+  all.id[[i]]$LR <- 0
+
+  all.id[[i]]$DN[which(all.id[[i]]$gCrown==0 & all.id[[i]]$bSprout==0)] <- 1
+  all.id[[i]]$DR[which(all.id[[i]]$gCrown==0 & all.id[[i]]$bSprout==1)] <- 1
+  all.id[[i]]$LN[which(all.id[[i]]$gCrown==1 & all.id[[i]]$bSprout==0)] <- 1
+  all.id[[i]]$LR[which(all.id[[i]]$gCrown==1 & all.id[[i]]$bSprout==1)] <- 1
+}
+
+i=3
+for (i in 2:4) {
+  print(table(all.id[[i]][,c('DN','DR')]))
+  print(table(all.id[[i]][,c('DN','LN')]))
+  print(table(all.id[[i]][,c('DN','LR')]))
+  print(table(all.id[[i]][,c('DR','LN')]))
+  print(table(all.id[[i]][,c('DR','LR')]))
+  print(table(all.id[[i]][,c('LN','LR')]))
+}
+for (i in 2:4) print(table(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)))
+
+i=3
+tfail <- which(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)==0)
+head(all.id[[i]][tfail,])
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
