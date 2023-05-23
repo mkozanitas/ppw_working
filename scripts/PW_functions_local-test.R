@@ -1,10 +1,10 @@
+# run these if debugging functions line by line
 rm(list=ls())
 update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
-
 source('scripts/PWFunctions_load.R')
 
 ### only for debugging
-year <- 2020
+year <- 2018
 stump <- F
 orig.dead <- F
 survival <- F

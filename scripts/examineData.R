@@ -97,30 +97,31 @@ all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
 # table(SA18$Live,SA18$gCrown)
 # table(SA18$Topkill,SA18$gCrown)
 
+## COMMENTED OUT - WAS A TROUBLESHOOTING STEP
 # Now create some combined states, again to look for 'illegal' data combinations. Need to revisit this - some of the '2s' may suggest problems, but not sure.
-i=4
-for (i in 2:4) {
-  all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
-  all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
-  all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
-  all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
-  all.id[[i]]$TB <- 0
-  all.id[[i]]$TB[which(all.id[[i]]$bSprout==1 & all.id[[i]]$Topkill==1)] <- 1
-  print(c(years[i],'Dead'))
-  print(table(all.id[[i]]$Dead))
-  print(c(''))
-  print(c(years[i],'Topkill'))
-  print(table(all.id[[i]]$Topkill))
-  print(c(''))
-  print(c(years[i],'gCrown'))
-  print(table(all.id[[i]]$gCrown))
-  print(c(years[i],'DT'))
-  print(table(all.id[[i]]$DT))
-  print(c(years[i],'TG'))
-  print(table(all.id[[i]]$TG))
-  print(c(years[i],'DG'))
-  print(table(all.id[[i]]$DG))
-}
+# i=4
+# for (i in 2:4) {
+#   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
+#   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
+#   all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
+#   all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
+#   all.id[[i]]$TB <- 0
+#   all.id[[i]]$TB[which(all.id[[i]]$bSprout==1 & all.id[[i]]$Topkill==1)] <- 1
+#   print(c(years[i],'Dead'))
+#   print(table(all.id[[i]]$Dead))
+#   print(c(''))
+#   print(c(years[i],'Topkill'))
+#   print(table(all.id[[i]]$Topkill))
+#   print(c(''))
+#   print(c(years[i],'gCrown'))
+#   print(table(all.id[[i]]$gCrown))
+#   print(c(years[i],'DT'))
+#   print(table(all.id[[i]]$DT))
+#   print(c(years[i],'TG'))
+#   print(table(all.id[[i]]$TG))
+#   print(c(years[i],'DG'))
+#   print(table(all.id[[i]]$DG))
+# }
 
 ## CREATE FOUR FATES
 i=4
@@ -129,27 +130,50 @@ for (i in 2:4) {
   all.id[[i]]$DR <- 0
   all.id[[i]]$LN <- 0
   all.id[[i]]$LR <- 0
-
-  all.id[[i]]$DN[which(all.id[[i]]$gCrown==0 & all.id[[i]]$bSprout==0)] <- 1
-  all.id[[i]]$DR[which(all.id[[i]]$gCrown==0 & all.id[[i]]$bSprout==1)] <- 1
-  all.id[[i]]$LN[which(all.id[[i]]$gCrown==1 & all.id[[i]]$bSprout==0)] <- 1
-  all.id[[i]]$LR[which(all.id[[i]]$gCrown==1 & all.id[[i]]$bSprout==1)] <- 1
+  
+  # all.id[[i]]$DN[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==1)] <- 0
+  # all.id[[i]]$DR[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==0)] <- 0
+  # all.id[[i]]$LN[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==1)] <- 0
+  # all.id[[i]]$LR[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==0)] <- 0
+  
+  all.id[[i]]$DN[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==0)] <- 1
+  all.id[[i]]$DR[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==1)] <- 1
+  all.id[[i]]$LN[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==0)] <- 1
+  all.id[[i]]$LR[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==1)] <- 1
 }
+i=2
+nrow(all.id[[i]])
+table(all.id[[i]]$DN,useNA = 'always')
+table(all.id[[i]]$DR,useNA = 'always')
+table(all.id[[i]]$LN,useNA = 'always')
+table(all.id[[i]]$LR,useNA = 'always')
 
 i=3
-for (i in 2:4) {
-  print(table(all.id[[i]][,c('DN','DR')]))
-  print(table(all.id[[i]][,c('DN','LN')]))
-  print(table(all.id[[i]][,c('DN','LR')]))
-  print(table(all.id[[i]][,c('DR','LN')]))
-  print(table(all.id[[i]][,c('DR','LR')]))
-  print(table(all.id[[i]][,c('LN','LR')]))
+for (i in 1:4) {
+  print(table(all.id[[i]][,c('Topkill','gCrown')]))
 }
-for (i in 2:4) print(table(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)))
 
-i=3
-tfail <- which(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)==0)
-head(all.id[[i]][tfail,])
+## SKIP AS ALL DATA CLEAN AS OF 5/23/23
+if (FALSE) {
+  for (i in 2:4) {
+    print(table(all.id[[i]][,c('DN','DR')]))
+    print(table(all.id[[i]][,c('DN','LN')]))
+    print(table(all.id[[i]][,c('DN','LR')]))
+    print(table(all.id[[i]][,c('DR','LN')]))
+    print(table(all.id[[i]][,c('DR','LR')]))
+    print(table(all.id[[i]][,c('LN','LR')]))
+  }
+  for (i in 2:4) print(table(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)))
+  
+  # Every tree should be one of these fates
+  i=3
+  all.id[[i]]$Nfate <- apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)
+  table(all.id[[i]]$Nfate)
+  
+  tfail <- which(all.id[[i]]$Nfate==0)
+  length(tfail)
+  head(all.id[[i]][tfail,])
+}
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)

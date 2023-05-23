@@ -1,4 +1,4 @@
-#analyzeData-t12343 is to compare 2013, 2018 and 2019 for delayed mortality and other changes in state
+#analyzeData-tAll is to compare 2013, 2018, 2019, and 2020 for delayed mortality and other changes in state
 
 # RUN prepareData and examineData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 
@@ -110,117 +110,87 @@ dim(t123)
 head(t123)
 tail(t123)
 
-t1234 <- merge(t123,t4,by = 'Num',all = T)
-names(t1234)
-dim(t1234)
-head(t1234)
-tail(t1234)
+tAll <- merge(t123,t4,by = 'Num',all = T)
+names(tAll)
+dim(tAll)
+head(tAll)
+tail(tAll)
 
 rm('t12')
 rm('t123')
 
-table(t1234$Plot.19)
+# All four years are now merged!!!!! ###
 
-# create 'fake 2013 data'
+# create 'proxy 2013 data'
 # rownums for new 2018 individuals from new plots
-newIndvs <- which(is.na(t1234$Plot.13))
+newIndvs <- which(is.na(tAll$Plot.13))
 length(newIndvs)
 
-t1234$Plot.13[newIndvs] <- t1234$Plot.18[newIndvs]
+tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
 
 # SEARCH AND REPLACE FROM HERE
-t1234$Quad.13[newIndvs] <- t1234$Quad.18[newIndvs]
-t1234$Type.13[newIndvs] <- t1234$Type.18[newIndvs]
-t1234$Species.13[newIndvs] <- t1234$Species.18[newIndvs]
+tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
+tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
+tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
 
 # This introduces inaccuracies because 2018 basal areas reflect 5 more years of growth
-t1234$Basal.Area.13[newIndvs] <- t1234$Basal.Area.18[newIndvs]
-t1234$dbh.13[newIndvs] <- t1234$dbh.18[newIndvs]
-t1234$Dead.13[newIndvs] <- 0
-t1234$Live.13[newIndvs] <- 1
-t1234$gCrown.13[newIndvs] <- 1
+tAll$Basal.Area.13[newIndvs] <- tAll$Basal.Area.18[newIndvs]
+tAll$dbh.13[newIndvs] <- tAll$dbh.18[newIndvs]
+tAll$Dead.13[newIndvs] <- 0
+tAll$Live.13[newIndvs] <- 1
+tAll$gCrown.13[newIndvs] <- 1
 
 # ignore these individuals for basal area growth
-t1234$UseForBAGrowth <- T
-t1234$UseForBAGrowth[newIndvs] <- F
+tAll$UseForBAGrowth <- T
+tAll$UseForBAGrowth[newIndvs] <- F
 
-#plot(t1234$Basal.Area.13,t1234$Basal.Area.18)
-#summary(t1234$Basal.Area.18/t1234$Basal.Area.13)
-#abline(0,1)
+## END CREATE PROXY 2103 Data for new trees encountered post-fire, including new plots
 
-# ANALYZE BY SPECIES AND TYPE
+
+## quick look, out of curiosity, for basal area growth
+#plot(tAll$Basal.Area.13[tAll$UseForBAGrowth],tAll$Basal.Area.18[tAll$UseForBAGrowth],log='xy')
+#summary(tAll$Basal.Area.18/tAll$Basal.Area.13)
+#abline(0,1,col='red')
+
+
+# ANALYZE BY SPECIES AND TYPE for 2018 post-fire fates
 (use.species <- spNames$spName)
-fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.dead=NA,N18.TKB=NA,N18.BC=NA,N18.C=NA,nMissing=NA)
+fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
 head(fst)                  
 tail(fst)
 
-i=24
+i=5
 for (i in 1:nrow(fst))
 {
   sp <- fst$Species[i]
   ty <- fst$Type[i]
-  init <- t1234$Num[which(t1234$Species.13==sp & t1234$Type.13==ty & t1234$Live.13==1)]
-  fst$N13[i] <- length(init)
+  temp <- tAll[which(tAll$Species.13==sp & tAll$Type.13==ty),]
   
-  fin1 <- intersect(init,t1234$Num[which(t1234$Live.18==0)])
-  # fin1 is the number of original ty surviving, whether or not they transitioned from SA->TR (or the other way!)
+  fst$N13[i] <- sum(temp$Live.13,na.rm=T)
   
-  fst$N18.dead[i] <- length(fin1)
-  
-  #fin2 is topkill and basal sprouting
-  fin2 <- intersect(init,t1234$Num[which(t1234$bSprout.18==1 & t1234$Topkill.18==1)])
-  fst$N18.TKB[i] <- length(fin2) 
-  
-  # fin3 is basal sprouting and green crown
-  fin3 <- intersect(init,t2$Num[which(t2$bSprout==1 & t2$gCrown==1)])
-  fst$N18.BC[i] <- length(fin3) 
-  
-  # fin4 is green crown only
-  fin4 <- intersect(init,t2$Num[which(t2$bSprout==0 & t2$gCrown==1)])
-  fst$N18.C[i] <- length(fin4) 
-  
-  missed <- init[which (!init %in% c(fin1,fin2,fin3,fin4))]
-  fst$nMissing[i] <- length(missed)
+  fst$N18.DN[i] <- sum(temp$DN.18,na.rm = T)
+  fst$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
+  fst$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
+  fst$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
+  miss <- which(temp$Live.13==1 & is.na(temp$DN.18)==1)
+  if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot.13','Num')])
+  fst$nMissing <- fst$N13-(fst$N18.DN+fst$N18.DR+fst$N18.LN+fst$N18.LR)
 }
+
 head(fst)
 tail(fst)
 sum(fst$nMissing)
 
-fst$percSurv <- 1 - fst$N18.dead/fst$N13
-fst$percSurv[fst$N13==0] <- NA
+#### CREATE FATE VARIABLE FOR EACH YEAR WITH FOUR STATES
+#### RUN TABLES, SHOWING NAs, OF FATES AGAINST EACH OTHER
 
-## What percent died in Tubbs, overall and by Type?
-## lTXNJV9X2df1
-SArows <- which(fst$Type=='SA')
-TRrows <- which(fst$Type=='TR')
 
-sum(fst$N13)
-sum(fst$N18.dead)
-sum(fst$N18.dead)/sum(fst$N13)
-sum(fst$N18.dead[SArows])/sum(fst$N13[SArows])
-sum(fst$N18.dead[TRrows])/sum(fst$N13[TRrows])
-
-## Abundant species only
-#AbSp <- c('AMOCAL','ARBMEN','ARCMAN','FRACAL','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
-
-# dropping QUEBER, FRACAL, AMOCAL for now
-AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
-length(AbSp)
-fsta <- fst[which(fst$Species %in% AbSp),]
-
-#examine data
-fsta[fsta$Type=='TR',][order(fsta$percSurv[fsta$Type=='TR']),]
-fsta[fsta$Type=='SA',][order(fsta$percSurv[fsta$Type=='SA']),]
-
-# plot sapling vs. tree survival
-plot(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],xlim=c(0,1),ylim=c(0,1),type='n',xlab='Survival, trees',ylab='Survival, saplings')
-text(fsta[fsta$Type=='TR','percSurv'],fsta[fsta$Type=='SA','percSurv'],labels = fsta[fsta$Type=='TR','Species'])
-abline(0,1)
+# ANALYSIS CONTINUES HERE
 
 #### EXPAND ANALYSIS to ALL POST-FIRE FATES
-dim(t1234)
-head(t1234)
-names(t1234)
+dim(tAll)
+head(tAll)
+names(tAll)
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
@@ -229,13 +199,13 @@ summary(fs[,fsmet])
 hist(fs[,fsmet])
 sort(fs[,fsmet])
 
-f2t <- match(t1234$Plot.13,fs$Plot)
+f2t <- match(tAll$Plot.13,fs$Plot)
 head(f2t)
 tail(f2t)
-t1234$FireSev <- fs[f2t,fsmet]
-dim(t1234)
-tail(t1234)
-table(t1234$Plot.13)
+tAll$FireSev <- fs[f2t,fsmet]
+dim(tAll)
+tail(tAll)
+table(tAll$Plot.13)
 
 # RDNBR fire severity levels
 # Unburned
@@ -244,45 +214,45 @@ table(t1234$Plot.13)
 # High: >700
 # unburned: 1308, 1309, 1311, 1312, 1327, 1344, 1347
 
-summary(t1234$FireSev)
-hist(t1234$FireSev,breaks=c(-100,0,50,100,150,200,300,400,500,600,700,800,1000))
+summary(tAll$FireSev)
+hist(tAll$FireSev,breaks=c(-100,0,50,100,150,200,300,400,500,600,700,800,1000))
 fs.breaks <- c(-100,135,430,1000) # Based on Parks et al. 2014, but not using intermediate split at 304
-t1234$fsCat <- cut(t1234$FireSev,fs.breaks)
-table(t1234$fsCat)
-t1234$fsLevel <- as.numeric(t1234$fsCat)
-table(t1234$fsLevel)
+tAll$fsCat <- cut(tAll$FireSev,fs.breaks)
+table(tAll$fsCat)
+tAll$fsLevel <- as.numeric(tAll$fsCat)
+table(tAll$fsLevel)
 
 # manually code unburned as 0
 unburned.plots <- c('PPW1308','PPW1309','PPW1311','PPW1312','PPW1327','PPW1344','PPW1347')
-t1234$fsLevel[which(t1234$Plot.13 %in% unburned.plots)] <- 0
-table(t1234$fsLevel)
+tAll$fsLevel[which(tAll$Plot.13 %in% unburned.plots)] <- 0
+table(tAll$fsLevel)
 
-table(t1234$Plot.13[which(t1234$fsLevel==3)])
+table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # Use dbh for largest stem
-summary(t1234$dbh.13)
+summary(tAll$dbh.13)
 
 ## USE LOG DBH for analysis
-hist(t1234$dbh.13)
-t1234$ldbh <- log10(t1234$dbh.13)
-hist(t1234$ldbh)
-t1234$ldbh2 <- t1234$ldbh^2
+hist(tAll$dbh.13)
+tAll$ldbh <- log10(tAll$dbh.13)
+hist(tAll$ldbh)
+tAll$ldbh2 <- tAll$ldbh^2
 
 #### SURVIVAL ANALYSIS
-plot(t1234$ldbh,t1234$Live.18)
+plot(tAll$ldbh,tAll$Live.18)
 
 # **** mixing SA and TR - need to work on diameter conversion to get this right ***
-(N <- length(which(!is.na(t1234$ldbh) & !is.na(t1234$Live.18))))
-fit <- glm(Live.18~ldbh,data=t1234,family='binomial')
+(N <- length(which(!is.na(tAll$ldbh) & !is.na(tAll$Live.18))))
+fit <- glm(Live.18~ldbh,data=tAll,family='binomial')
 summary(fit)
 
-summary(t1234$ldbh)
-nd <- with(t1234,data.frame(ldbh=seq(min(t1234$ldbh,na.rm=T),max(t1234$ldbh,na.rm=T),length.out=1000)))
+summary(tAll$ldbh)
+nd <- with(tAll,data.frame(ldbh=seq(min(tAll$ldbh,na.rm=T),max(tAll$ldbh,na.rm=T),length.out=1000)))
 head(nd)
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
 
-plot(t1234$ldbh,t1234$Live.18)
+plot(tAll$ldbh,tAll$Live.18)
 lines(nd$ldbh,nd$pSurvAll,lwd=4)
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
@@ -295,7 +265,7 @@ abline(v=log10(2),lty=2)
 spRes
 
 ## now run by species for species with lots of data
-spN <- table(t1234$Species.13)
+spN <- table(tAll$Species.13)
 spN[order(spN)]
 
 #(spA <- names(spN)[which(spN>=25)])
@@ -308,7 +278,7 @@ i <- 3
 for (i in 1:length(spA))
 {
   (species <- spA[i])
-  tmp <- t1234[which(t1234$Species.13==species),]
+  tmp <- tAll[which(tAll$Species.13==species),]
   N <- length(which(!is.na(tmp$Basal.Area.13) & !is.na(tmp$Live.18)))
   fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
   pval <- predict(fit,newdata=nd,type='response')
@@ -328,45 +298,45 @@ spRes$ld50 <- round(as.numeric(spRes$ld50),3)
 spRes$slp <- round(as.numeric(spRes$slp),3)
 spRes
 
-plotSP <- function(t1234,species=NULL)
+plotSP <- function(tAll,species=NULL)
 {
-  tmp <- t1234[which(t1234$Species.13==species),]
+  tmp <- tAll[which(tAll$Species.13==species),]
   plot(tmp$ldbh,tmp$Live.18)
   fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
-  nd <- with(t1234,data.frame(ldbh=seq(-0.5,2,length.out=1001)))
+  nd <- with(tAll,data.frame(ldbh=seq(-0.5,2,length.out=1001)))
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
-plotSP(t1234,'ARCMAN')
-plotSP(t1234,'QUEAGR')
-plotSP(t1234,'QUEDOU')
-plotSP(t1234,'ARBMEN')
-plotSP(t1234,'HETARB')
-plotSP(t1234,'PSEMEN')
-plotSP(t1234,'QUEGAR')
-plotSP(t1234,'QUEKEL')
-plotSP(t1234,'UMBCAL')
+plotSP(tAll,'ARCMAN')
+plotSP(tAll,'QUEAGR')
+plotSP(tAll,'QUEDOU')
+plotSP(tAll,'ARBMEN')
+plotSP(tAll,'HETARB')
+plotSP(tAll,'PSEMEN')
+plotSP(tAll,'QUEGAR')
+plotSP(tAll,'QUEKEL')
+plotSP(tAll,'UMBCAL')
 
 ########### Starting with Models########
 
 ## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in model-change back to c(0:3 to expand to all fslevels) to generate curves
-t1234s <- t1234[which(t1234$Species.13 %in% spA & t1234$fsLevel %in% c(2:3)),]
+tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(2:3)),]
 
 # assign dependent variable to rVar
-names(t1234s)
+names(tAlls)
 selVar <- 'Live.18'
-t1234s$rVar <- t1234s[,selVar]
+tAlls$rVar <- tAlls[,selVar]
 
-(N <- length(which(!is.na(t1234s$ldbh) & !is.na(t1234s$rVar))))
-table(t1234s$Species.13)
-head(t1234s)
-fit <- glm(rVar~ldbh + ldbh2 + Species.13,data=t1234s,family='binomial')
+(N <- length(which(!is.na(tAlls$ldbh) & !is.na(tAlls$rVar))))
+table(tAlls$Species.13)
+head(tAlls)
+fit <- glm(rVar~ldbh + ldbh2 + Species.13,data=tAlls,family='binomial')
 summary(fit)
 
-summary(t1234s$ldbh)
+summary(tAlls$ldbh)
 #choose sizes here at which predicted values will be calculated
 predSizes <- c(10,30,80)
-nd <- with(t1234s,data.frame(ldbh=rep(log10(predSizes),length(spA)),Species.13=rep(spA,each=length(predSizes))))
+nd <- with(tAlls,data.frame(ldbh=rep(log10(predSizes),length(spA)),Species.13=rep(spA,each=length(predSizes))))
 nd$ldbh2 <- nd$ldbh^2
 nd
 nd$pValue <- round(predict(fit,newdata=nd,type='response'),4)
@@ -396,18 +366,18 @@ par(op)
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.18 or Live.18 to analyze crown survival
-t1234s <- t1234[which(t1234$Species.13 %in% spA & t1234$fsLevel %in% c(0:3)),]
+tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(0:3)),]
 #did a fix here to set variable like we did above using selVar..
 selVar <- 'gCrown.18'
-t1234s$rVar <- t1234s[,selVar]
-fit <- glm(rVar~ldbh + as.factor(fsLevel),data=t1234s,family='binomial')
+tAlls$rVar <- tAlls[,selVar]
+fit <- glm(rVar~ldbh + as.factor(fsLevel),data=tAlls,family='binomial')
 summary(fit)
 
 nvals <- 101
 ldbh.vals <- seq(-0.5,2,length.out=nvals)
 #FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
-FireLevel.vals <- sort(unique(t1234s$fsLevel))
-nd <- with(t1234,data.frame(ldbh=rep(ldbh.vals,length(FireLevel.vals)),fsLevel=rep(FireLevel.vals,each=nvals)))
+FireLevel.vals <- sort(unique(tAlls$fsLevel))
+nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(FireLevel.vals)),fsLevel=rep(FireLevel.vals,each=nvals)))
 head(nd)
 
 nd$rVarPred <- predict(fit,newdata=nd,type='response')
@@ -415,7 +385,7 @@ head(nd)
 tail(nd)
 
 # Plot response variable as a function of size, with isoclines as a function fire severity. Lines are increasing - survival is higher for larger trees, but lower at higher fire severity
-plot(t1234s$ldbh,t1234s$rVar,type="n", xlab="log10DBH", ylab = selVar)
+plot(tAlls$ldbh,tAlls$rVar,type="n", xlab="log10DBH", ylab = selVar)
 i=1
 for (i in 1:length(FireLevel.vals)) {
   ndt <- nd[which(nd$fsLevel==FireLevel.vals[i]),]
@@ -425,7 +395,7 @@ for (i in 1:length(FireLevel.vals)) {
 
 #### THIS WON'T WORK NOW AS MODEL ABOVE WAS CHANGED TO USE FIRE SEVERITY LEVELS
 # Plot survival as a function of fire severity, with isoclines as a function ldbh. Lines are declining - survival is lower at higher fire severity, but larger trees have higher values
-# plot(t1234s$FireSev,t1234s$Live.18)
+# plot(tAlls$FireSev,tAlls$Live.18)
 # i=1
 # for (i in 1:nvals) {
 #   ndt <- nd[which(nd$ldbh==ldbh.vals[i]),]
@@ -437,8 +407,8 @@ for (i in 1:length(FireLevel.vals)) {
 ## RECODED WITH FIRE LEVELS
 # model with size, fire, species, predicting survival
 {
-  fit2 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13,data=t1234s,family='binomial')
-  fit1 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=t1234s,family='binomial')
+  fit2 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13,data=tAlls,family='binomial')
+  fit1 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=tAlls,family='binomial')
   BIC(fit1)
   BIC(fit2)
   summary(fit1)
@@ -447,7 +417,7 @@ for (i in 1:length(FireLevel.vals)) {
   nvals <- 11
   ldbh.vals <- seq(-0.5,2,length.out=nvals)
   fsLevels.vals <- c(0:3)
-  nd <- with(t1234,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
   dim(nd)
   head(nd)
   
@@ -457,10 +427,10 @@ for (i in 1:length(FireLevel.vals)) {
   head(nd2)
   
   plotSpecies <- function(spname,nd.tmp=nd2) {
-    tmp <- t1234s[which(t1234s$Species.13==spname),]
+    tmp <- tAlls[which(tAlls$Species.13==spname),]
     #op=par(mfrow=c(1,2))
     
-    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(t1234s$FireSev,na.rm=T))
+    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
     # i=1
     # for (i in 1:nvals) {
     #   ndt <- nd2[which(nd2$Species.13==spname & nd2$ldbh==ldbh.vals[i]),]
@@ -468,7 +438,7 @@ for (i in 1:length(FireLevel.vals)) {
     #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
     # }
     
-    plot(tmp$ldbh,tmp$Live.18,xlim=range(t1234s$ldbh,na.rm=T))
+    plot(tmp$ldbh,tmp$Live.18,xlim=range(tAlls$ldbh,na.rm=T))
     i=2
     for (i in 1:length(unique(nd.tmp$fsLevel))) {
       ndt <- nd.tmp[which(nd2$Species.13==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
@@ -488,7 +458,7 @@ for (i in 1:length(FireLevel.vals)) {
   nvals <- 1
   ldbh.vals <- log10(2)
   fsLevels.vals <- c(0:3)
-  nd <- with(t1234,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
   dim(nd)
   head(nd)
   
@@ -507,8 +477,8 @@ for (i in 1:length(FireLevel.vals)) {
 }
 # same code, with gCrown.18 instead of Live.18
 {
-  fit2 <- glm(gCrown.18~ldbh + as.factor(fsLevel) + Species.13,data=t1234s,family='binomial')
-  fit1 <- glm(gCrown.18~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=t1234s,family='binomial')
+  fit2 <- glm(gCrown.18~ldbh + as.factor(fsLevel) + Species.13,data=tAlls,family='binomial')
+  fit1 <- glm(gCrown.18~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=tAlls,family='binomial')
   BIC(fit1)
   BIC(fit2)
   summary(fit1)
@@ -517,7 +487,7 @@ for (i in 1:length(FireLevel.vals)) {
   nvals <- 11
   ldbh.vals <- seq(-0.5,2,length.out=nvals)
   fsLevels.vals <- c(0:3)
-  nd <- with(t1234,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
   dim(nd)
   head(nd)
   
@@ -528,10 +498,10 @@ for (i in 1:length(FireLevel.vals)) {
   
   spname='QUEAGR'
   plotSpecies <- function(spname,nd.tmp=nd2) {
-    tmp <- t1234s[which(t1234s$Species.13==spname),]
+    tmp <- tAlls[which(tAlls$Species.13==spname),]
     #op=par(mfrow=c(1,2))
     
-    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(t1234s$FireSev,na.rm=T))
+    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
     # i=1
     # for (i in 1:nvals) {
     #   ndt <- nd2[which(nd2$Species.13==spname & nd2$ldbh==ldbh.vals[i]),]
@@ -539,7 +509,7 @@ for (i in 1:length(FireLevel.vals)) {
     #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ldbh.vals[i])
     # }
     
-    plot(tmp$ldbh,tmp$gCrown.18,xlim=range(t1234s$ldbh,na.rm=T))
+    plot(tmp$ldbh,tmp$gCrown.18,xlim=range(tAlls$ldbh,na.rm=T))
     i=2
     for (i in 1:length(unique(nd.tmp$fsLevel))) {
       ndt <- nd.tmp[which(nd2$Species.13==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
@@ -554,7 +524,7 @@ for (i in 1:length(FireLevel.vals)) {
   nvals <- 1
   ldbh.vals <- log10(2)
   fsLevels.vals <- c(0:3)
-  nd <- with(t1234,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
+  nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
   dim(nd)
   head(nd)
   
@@ -571,35 +541,35 @@ for (i in 1:length(FireLevel.vals)) {
 }
 ## END RECODE HERE ##
 
-names(t1234)
-table(t1234$Dead.18)
-table(t1234$Live.18)
-table(t1234$TB)
-table(t1234$gCrown.18)
-table(t1234$Live.18,t1234$TB.18)
-table(t1234$Live.18,t1234$gCrown.18)
+names(tAll)
+table(tAll$Dead.18)
+table(tAll$Live.18)
+table(tAll$TB)
+table(tAll$gCrown.18)
+table(tAll$Live.18,tAll$TB.18)
+table(tAll$Live.18,tAll$gCrown.18)
 
-t1234$PFstatus.18 <- (-1)
-t1234$PFstatus.18[which(t1234$Live.18==0)] <- 0
-t1234$PFstatus.18[which(t1234$TB.18==1)] <- 1
-t1234$PFstatus.18[which(t1234$gCrown.18==1)] <- 2
-table(t1234$PFstatus.18)
+tAll$PFstatus.18 <- (-1)
+tAll$PFstatus.18[which(tAll$Live.18==0)] <- 0
+tAll$PFstatus.18[which(tAll$TB.18==1)] <- 1
+tAll$PFstatus.18[which(tAll$gCrown.18==1)] <- 2
+table(tAll$PFstatus.18)
 
 
 (PFstatusLevels <- 0:2)
 (PFsPlotVals <- c(0.95,1,1.05))
 (PFsPlotCols <- c('black','red','green'))
 
-t1234$PFsPlotVals <- PFsPlotVals[match(t1234$PFstatus,PFstatusLevels)]
-t1234$PFsPlotCols <- PFsPlotCols[match(t1234$PFstatus,PFstatusLevels)]
+tAll$PFsPlotVals <- PFsPlotVals[match(tAll$PFstatus,PFstatusLevels)]
+tAll$PFsPlotCols <- PFsPlotCols[match(tAll$PFstatus,PFstatusLevels)]
 
 # range of ldbh for abundant species
-spArows <- which(t1234$Species.13 %in% spA)
-(t1234ldbh.range <- c(min(t1234$ldbh[spArows],na.rm=T),max(t1234$ldbh[spArows],na.rm=T)))
+spArows <- which(tAll$Species.13 %in% spA)
+(tAllldbh.range <- c(min(tAll$ldbh[spArows],na.rm=T),max(tAll$ldbh[spArows],na.rm=T)))
 
-# head(t1234$fsLevel)
-# head(match(t1234$fsLevel,PFstatusLevels))
-# head(t1234$PFsPlotVals)
+# head(tAll$fsLevel)
+# head(match(tAll$fsLevel,PFstatusLevels))
+# head(tAll$PFsPlotVals)
 ## ANALYSIS FOR ONE SPECIES
 spA
 
@@ -607,46 +577,46 @@ spA
 selSpecies <- spA # use spA for all abundant species, rather than one
 FireLevels <- c('Mod+High')
 #FireLevels <- c('ANY LEVEL') #then change range in line below c(1:3)
-t1234sp <- t1234[which(t1234$Species.13 %in% c(selSpecies) & t1234$fsLevel %in% c(2:3)),] #individual species?
+tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% c(2:3)),] #individual species?
 {
-  #t1234sp <- t1234[which(t1234$Species.13 %in% spA),] #abundant species?
-  #t1234sp <- t1234[which(t1234$Species.13 %in% spA & t1234$fsLevel>1),] #abundant sp with fs level of 1 or more?
+  #tAllsp <- tAll[which(tAll$Species.13 %in% spA),] #abundant species?
+  #tAllsp <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel>1),] #abundant sp with fs level of 1 or more?
   
-  dim(t1234sp)
-  t1234sp <- t1234sp[which(!is.na(t1234sp$ldbh)),]
-  dim(t1234sp)
+  dim(tAllsp)
+  tAllsp <- tAllsp[which(!is.na(tAllsp$ldbh)),]
+  dim(tAllsp)
   
   # code to run a binomial model and plot response curve with data
   # MORTALITY
-  nd <- with(t1234sp,data.frame(ldbh=seq(min(t1234sp$ldbh,na.rm=T),max(t1234sp$ldbh,na.rm=T),length.out=101)))
+  nd <- with(tAllsp,data.frame(ldbh=seq(min(tAllsp$ldbh,na.rm=T),max(tAllsp$ldbh,na.rm=T),length.out=101)))
   nd$ldbh2 <- nd$ldbh^2
   
-  #plot(t1234sp$ldbh,t1234sp$Dead.18,xlim=t1234ldbh.range)
-  fit1 <- glm(Dead.18~ldbh,data=t1234sp,family='binomial')
-  fit2 <- glm(Dead.18~ldbh+ldbh2,data=t1234sp,family='binomial')
+  #plot(tAllsp$ldbh,tAllsp$Dead.18,xlim=tAllldbh.range)
+  fit1 <- glm(Dead.18~ldbh,data=tAllsp,family='binomial')
+  fit2 <- glm(Dead.18~ldbh+ldbh2,data=tAllsp,family='binomial')
   BIC(fit1)
   BIC(fit2)
   nd$pMortality <- predict(fit1,newdata=nd,type='response')
   #lines(nd$ldbh,nd$pMortality)
   
   #TOPKILL WITH RESPROUT
-  #plot(t1234sp$ldbh,t1234sp$TB,xlim=t1234ldbh.range)
-  fit <- glm(TB~ldbh+ldbh2 ,data=t1234sp,family='binomial')
+  #plot(tAllsp$ldbh,tAllsp$TB,xlim=tAllldbh.range)
+  fit <- glm(TB~ldbh+ldbh2 ,data=tAllsp,family='binomial')
   summary(fit)
   nd$pTB <- predict(fit,newdata=nd,type='response')
   #lines(nd$ldbh,nd$pTB)
   
   #GREEN CROWN
-  #plot(t1234sp$ldbh,t1234sp$gCrown.18,xlim=t1234ldbh.range)
-  fit1 <- glm(gCrown.18~ldbh,data=t1234sp,family='binomial')
-  fit2 <- glm(gCrown.18~ldbh+ldbh2,data=t1234sp,family='binomial')
+  #plot(tAllsp$ldbh,tAllsp$gCrown.18,xlim=tAllldbh.range)
+  fit1 <- glm(gCrown.18~ldbh,data=tAllsp,family='binomial')
+  fit2 <- glm(gCrown.18~ldbh+ldbh2,data=tAllsp,family='binomial')
   summary(fit1)
   nd$pGCrown <- predict(fit1,newdata=nd,type='response')
   #lines(nd$ldbh,nd$pGCrown)
   
   #plot all three (change main from selSpecies to ".." to alter main title)
-  plot(t1234sp$ldbh,t1234sp$PFsPlotVals,col=t1234sp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=t1234ldbh.range,main=paste("Allsp",FireLevels))
-  points(t1234sp$ldbh,rep(-0.05,length(t1234sp$ldbh)))
+  plot(tAllsp$ldbh,tAllsp$PFsPlotVals,col=tAllsp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=tAllldbh.range,main=paste("Allsp",FireLevels))
+  points(tAllsp$ldbh,rep(-0.05,length(tAllsp$ldbh)))
   lines(nd$ldbh,nd$pGCrown,col='green')
   lines(nd$ldbh,nd$pTB,col='red')
   lines(nd$ldbh,nd$pMortality)
@@ -662,15 +632,15 @@ par(mfrow=c(1,1))
 require(nnet)
 
 # MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ldbh2' - changes results some
-fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2, data=t1234sp)
+fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2, data=tAllsp)
 fit1
 head(round(fitted(fit1),2))
 dim(fitted(fit1))
 
-plot(t1234sp$ldbh,t1234sp$Live.18)
-points(t1234sp$ldbh,fitted(fit1)[,1],col='black')
-points(t1234sp$ldbh,fitted(fit1)[,2],col='red')
-points(t1234sp$ldbh,fitted(fit1)[,3],col='green')
+plot(tAllsp$ldbh,tAllsp$Live.18)
+points(tAllsp$ldbh,fitted(fit1)[,1],col='black')
+points(tAllsp$ldbh,fitted(fit1)[,2],col='red')
+points(tAllsp$ldbh,fitted(fit1)[,3],col='green')
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
 
@@ -707,45 +677,45 @@ summary(apply(fitted(fit1)[,1:3],1,sum))
 # dev.off()
 
 ### full model with random plot
-#fit <- glmer(Live.18~ldbh + FireSev + Species.13 + (1 |Plot.13),data=t1234s,family='binomial')
+#fit <- glmer(Live.18~ldbh + FireSev + Species.13 + (1 |Plot.13),data=tAlls,family='binomial')
 
 ######## TOPKILL ANALYSIS
 # current scoring has dead trees as topkilled. Change so topkill is only for those that are alive
-t1234$TopkillLive.18 <- 0
-t1234$TopkillLive.18[which(t1234$Topkill.18==1 & t1234$Live.18==1)] <- 1
+tAll$TopkillLive.18 <- 0
+tAll$TopkillLive.18[which(tAll$Topkill.18==1 & tAll$Live.18==1)] <- 1
 
-table(t1234$Dead.18,t1234$TopkillLive.18,t1234$gCrown.18)
-t1234[which(t1234$gCrown.18==0 & t1234$TopkillLive.18==0 & t1234$Dead.18==0),]
+table(tAll$Dead.18,tAll$TopkillLive.18,tAll$gCrown.18)
+tAll[which(tAll$gCrown.18==0 & tAll$TopkillLive.18==0 & tAll$Dead.18==0),]
 # TWO INDIVIDUALS WITH PROBLEM DATA: 3415, 4437 (already identified those above - if they've been fixed and don't show up at this point, delete this line)
 
-t1234a <- t1234[which(t1234$FireSev>100),]
+tAlla <- tAll[which(tAll$FireSev>100),]
 
-dim(t1234a)
-names(t1234a)
-head(t1234a)
-t1234a$ldbh2 <- t1234a$ldbh^2
+dim(tAlla)
+names(tAlla)
+head(tAlla)
+tAlla$ldbh2 <- tAlla$ldbh^2
 
 op=par(mfrow=c(1,1))
-plot(Dead.18~ldbh,data=t1234a)
-fitD <- glm(Dead.18~ldbh+ldbh2,data=t1234a,family='binomial')
+plot(Dead.18~ldbh,data=tAlla)
+fitD <- glm(Dead.18~ldbh+ldbh2,data=tAlla,family='binomial')
 fitD
-nd <- data.frame(ldbh=seq(min(t1234a$ldbh,na.rm=T),max(t1234a$ldbh,na.rm=T),length.out=101))
+nd <- data.frame(ldbh=seq(min(tAlla$ldbh,na.rm=T),max(tAlla$ldbh,na.rm=T),length.out=101))
 nd$ldbh2 <- nd$ldbh^2
 head(nd)
 nd$pDead <- predict(fitD,nd,type='response')
 lines(pDead~ldbh,data=nd,lwd=2,col='black')
 
-#plot(Topkill.18~ldbh,data=t1234a)
-fitT <- glm(TopkillLive.18~ldbh+ldbh2,data=t1234a,family='binomial')
+#plot(Topkill.18~ldbh,data=tAlla)
+fitT <- glm(TopkillLive.18~ldbh+ldbh2,data=tAlla,family='binomial')
 fitT
 nd$pTopKill <- predict(fitT,nd,type='response')
 lines(pTopKill~ldbh,data=nd,lwd=2,col='red')
 
-#plot(gCrown.18~ldbh,data=t1234a)
-fitG2 <- glm(gCrown.18~ldbh+ldbh2,data=t1234a,family='binomial')
+#plot(gCrown.18~ldbh,data=tAlla)
+fitG2 <- glm(gCrown.18~ldbh+ldbh2,data=tAlla,family='binomial')
 fitG2
 BIC(fitG2)
-fitG1 <- glm(gCrown.18~ldbh,data=t1234a,family='binomial')
+fitG1 <- glm(gCrown.18~ldbh,data=tAlla,family='binomial')
 fitG1
 BIC(fitG1)
 
@@ -759,95 +729,95 @@ require(nnet)
 allNotNA <- function(x) all(!is.na(x))
 
 # Size only
-rComp <- apply(t1234[,c('ldbh','PFstatus','Species.13','FireSev')],1,allNotNA)
+rComp <- apply(tAll[,c('ldbh','PFstatus','Species.13','FireSev')],1,allNotNA)
 table(rComp)
-t1234a <- t1234[rComp,]
+tAlla <- tAll[rComp,]
 
-fit1 <- multinom(PFstatus ~ ldbh,data=t1234a)
+fit1 <- multinom(PFstatus ~ ldbh,data=tAlla)
 fit1
 head(round(fitted(fit1),2))
 
-plot(t1234a$ldbh,t1234a$Live.18)
-points(t1234a$ldbh,fitted(fit1)[,1],col='red')
-points(t1234a$ldbh,fitted(fit1)[,2],col='gray')
-points(t1234a$ldbh,fitted(fit1)[,3],col='green')
+plot(tAlla$ldbh,tAlla$Live.18)
+points(tAlla$ldbh,fitted(fit1)[,1],col='red')
+points(tAlla$ldbh,fitted(fit1)[,2],col='gray')
+points(tAlla$ldbh,fitted(fit1)[,3],col='green')
 
 
 ##########
-head(t1234)
-dim(t1234)
-t1234$dupStatusCheck <- apply(t1234[,c('Dead.18','TopkillLive.18','gCrown.18')],1,sum,na.rm=T)
-table(t1234$dupStatusCheck)
+head(tAll)
+dim(tAll)
+tAll$dupStatusCheck <- apply(tAll[,c('Dead.18','TopkillLive.18','gCrown.18')],1,sum,na.rm=T)
+table(tAll$dupStatusCheck)
 ## same 2 as above
 
 ###end skip section ###
 
 #### PROVISIONALLY ASSIGN TO THREE CLASSES
-t1234$PFstatus <- (-1)
-t1234$PFstatus[which(t1234$Live.18==0)] <- 0
-t1234$PFstatus[which(t1234$TopkillLive.18==1)] <- 1
-t1234$PFstatus[which(t1234$Topkill.18==0 & t1234$gCrown.18==1)] <- 2
-table(t1234$PFstatus)
+tAll$PFstatus <- (-1)
+tAll$PFstatus[which(tAll$Live.18==0)] <- 0
+tAll$PFstatus[which(tAll$TopkillLive.18==1)] <- 1
+tAll$PFstatus[which(tAll$Topkill.18==0 & tAll$gCrown.18==1)] <- 2
+table(tAll$PFstatus)
 
 # now assign all remaing NAs to dead - TEMP STEP
-t1234$PFstatus[which(t1234$PFstatus==(-1))] <- 0
-table(t1234$PFstatus)
+tAll$PFstatus[which(tAll$PFstatus==(-1))] <- 0
+table(tAll$PFstatus)
 
 ## NOW TRY MULTINOMIAL
 # setup discrete FireSev
-summary(t1234$FireSev)
-t1234$dFS <- cut(t1234$FireSev,breaks = c(-200,35,130,298,1000))
-table(t1234$dFS)
+summary(tAll$FireSev)
+tAll$dFS <- cut(tAll$FireSev,breaks = c(-200,35,130,298,1000))
+table(tAll$dFS)
 
 require(nnet)
 allNotNA <- function(x) all(!is.na(x))
 
 # Size only
-rComp <- apply(t1234[,c('ldbh','PFstatus','Species.13','FireSev')],1,allNotNA)
+rComp <- apply(tAll[,c('ldbh','PFstatus','Species.13','FireSev')],1,allNotNA)
 table(rComp)
-t1234a <- t1234[rComp,]
+tAlla <- tAll[rComp,]
 
-fit1 <- multinom(PFstatus ~ ldbh,data=t1234a)
+fit1 <- multinom(PFstatus ~ ldbh,data=tAlla)
 fit1
 head(round(fitted(fit1),2))
 
-plot(t1234a$ldbh,t1234a$Live.18)
-points(t1234a$ldbh,fitted(fit1)[,1],col='red')
-points(t1234a$ldbh,fitted(fit1)[,2],col='gray')
-points(t1234a$ldbh,fitted(fit1)[,3],col='green')
+plot(tAlla$ldbh,tAlla$Live.18)
+points(tAlla$ldbh,fitted(fit1)[,1],col='red')
+points(tAlla$ldbh,fitted(fit1)[,2],col='gray')
+points(tAlla$ldbh,fitted(fit1)[,3],col='green')
 
 #Size and Fire Sev 
-fit2 <- multinom(PFstatus ~ ldbh + dFS,data=t1234a)
+fit2 <- multinom(PFstatus ~ ldbh + dFS,data=tAlla)
 fit2
 BIC(fit2)
 head(round(fitted(fit2),2))
 
-plot(t1234a$ldbh,t1234a$Live.18)
-points(t1234a$ldbh,fitted(fit2)[,1],col='red')
-points(t1234a$ldbh,fitted(fit2)[,2],col='grey')
-points(t1234a$ldbh,fitted(fit2)[,3],col='green')
+plot(tAlla$ldbh,tAlla$Live.18)
+points(tAlla$ldbh,fitted(fit2)[,1],col='red')
+points(tAlla$ldbh,fitted(fit2)[,2],col='grey')
+points(tAlla$ldbh,fitted(fit2)[,3],col='green')
 
 # Add Species
-fit3 <- multinom(PFstatus ~ ldbh + dFS + Species.13,data=t1234a)
+fit3 <- multinom(PFstatus ~ ldbh + dFS + Species.13,data=tAlla)
 fit3
 BIC(fit3)
 head(round(fitted(fit3),2))
 
-plot(t1234a$ldbh,t1234a$Live.18)
-points(t1234a$ldbh,fitted(fit3)[,1],col='red')
-points(t1234a$ldbh,fitted(fit3)[,2],col='grey')
-points(t1234a$ldbh,fitted(fit3)[,3],col='green')
+plot(tAlla$ldbh,tAlla$Live.18)
+points(tAlla$ldbh,fitted(fit3)[,1],col='red')
+points(tAlla$ldbh,fitted(fit3)[,2],col='grey')
+points(tAlla$ldbh,fitted(fit3)[,3],col='green')
 
 # Add Species * size interaction
-fit3x <- multinom(PFstatus ~ ldbh + dFS + Species.13 + dFS:ldbh,data=t1234a)
+fit3x <- multinom(PFstatus ~ ldbh + dFS + Species.13 + dFS:ldbh,data=tAlla)
 fit3x
 BIC(fit3x)
 head(round(fitted(fit3x),2))
 
-plot(t1234a$ldbh,t1234a$Live.18)
-points(t1234a$ldbh,fitted(fit3x)[,1],col='red')
-points(t1234a$ldbh,fitted(fit3x)[,2],col='black')
-points(t1234a$ldbh,fitted(fit3x)[,3],col='green')
+plot(tAlla$ldbh,tAlla$Live.18)
+points(tAlla$ldbh,fitted(fit3x)[,1],col='red')
+points(tAlla$ldbh,fitted(fit3x)[,2],col='black')
+points(tAlla$ldbh,fitted(fit3x)[,3],col='green')
 
 # COMPARE BIC
 BIC(fit1)
@@ -856,14 +826,14 @@ BIC(fit3)
 BIC(fit3x)
 
 # plot for selected values
-rsel <- which(t1234a$Species.13=='PSEMEN' & as.numeric(t1234a$dFS)>0)
-plot(t1234a$ldbh[rsel],t1234a$PFstatus[rsel])
-points(t1234a$ldbh[rsel],fitted(fit3x)[rsel,1],col='red',pch=19)
-points(t1234a$ldbh[rsel],fitted(fit3x)[rsel,2],col='black',pch=19)
-points(t1234a$ldbh[rsel],fitted(fit3x)[rsel,3],col='green',pch=19)
+rsel <- which(tAlla$Species.13=='PSEMEN' & as.numeric(tAlla$dFS)>0)
+plot(tAlla$ldbh[rsel],tAlla$PFstatus[rsel])
+points(tAlla$ldbh[rsel],fitted(fit3x)[rsel,1],col='red',pch=19)
+points(tAlla$ldbh[rsel],fitted(fit3x)[rsel,2],col='black',pch=19)
+points(tAlla$ldbh[rsel],fitted(fit3x)[rsel,3],col='green',pch=19)
 
 ## logit model and plot
-d=t1234
+d=tAll
 xcn='ldbh'
 ycn='Live.18'
 ## NOT WORKING RIGHT NOW
@@ -877,7 +847,7 @@ logit2Plot <- function(d,xcn,ycn,np=101)
   nd$yPred <- predict(fit,nd)
   lines(nd$dx,nd$yPred)
 }
-logit2Plot(t1234,'ldbh','Live.18')
+logit2Plot(tAll,'ldbh','Live.18')
 
 
 
