@@ -89,6 +89,7 @@ t2 <- all.id[[2]]
 t3 <- all.id[[3]]
 t4 <- all.id[[4]]
 
+names(t1)
 names(t1)[-4] <- paste(names(t1)[-4],'.13',sep='')
 names(t1)
 names(t2)[-4] <- paste(names(t2)[-4],'.18',sep='')
@@ -152,45 +153,46 @@ tAll$UseForBAGrowth[newIndvs] <- F
 #summary(tAll$Basal.Area.18/tAll$Basal.Area.13)
 #abline(0,1,col='red')
 
+## THIS CODE SECTION ANALYZES 2018 FATES ###
 
 # ANALYZE BY SPECIES AND TYPE for 2018 post-fire fates
 (use.species <- spNames$spName)
-fst <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
-head(fst)                  
-tail(fst)
+
+# create fst dataframe - FateSummaryTable
+fst12 <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
+head(fst12)                  
+tail(fst12)
 
 i=5
-for (i in 1:nrow(fst))
+for (i in 1:nrow(fst12))
 {
-  sp <- fst$Species[i]
-  ty <- fst$Type[i]
+  sp <- fst12$Species[i]
+  ty <- fst12$Type[i]
   temp <- tAll[which(tAll$Species.13==sp & tAll$Type.13==ty),]
   
-  fst$N13[i] <- sum(temp$Live.13,na.rm=T)
+  fst12$N13[i] <- sum(temp$Live.13,na.rm=T)
   
-  fst$N18.DN[i] <- sum(temp$DN.18,na.rm = T)
-  fst$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
-  fst$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
-  fst$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
+  ## The next three lines are all equivalent - just using third one
+  #fst12$N18.DN[i] <- length(which(temp$fate.18=='DN'))
+  #fst12$N18.DN[i] <- length(which(temp$DN.18=='1'))
+  fst12$N18.DN[i] <- sum(temp$DN.18,na.rm = T)
+  
+  fst12$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
+  fst12$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
+  fst12$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
   miss <- which(temp$Live.13==1 & is.na(temp$DN.18)==1)
   if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot.13','Num')])
-  fst$nMissing <- fst$N13-(fst$N18.DN+fst$N18.DR+fst$N18.LN+fst$N18.LR)
+  fst12$nMissing <- fst12$N13-(fst12$N18.DN+fst12$N18.DR+fst12$N18.LN+fst12$N18.LR)
 }
 
-head(fst)
-tail(fst)
-sum(fst$nMissing)
+fst12
+head(fst12)
+tail(fst12)
+sum(fst12$nMissing) # 1330 duplicates - ignoring!!
 
-#### CREATE FATE VARIABLE FOR EACH YEAR WITH FOUR STATES
-#### RUN TABLES, SHOWING NAs, OF FATES AGAINST EACH OTHER
-
-
-# ANALYSIS CONTINUES HERE
-
-#### EXPAND ANALYSIS to ALL POST-FIRE FATES
-dim(tAll)
-head(tAll)
-names(tAll)
+# Summary across all species and types
+fate.sum <- apply(fst12[,-c(1:2)],2,sum)
+(fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
@@ -214,6 +216,7 @@ table(tAll$Plot.13)
 # High: >700
 # unburned: 1308, 1309, 1311, 1312, 1327, 1344, 1347
 
+# Create a discrete FireSev variable
 summary(tAll$FireSev)
 hist(tAll$FireSev,breaks=c(-100,0,50,100,150,200,300,400,500,600,700,800,1000))
 fs.breaks <- c(-100,135,430,1000) # Based on Parks et al. 2014, but not using intermediate split at 304
@@ -227,9 +230,16 @@ unburned.plots <- c('PPW1308','PPW1309','PPW1311','PPW1312','PPW1327','PPW1344',
 tAll$fsLevel[which(tAll$Plot.13 %in% unburned.plots)] <- 0
 table(tAll$fsLevel)
 
+# plots experiencing each fire severity level, and how many N13 individuals in each
+table(tAll$Plot.13[which(tAll$fsLevel==0)])
+table(tAll$Plot.13[which(tAll$fsLevel==1)])
+table(tAll$Plot.13[which(tAll$fsLevel==2)])
 table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # Use dbh for largest stem
+nodbh <- which(is.na(tAll$dbh.13))
+length(nodbh)
+head(tAll[nodbh,])
 summary(tAll$dbh.13)
 
 ## USE LOG DBH for analysis

@@ -4,7 +4,7 @@ rm(list=ls())
 
 # read in list of 4 items, each item with the full data file for all trees in a given year
 years <- c(2013,2018,2019,2020)
-all.id <- readRDS('data/allid.Rdata')
+all.id <- readRDS('data/allidb.Rdata')
 
 # these are data files with 'points' (branches) output individually. Not currently being used, and the lines to create these files may be commented out in prepareData
 #all.idb <- readRDS('data/allidb.Rdata')
@@ -149,9 +149,10 @@ table(all.id[[i]]$LN,useNA = 'always')
 table(all.id[[i]]$LR,useNA = 'always')
 
 i=3
-for (i in 1:4) {
+for (i in 2:4) {
   print(table(all.id[[i]][,c('Topkill','gCrown')]))
 }
+
 
 ## SKIP AS ALL DATA CLEAN AS OF 5/23/23
 if (FALSE) {
@@ -166,13 +167,25 @@ if (FALSE) {
   for (i in 2:4) print(table(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)))
   
   # Every tree should be one of these fates
-  i=3
-  all.id[[i]]$Nfate <- apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)
-  table(all.id[[i]]$Nfate)
+  # SUCCESS!! as of 5/31/23
+  for (i in 2:4) {
+    all.id[[i]]$nFates <- apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)
+    print(table(all.id[[i]]$nFates,useNA = 'always'))
+  }
   
-  tfail <- which(all.id[[i]]$Nfate==0)
+  tfail <- which(all.id[[i]]$nFates==0)
   length(tfail)
   head(all.id[[i]][tfail,])
+}
+
+## Create fates variable with DN, DR, LN, LR as states
+for (i in 2:4) {
+  all.id[[i]]$fate <- NA
+  all.id[[i]]$fate[which(all.id[[i]]$DN==1)] <- 'DN'
+  all.id[[i]]$fate[which(all.id[[i]]$DR==1)] <- 'DR'
+  all.id[[i]]$fate[which(all.id[[i]]$LN==1)] <- 'LN'
+  all.id[[i]]$fate[which(all.id[[i]]$LR==1)] <- 'LR'
+  print(table(all.id[[i]]$fate,useNA='always'))
 }
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
