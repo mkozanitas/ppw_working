@@ -248,10 +248,16 @@ tAll$ldbh <- log10(tAll$dbh.13)
 hist(tAll$ldbh)
 tAll$ldbh2 <- tAll$ldbh^2
 
-#### SURVIVAL ANALYSIS
-plot(tAll$ldbh,tAll$Live.18)
+table(tAll$Live.18, tAll$fate.18)
 
-# **** mixing SA and TR - need to work on diameter conversion to get this right ***
+plot(tAll$ldbh,tAll$Live.18)
+which(tAll$Live.18==0&tAll$fate.18=="LN")
+#to see the problematic line
+#tAll[6937,] 
+
+#### SURVIVAL ANALYSIS
+
+
 (N <- length(which(!is.na(tAll$ldbh) & !is.na(tAll$Live.18))))
 fit <- glm(Live.18~ldbh,data=tAll,family='binomial')
 summary(fit)
@@ -278,8 +284,15 @@ spRes
 spN <- table(tAll$Species.13)
 spN[order(spN)]
 
-#(spA <- names(spN)[which(spN>=25)])
-#spA <- spA[-which(spA=='QUEBER')] # drop QUEBER - none died!
+(spA <- names(spN)[which(spN>=25)])
+spA <- spA[-which(spA=='QUEBER')] # drop QUEBER - none died!
+
+## Abundant species only
+#AbSp <- c('AMOCAL','ARBMEN','ARCMAN','FRACAL','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+
+# dropping QUEBER, FRACAL, AMOCAL for now
+AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+length(AbSp)
 
 # use abundant species identified above for ESA
 (spA <- AbSp)

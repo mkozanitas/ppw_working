@@ -164,7 +164,6 @@ if (FALSE) {
     print(table(all.id[[i]][,c('DR','LR')]))
     print(table(all.id[[i]][,c('LN','LR')]))
   }
-  for (i in 2:4) print(table(apply(all.id[[i]][,c('DN','DR','LN','LR')],1,sum)))
   
   # Every tree should be one of these fates
   # SUCCESS!! as of 5/31/23
