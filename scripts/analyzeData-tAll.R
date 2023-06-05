@@ -82,8 +82,9 @@ nrow(allIndv)
 # nrow(t2)
 # t3 <- all.id[[3]][which(all.id[[3]]$Num %in% ps.ok),]
 # nrow(t3)
+## END TREE SELECTION SNIPPET
 
-# COMNMENT OUT IF CODE ABOVE COMMENTED IN
+# MERGE YEARS!!
 t1 <- all.id[[1]]
 t2 <- all.id[[2]]
 t3 <- all.id[[3]]
@@ -98,8 +99,6 @@ names(t3)[-4] <- paste(names(t3)[-4],'.19',sep='')
 names(t3)
 names(t4)[-4] <- paste(names(t4)[-4],'.20',sep='')
 names(t4)
-## END TREE SELECTION SNIPPET
-
 
 # And merge!
 t12 <- merge(t1,t2,by = 'Num',all = T)
@@ -191,6 +190,12 @@ tail(fst12)
 sum(fst12$nMissing) # 1330 duplicates - ignoring!!
 
 # Summary across all species and types
+tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
+(tree.sum-tree.sum[6])/(tree.sum[1]-tree.sum[6])
+
+sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
+(sap.sum-sap.sum[6])/(sap.sum[1]-sap.sum[6])
+
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
@@ -252,12 +257,9 @@ table(tAll$Live.18, tAll$fate.18)
 
 plot(tAll$ldbh,tAll$Live.18)
 which(tAll$Live.18==0&tAll$fate.18=="LN")
-#to see the problematic line
-#tAll[6937,] 
+# all clear
 
 #### SURVIVAL ANALYSIS
-
-
 (N <- length(which(!is.na(tAll$ldbh) & !is.na(tAll$Live.18))))
 fit <- glm(Live.18~ldbh,data=tAll,family='binomial')
 summary(fit)
@@ -268,6 +270,7 @@ head(nd)
 nd$pSurvAll <- predict(fit,newdata=nd,type='response')
 head(nd)
 
+range(tAll$ldbh,na.rm=T)
 plot(tAll$ldbh,tAll$Live.18)
 lines(nd$ldbh,nd$pSurvAll,lwd=4)
 #abline(h=0.5,lty=2) 
@@ -275,7 +278,7 @@ lines(nd$ldbh,nd$pSurvAll,lwd=4)
 
 #what is critical basal area to achieve 50% survival?
 (ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]])
-abline(v=log10(2),lty=2)
+abline(v=ld50,lty=2)
 
 (spRes <- data.frame(species='All',N=N,ld50=ld50,slp=fit$coefficients[2]))
 spRes
@@ -321,12 +324,14 @@ spRes$ld50 <- round(as.numeric(spRes$ld50),3)
 spRes$slp <- round(as.numeric(spRes$slp),3)
 spRes
 
-plotSP <- function(tAll,species=NULL)
+plotSP <- function(tAll,species=NULL,xlims=range(tAll$ldbh,na.rm=T))
 {
   tmp <- tAll[which(tAll$Species.13==species),]
-  plot(tmp$ldbh,tmp$Live.18)
+  mindbh <- min(tmp$ldbh,na.rm=T)
+  maxdbh <- max(tmp$ldbh,na.rm=T)
+  plot(tmp$ldbh,tmp$Live.18,main=species,xlim=xlims)
   fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
-  nd <- with(tAll,data.frame(ldbh=seq(-0.5,2,length.out=1001)))
+  nd <- with(tAll,data.frame(ldbh=seq(mindbh,maxdbh,length.out=1001)))
   pval <- predict(fit,newdata=nd,type='response')
   lines(nd$ldbh,pval)  
 }
@@ -368,7 +373,8 @@ nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR"
 
 
 # with shrubs
-barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[1])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[1],' cm dbh'))
+selSize <- 3
+barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
 
 # remove shrubs for larger sizes cm plot
 # op=par will stack 3 figures (1,3) for horizontal & (3,1) for vertical
