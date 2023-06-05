@@ -188,14 +188,17 @@ for (i in 2:4) {
 }
 
 # check that our previous combined fates align with these new ones
+for (i in 2:4) print(table(all.id[[i]]$Live,all.id[[i]]$fate,useNA='always'))
+
+for (i in 2:4) print(table(all.id[[i]]$gCrown,all.id[[i]]$fate,useNA='always'))
+
+for (i in 2:4) print(table(all.id[[i]]$Topkill,all.id[[i]]$fate,useNA='always'))
+
 for (i in 2:4) {
-  print(table(all.id[[i]]$Live,all.id[[i]]$fate,useNA='always'))
-  print(table(all.id[[i]]$gCrown,all.id[[i]]$fate,useNA='always'))
-  print(table(all.id[[i]]$Topkill,all.id[[i]]$fate,useNA='always'))
-  all.id[[i]]$resprout <- NA
-  all.id[[i]]$resprout[which(all.id[[i]]$fate %in% c('DR','LR'))] <- 1
-  all.id[[i]]$resprout[which(all.id[[i]]$fate %in% c('DN','LN'))] <- 0
-  print(table(all.id[[i]]$resprout,all.id[[i]]$fate,useNA='always'))
+  all.id[[i]]$Resprout <- NA
+  all.id[[i]]$Resprout[which(all.id[[i]]$fate %in% c('DR','LR'))] <- 1
+  all.id[[i]]$Resprout[which(all.id[[i]]$fate %in% c('DN','LN'))] <- 0
+  print(table(all.id[[i]]$Resprout,all.id[[i]]$fate,useNA='always'))
 }
 
 # a few more problem plants!
