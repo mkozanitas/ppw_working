@@ -197,7 +197,8 @@ tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
 sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
 (sap.sum-sap.sum[6])/(sap.sum[1]-sap.sum[6])
 
-#ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum)
+# NaN errors?
+#ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum,na.rm=T)
 #(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
 
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
@@ -576,6 +577,7 @@ for (i in 1:length(FireLevel.vals)) {
 
 #changed TB.18 to DR.18 from here on... i think thats right bc TB meant topkilled with basal 
 
+tAll$Dead.18 <- 1 - tAll$Live.18
 names(tAll)
 table(tAll$Dead.18)
 table(tAll$Live.18)
@@ -610,9 +612,10 @@ spA
 
 # pick one of these!
 selSpecies <- spA # use spA for all abundant species, rather than one species
-FireLevels <- c('Mod+High')
-#FireLevels <- c('ANY LEVEL') #then change range in line below c(1:3)
-tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% c(2:3)),] #individual species?
+# comment in or out next two lines
+FireLevels <- c('Mod+High'); FVals <- 2:3
+#FireLevels <- c('ANY LEVEL'); FVals <- 1:3 #then change range in line below c(1:3)
+tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% FVals),] #individual species?
 {
   #tAllsp <- tAll[which(tAll$Species.13 %in% spA),] #abundant species?
   #tAllsp <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel>1),] #abundant sp with fs level of 1 or more?
