@@ -190,6 +190,9 @@ head(fst12)
 tail(fst12)
 sum(fst12$nMissing) # 1330 duplicates - ignoring!!
 
+#almost working to generate % in each categoty per species and type
+#cbind(fst12[,1:2],fst12[,3:7]/fst12[,3])[which(fst12$Type=='TR'&is.finite(fst12[,3])),]
+
 # Summary across all species and types
 tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
 (tree.sum-tree.sum[6])/(tree.sum[1]-tree.sum[6])
@@ -357,7 +360,7 @@ tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(2:3)),]
 
 # assign dependent variable to rVar
 names(tAlls)
-selVar <- 'Live.18'
+selVar <- 'gCrown.18'
 tAlls$rVar <- tAlls[,selVar]
 
 (N <- length(which(!is.na(tAlls$ldbh) & !is.na(tAlls$rVar))))
@@ -367,7 +370,7 @@ fit <- glm(rVar~ldbh + ldbh2 + Species.13,data=tAlls,family='binomial')
 summary(fit)
 
 summary(tAlls$ldbh)
-#choose sizes here at which predicted values will be calculated
+#choose sizes here at which predicted values will be calculated, can change size 1 to 2cm and rerun
 predSizes <- c(10,30,80)
 nd <- with(tAlls,data.frame(ldbh=rep(log10(predSizes),length(spA)),Species.13=rep(spA,each=length(predSizes))))
 nd$ldbh2 <- nd$ldbh^2
@@ -378,7 +381,7 @@ nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR"
 
 
 # with shrubs
-selSize <- 3
+selSize <- 1 #change size 1 above from 10cm to 2cm in order to look at shrubs
 barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
 
 # remove shrubs for larger sizes cm plot
@@ -615,7 +618,7 @@ spA
 selSpecies <- spA # use spA for all abundant species, rather than one species
 # comment in or out next two lines
 FireLevels <- c('Mod+High'); FVals <- 2:3
-#FireLevels <- c('ANY LEVEL'); FVals <- 1:3 #then change range in line below c(1:3)
+#FireLevels <- c('ANY LEVEL'); FVals <- 1:3 #changes FireSev range to all c(1:3)
 tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% FVals),] #individual species?
 {
   #tAllsp <- tAll[which(tAll$Species.13 %in% spA),] #abundant species?
@@ -654,7 +657,7 @@ tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% FVal
   #lines(nd$ldbh,nd$pGCrown)
   
   #plot all three (change main from selSpecies to ".." to alter main title)
-  plot(tAllsp$ldbh,tAllsp$PFsPlotVals,col=tAllsp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=tAllldbh.range,main=paste("Allsp",FireLevels))
+  plot(tAllsp$ldbh,tAllsp$PFsPlotVals,col=tAllsp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=tAllldbh.range,main=paste("ALL_SP",FireLevels))
   points(tAllsp$ldbh,rep(-0.05,length(tAllsp$ldbh)))
   lines(nd$ldbh,nd$pGCrown,col='green')
   lines(nd$ldbh,nd$pDR,col='red')
@@ -667,6 +670,7 @@ tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% FVal
 
 #reset plotting window with one panel
 par(mfrow=c(1,1))
+
 # NOW FIT MULTINOMIAL
 require(nnet)
 
