@@ -159,6 +159,7 @@ tAll$UseForBAGrowth[newIndvs] <- F
 
 # create fst dataframe - FateSummaryTable
 fst12 <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
+#fst12 <- data.frame(Species=rep(use.species,each=3),Type=rep(c('SA','TR','TS'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
 head(fst12)                  
 tail(fst12)
 
@@ -195,6 +196,9 @@ tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
 
 sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
 (sap.sum-sap.sum[6])/(sap.sum[1]-sap.sum[6])
+
+#ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum)
+#(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
 
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
@@ -570,17 +574,19 @@ for (i in 1:length(FireLevel.vals)) {
 }
 ## END RECODE HERE ##
 
+#changed TB.18 to DR.18 from here on... i think thats right bc TB meant topkilled with basal 
+
 names(tAll)
 table(tAll$Dead.18)
 table(tAll$Live.18)
-table(tAll$TB)
+table(tAll$DR.18)
 table(tAll$gCrown.18)
-table(tAll$Live.18,tAll$TB.18)
+table(tAll$Live.18,tAll$DR.18)
 table(tAll$Live.18,tAll$gCrown.18)
 
 tAll$PFstatus.18 <- (-1)
 tAll$PFstatus.18[which(tAll$Live.18==0)] <- 0
-tAll$PFstatus.18[which(tAll$TB.18==1)] <- 1
+tAll$PFstatus.18[which(tAll$DR.18==1)] <- 1
 tAll$PFstatus.18[which(tAll$gCrown.18==1)] <- 2
 table(tAll$PFstatus.18)
 
@@ -603,7 +609,7 @@ spArows <- which(tAll$Species.13 %in% spA)
 spA
 
 # pick one of these!
-selSpecies <- spA # use spA for all abundant species, rather than one
+selSpecies <- spA # use spA for all abundant species, rather than one species
 FireLevels <- c('Mod+High')
 #FireLevels <- c('ANY LEVEL') #then change range in line below c(1:3)
 tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% c(2:3)),] #individual species?
@@ -630,9 +636,9 @@ tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% c(2:
   
   #TOPKILL WITH RESPROUT
   #plot(tAllsp$ldbh,tAllsp$TB,xlim=tAllldbh.range)
-  fit <- glm(TB~ldbh+ldbh2 ,data=tAllsp,family='binomial')
+  fit <- glm(DR.18~ldbh+ldbh2 ,data=tAllsp,family='binomial')
   summary(fit)
-  nd$pTB <- predict(fit,newdata=nd,type='response')
+  nd$pDR <- predict(fit,newdata=nd,type='response')
   #lines(nd$ldbh,nd$pTB)
   
   #GREEN CROWN
@@ -647,11 +653,11 @@ tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% c(2:
   plot(tAllsp$ldbh,tAllsp$PFsPlotVals,col=tAllsp$PFsPlotCols,pch=19,ylim=c(-0.05,1.05),xlim=tAllldbh.range,main=paste("Allsp",FireLevels))
   points(tAllsp$ldbh,rep(-0.05,length(tAllsp$ldbh)))
   lines(nd$ldbh,nd$pGCrown,col='green')
-  lines(nd$ldbh,nd$pTB,col='red')
+  lines(nd$ldbh,nd$pDR,col='red')
   lines(nd$ldbh,nd$pMortality)
   
   # does the sum of the three binomials for these three exclusive fates sum to 1?
-  nd$pTOT <- apply(nd[,c('pGCrown','pTB','pMortality')],1,sum)
+  nd$pTOT <- apply(nd[,c('pGCrown','pDR','pMortality')],1,sum)
   summary(nd$pTOT)
 }
 
@@ -661,7 +667,7 @@ par(mfrow=c(1,1))
 require(nnet)
 
 # MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ldbh2' - changes results some
-fit1 <- multinom(as.factor(PFstatus) ~ ldbh +ldbh2, data=tAllsp)
+fit1 <- multinom(as.factor(PFstatus.18) ~ ldbh +ldbh2, data=tAllsp)
 fit1
 head(round(fitted(fit1),2))
 dim(fitted(fit1))
