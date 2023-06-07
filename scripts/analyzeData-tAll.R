@@ -590,7 +590,8 @@ tAll$PFstatus.18 <- (-1)
 tAll$PFstatus.18[which(tAll$Live.18==0)] <- 0
 tAll$PFstatus.18[which(tAll$DR.18==1)] <- 1
 tAll$PFstatus.18[which(tAll$gCrown.18==1)] <- 2
-table(tAll$PFstatus.18)
+table(tAll$PFstatus.18) 
+#this table totals 6945 out of total 6946 trees, why is one indv missing??
 
 
 (PFstatusLevels <- 0:2)
