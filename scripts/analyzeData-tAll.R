@@ -358,6 +358,7 @@ plotSP(tAll,'UMBCAL')
 ## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in model-change back to c(0:3 to expand to all fslevels) to generate curves
 tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(2:3)),]
 
+
 # assign dependent variable to rVar
 names(tAlls)
 selVar <- 'gCrown.18'
