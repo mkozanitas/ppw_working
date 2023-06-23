@@ -192,6 +192,7 @@ hist(tAll$absddbh.1318)
 tail(sort(tAll$absddbh.1318))
 
 write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquestions.csv')
+
 ## END CREATE PROXY 2103 Data for new trees encountered post-fire, including new plots
 
 ## THIS CODE SECTION ANALYZES 2018 FATES ###
