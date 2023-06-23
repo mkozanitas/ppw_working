@@ -31,40 +31,44 @@ bd[rm1,]
 rm2 <- which(bd$DBH.cm<10 & bd$SA.BD.cm>15)
 bd[rm2,]
 
+rm3 <- which(bd$Type=='SA')
+bd[rm3,]
+
 plot(lDBH~lSABD,data=bd)
 points(lDBH~lSABD,data=bd[rm1,],pch=19)
 points(lDBH~lSABD,data=bd[rm2,],pch=19)
+points(lDBH~lSABD,data=bd[rm3,],pch=19)
 
 # new data frame with those 13 points removed
-bd2 <- bd[!1:nrow(bd) %in% c(rm1,rm2),]
+bd2 <- bd[!1:nrow(bd) %in% c(rm1,rm2,rm3),]
 dim(bd)
 dim(bd2)
 
 # plot log data again
 plot(lDBH~lSABD,data=bd2,log='',xlim=c(-1,2),ylim=c(-1,2))
-fit <- lm(lDBH~lSABD,data=bd)
+fit <- lm(lDBH~lSABD,data=bd2)
 abline(0,1,lty=2)
 abline(h=0,lty=2)
 abline(fit)
+fit
 
 #linear data
 plot(DBH.cm~SA.BD.cm,data=bd2,log='')
-fit <- lm(DBH.cm~SA.BD.cm,data=bd)
+fit.all <- lm(DBH.cm~SA.BD.cm,data=bd)
 abline(0,1,lty=2)
-abline(fit)
+abline(fit.all,col='red')
 
 #linear data focusing on points near 0
-plot(DBH.cm~SA.BD.cm,data=bd2,log=''
-,xlim=c(0,5),ylim=c(0,5))
-fit <- lm(DBH.cm~SA.BD.cm,data=bd)
-fit
+plot(DBH.cm~SA.BD.cm,data=bd2,log='',xlim=c(0,5),ylim=c(0,5))
+abline(fit.all,col='red')
+fit.5 <- lm(DBH.cm~SA.BD.cm,data=bd2[which(bd2$SA.BD.cm<=5),])
 abline(0,1,lty=2)
 abline(h=1,lty=2)
-abline(fit)
+abline(fit.5)
 
-# log regression is better in terms of the distribution of points. But by definition logs can't go to zero. In contrast, for this data set, DBH  really does go to zero for saplings with height < 1.5m, so I think linear is better. So we would use the equation above (fit) to convert linear sapling basal area to dbh.
-fit
-# DBH = SA.BD * 0.64426 - 0.06439
+# log regression is better in terms of the distribution of points. But by definition logs can't go to zero. In contrast, for this data set, DBH really does go to zero for saplings with height < 1.5m, so I think linear is better. So we would use the equation above (fit) to convert linear sapling basal area to dbh.4
+fit.all
+# DBH = SA.BD * 0.8331 - 0.6582
 
 #Looking at the slope, you can see the regression almost converges on 0, so we're not going to get dbh<0 (which would be hard to explain).
 

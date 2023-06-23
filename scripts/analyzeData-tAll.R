@@ -23,21 +23,24 @@ all.id <- readRDS('data/allid-nodups.Rdata')
 str(all.id)
 length(all.id)
 head(all.id[[1]])
+head(all.id[[1]][all.id[[1]]$Type=='SA',])
 
 # how many trees have BD but not DBH
 nodbh <- which(!is.na(all.id[[2]]$SA.BD_cm) & is.na(all.id[[2]]$DBH_cm))
 table(all.id[[2]]$Type[nodbh])
 length(nodbh)
 
-## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression; regression calculated in script: 
+## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression; regression calculated in script: DBH-SADB.R
 i=1
 for (i in 1:length(all.id)) {
   SArows <- which(all.id[[i]]$Type=='SA')
-  all.id[[i]]$BD <- NA
-  all.id[[i]]$BD[SArows] <- all.id[[i]]$dbh[SArows]
+  # seems we created 'BD' to save dbhs before adjusting; but this is already in 'SA.BD_cm'
+  # all.id[[i]]$BD <- NA
+  # all.id[[i]]$BD[SArows] <- all.id[[i]]$dbh[SArows]
   print(tail(sort(all.id[[i]]$dbh[SArows])))
   sdbh <- all.id[[i]]$dbh[SArows]
-  sdbh <- sdbh * 0.64426 - 0.06439
+  # DBH = SA.BD * 0.8331 - 0.6582
+  sdbh <- sdbh * 0.8331 - 0.6582
   all.id[[i]]$dbh[SArows] <- sdbh
 }
 
@@ -46,10 +49,10 @@ head(all.id[[1]])
 sap13 <- all.id[[1]]
 sap13 <- sap13[which(sap13$Type=='SA'),]
 dim(sap13)
-hist(sap13$dbh,xlim=c(0,5),breaks=c(0,1,2,3,4,5,1000))
+hist(sap13$dbh)
 summary(sap13$dbh)
 sort(sap13$dbh[which(sap13$dbh>1)])
-plot(sap13$BD,sap13$dbh,log='xy')
+plot(sap13$SA.BD_cm,sap13$dbh,log='')
 sap13[which(sap13$dbh>3),]
 abline(0,1)
 # end examine basal diameter
@@ -131,51 +134,65 @@ rm('t123')
 table(tAll$Plot.13)
 table(tAll$Plot.18)
 
+
 # three subsets of new individuals
 # newIndvs: new recruits, and recruited and dead, and newplots
 newIndvs <- which(is.na(tAll$Plot.13))
 length(newIndvs)
+table(tAll$Type.18[newIndvs])
+
 # newly recruited and dead; subset of newIndvs
 n99 <- which(tAll$Num>99000)
 length(n99)
+table(tAll$Type.18[n99])
+
 # new plots; subset of newIndvs
 newPlot <- which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))
 length(newPlot)
+table(tAll$Type.18[newPlot])
+
+# New Trees - either not measured in 2013 or new recruits (or other error?)
+newTrees <- which(!tAll$Num %in% tAll$Num[n99] & !tAll$Num %in% tAll$Num[newPlot] & tAll$Type.18=='TR' & is.na(tAll$Plot.13) & tAll$Num %% 1==0)
+length(newTrees)
+sort(tAll$Num[newTrees])
+#tAll[newTrees[15],]
+# looks like 12 trees with Num < 5500 that were tagged and no data collected in 2013 - then there are a few new trees that may have recruited from <sapling to tree stage
 
 length(intersect(newIndvs,n99))
 length(intersect(newIndvs,newPlot))
 length(intersect(n99,newPlot))
 
-summary(tAll$Basal.Area.18[newPlot])
-summary(tAll$Basal.Area.18[n99])
+summary(tAll$dbh.18[newPlot])
+summary(tAll$dbh.18[n99])
 
-tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
+# Now start filling in 2013 data from later data, for completeness
+tAll$Plot.13[newPlot] <- tAll$Plot.18[newPlot]
+tAll$Quad.13[newPlot] <- tAll$Quad.18[newPlot]
+tAll$Species.13[newPlot] <- tAll$Species.18[newPlot]
 
-# SEARCH AND REPLACE FROM HERE
-tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
-tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
-tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
-
-# Analyze growth from 13 to 18, so we can back estimate 2013 BA for newly added, 2018 trees
-#plot(tAll$Basal.Area.13[tAll$UseForBAGrowth],tAll$Basal.Area.18[tAll$UseForBAGrowth],log='xy')
-#summary(tAll$Basal.Area.18/tAll$Basal.Area.13)
-#abline(0,1,col='red')
-
-
-# This introduces inaccuracies because 2018 basal areas reflect 5 more years of growth
-tAll$Basal.Area.13[newIndvs] <- tAll$Basal.Area.18[newIndvs]
-tAll$dbh.13[newIndvs] <- tAll$dbh.18[newIndvs]
-tAll$Dead.13[newIndvs] <- 0
-tAll$Live.13[newIndvs] <- 1
-tAll$gCrown.13[newIndvs] <- 1
+tAll$Dead.13[newPlot] <- 0
+tAll$Live.13[newPlot] <- 1
+tAll$gCrown.13[newPlot] <- 1
 
 # ignore these individuals for basal area growth
 tAll$UseForBAGrowth <- T
 tAll$UseForBAGrowth[newIndvs] <- F
 
+# initial growth analysis to identify potentially problematic size data
+# suggest taking median eliminating most negative and very large outliers. Suggests median diameter growth of 0.2 cm in five years
+tAll$ddbh.1318 <- tAll$dbh.18-tAll$dbh.13
+hist(tAll$ddbh.1318)
+summary(tAll$ddbh.1318)
+
+plot(tAll$dbh.13,tAll$ddbh.1318)
+abline(h=0)
+
+tAll$absddbh.1318 <- abs(tAll$ddbh.1318)
+hist(tAll$absddbh.1318)
+tail(sort(tAll$absddbh.1318))
+
+write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquestions.csv')
 ## END CREATE PROXY 2103 Data for new trees encountered post-fire, including new plots
-
-
 
 ## THIS CODE SECTION ANALYZES 2018 FATES ###
 
