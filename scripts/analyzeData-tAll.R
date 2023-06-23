@@ -188,12 +188,9 @@ for (i in 1:nrow(fst12))
 fst12
 head(fst12)
 tail(fst12)
-sum(fst12$nMissing) # 1330 duplicates - ignoring!!
+sum(fst12$nMissing) #fixed 1330 dups we were previously ignoring- should now be zero
 
-#almost working to generate % in each categoty per species and type
-#cbind(fst12[,1:2],fst12[,3:7]/fst12[,3])[which(fst12$Type=='TR'&is.finite(fst12[,3])),]
-
-# Summary across all species and types
+# Summary across all species and types #GHYTIGYFYGIGH - all categories at once in a table 
 tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
 (tree.sum-tree.sum[6])/(tree.sum[1]-tree.sum[6])
 
@@ -206,6 +203,36 @@ sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
 
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
+
+#almost working to generate % in each category per species and type
+#cbind(fst12[,1:2],fst12[,3:7]/fst12[,3])[which(fst12$Type=='TR'&is.finite(fst12[,3])),]
+
+#GHYTIGYFYGIGH - same as above but just for one category at a time (DN/DR/LR/LN)
+
+SArows <- which(fst12$Type=='SA')
+TRrows <- which(fst12$Type=='TR')
+#TSrows <- which(fst12$Type=='TS') 
+
+sum(fst12$N13)
+sum(fst12$N18.DN)
+sum(fst12$N18.DN)/sum(fst12$N13)
+sum(fst12$N18.DN[SArows])/sum(fst12$N13[SArows])
+sum(fst12$N18.DN[TRrows])/sum(fst12$N13[TRrows])
+#sum(fst12$N18.DN[TSrows])/sum(fst12$N13[TSrows]) #gives NaN error
+
+fst12$percSurv <- 1 - fst12$N18.DN/fst12$N13
+fst12$percSurv[fst12$N13==0] <- NA
+
+#copied AbSp code from below to calculate percSurv of each species in each category
+
+AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+length(AbSp)
+fst12a <- fst12[which(fst12$Species %in% AbSp),]
+
+fst12a[fst12a$Type=='TR',][order(fst12a$percSurv[fst12a$Type=='TR']),]
+fst12a[fst12a$Type=='SA',][order(fst12a$percSurv[fst12a$Type=='SA']),]
+#fst12a[fst12a$Type=='TS',][order(fst12a$percSurv[fst12a$Type=='TS']),]
+
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
@@ -359,7 +386,7 @@ plotSP(tAll,'UMBCAL')
 tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(2:3)),]
 
 
-# assign dependent variable to rVar
+# assign dependent variable to rVar # can switch between Live.18 and gCrown.18 to generate figures
 names(tAlls)
 selVar <- 'gCrown.18'
 tAlls$rVar <- tAlls[,selVar]
@@ -377,7 +404,7 @@ nd <- with(tAlls,data.frame(ldbh=rep(log10(predSizes),length(spA)),Species.13=re
 nd$ldbh2 <- nd$ldbh^2
 nd
 nd$pValue <- round(predict(fit,newdata=nd,type='response'),4)
-#- then use Sp.names instead of Species.13- below to reorder for barplot
+#- can use Sp.names instead of Species.13- below to reorder for barplot
 nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR", "gUMBCAL", "hHETARB", "iQUEAGR")
 
 
