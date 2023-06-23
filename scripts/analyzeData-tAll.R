@@ -24,7 +24,12 @@ str(all.id)
 length(all.id)
 head(all.id[[1]])
 
-## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression
+# how many trees have BD but not DBH
+nodbh <- which(!is.na(all.id[[2]]$SA.BD_cm) & is.na(all.id[[2]]$DBH_cm))
+table(all.id[[2]]$Type[nodbh])
+length(nodbh)
+
+## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression; regression calculated in script: 
 i=1
 for (i in 1:length(all.id)) {
   SArows <- which(all.id[[i]]$Type=='SA')
@@ -123,8 +128,26 @@ rm('t123')
 
 # create 'proxy 2013 data'
 # rownums for new 2018 individuals from new plots
+table(tAll$Plot.13)
+table(tAll$Plot.18)
+
+# three subsets of new individuals
+# newIndvs: new recruits, and recruited and dead, and newplots
 newIndvs <- which(is.na(tAll$Plot.13))
 length(newIndvs)
+# newly recruited and dead; subset of newIndvs
+n99 <- which(tAll$Num>99000)
+length(n99)
+# new plots; subset of newIndvs
+newPlot <- which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))
+length(newPlot)
+
+length(intersect(newIndvs,n99))
+length(intersect(newIndvs,newPlot))
+length(intersect(n99,newPlot))
+
+summary(tAll$Basal.Area.18[newPlot])
+summary(tAll$Basal.Area.18[n99])
 
 tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
 
@@ -132,6 +155,12 @@ tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
 tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
 tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
 tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
+
+# Analyze growth from 13 to 18, so we can back estimate 2013 BA for newly added, 2018 trees
+#plot(tAll$Basal.Area.13[tAll$UseForBAGrowth],tAll$Basal.Area.18[tAll$UseForBAGrowth],log='xy')
+#summary(tAll$Basal.Area.18/tAll$Basal.Area.13)
+#abline(0,1,col='red')
+
 
 # This introduces inaccuracies because 2018 basal areas reflect 5 more years of growth
 tAll$Basal.Area.13[newIndvs] <- tAll$Basal.Area.18[newIndvs]
@@ -147,10 +176,6 @@ tAll$UseForBAGrowth[newIndvs] <- F
 ## END CREATE PROXY 2103 Data for new trees encountered post-fire, including new plots
 
 
-## quick look, out of curiosity, for basal area growth
-#plot(tAll$Basal.Area.13[tAll$UseForBAGrowth],tAll$Basal.Area.18[tAll$UseForBAGrowth],log='xy')
-#summary(tAll$Basal.Area.18/tAll$Basal.Area.13)
-#abline(0,1,col='red')
 
 ## THIS CODE SECTION ANALYZES 2018 FATES ###
 
