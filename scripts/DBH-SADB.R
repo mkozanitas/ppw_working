@@ -39,7 +39,7 @@ points(lDBH~lSABD,data=bd[rm1,],pch=19)
 points(lDBH~lSABD,data=bd[rm2,],pch=19)
 points(lDBH~lSABD,data=bd[rm3,],pch=19)
 
-# new data frame with those 13 points removed
+# new data frame with 4 points removed ( was 13 before fixes to csv's) These 4 are correctly entered from scan and taper from BD to DBH- dropping them
 bd2 <- bd[!1:nrow(bd) %in% c(rm1,rm2,rm3),]
 dim(bd)
 dim(bd2)
@@ -69,6 +69,9 @@ abline(fit.5)
 # log regression is better in terms of the distribution of points. But by definition logs can't go to zero. In contrast, for this data set, DBH really does go to zero for saplings with height < 1.5m, so I think linear is better. So we would use the equation above (fit) to convert linear sapling basal area to dbh.4
 fit.all
 # DBH = SA.BD * 0.8331 - 0.6582
+
+#new equations after MK fixed CSVs
+# DBH = SA.BD * 0.8371 - 0.8269 (subtracting the intercept)
 
 #Looking at the slope, you can see the regression almost converges on 0, so we're not going to get dbh<0 (which would be hard to explain).
 

@@ -42,6 +42,9 @@ for (i in 1:length(all.id)) {
   # DBH = SA.BD * 0.8331 - 0.6582
   sdbh <- sdbh * 0.8331 - 0.6582
   all.id[[i]]$dbh[SArows] <- sdbh
+  
+  #new equations after MK fixed CSVs
+  # DBH = SA.BD * 0.8371 - 0.8269 (subtract the intercept right?)
 }
 
 # Examine basal diameter of SAs
