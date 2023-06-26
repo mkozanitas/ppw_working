@@ -31,34 +31,41 @@ table(all.id[[2]]$Type[nodbh])
 length(nodbh)
 
 ## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression; regression calculated in script: DBH-SADB.R
-i=1
-for (i in 1:length(all.id)) {
-  SArows <- which(all.id[[i]]$Type=='SA')
-  # seems we created 'BD' to save dbhs before adjusting; but this is already in 'SA.BD_cm'
-  # all.id[[i]]$BD <- NA
-  # all.id[[i]]$BD[SArows] <- all.id[[i]]$dbh[SArows]
-  print(tail(sort(all.id[[i]]$dbh[SArows])))
-  sdbh <- all.id[[i]]$dbh[SArows]
-  # DBH = SA.BD * 0.8331 - 0.6582
-  sdbh <- sdbh * 0.8331 - 0.6582
-  all.id[[i]]$dbh[SArows] <- sdbh
+## COMMENTED OUT FOR NOW, SEPARATING ANALYSES BY SA and TR
+if (FALSE) {
+  i=1
+  for (i in 1:length(all.id)) {
+    SArows <- which(all.id[[i]]$Type=='SA')
+    # seems we created 'BD' to save dbhs before adjusting; but this is already in 'SA.BD_cm'
+    # all.id[[i]]$BD <- NA
+    # all.id[[i]]$BD[SArows] <- all.id[[i]]$dbh[SArows]
+    print(tail(sort(all.id[[i]]$dbh[SArows])))
+    sdbh <- all.id[[i]]$dbh[SArows]
+    #sdbh <- sdbh * 0.8371 - 0.8269
+    all.id[[i]]$dbh[SArows] <- sdbh
+    
+    #new equations after MK fixed CSVs- now w/ 4 oddballs removed
+    # DBH = SA.BD * 0.8371 - 0.8269 (subtract the intercept)
+  }
   
-  #new equations after MK fixed CSVs
-  # DBH = SA.BD * 0.8371 - 0.8269 (subtract the intercept right?)
+  # Examine basal diameter of SAs
+  head(all.id[[1]])
+  sap13 <- all.id[[1]]
+  sap13 <- sap13[which(sap13$Type=='SA'),]
+  dim(sap13)
+  hist(sap13$dbh)
+  summary(sap13$dbh)
+  length(which(sap13$dbh<0.01))
+  nrow(sap13)
+  hist(sap13$SA.Height_cm)
+  plot(sap13$dbh,sap13$SA.Height_cm,xlim=c(-1,2))
+  
+  sort(sap13$dbh[which(sap13$dbh>1)])
+  plot(sap13$SA.BD_cm,sap13$dbh,log='')
+  sap13[which(sap13$dbh>3),]
+  abline(0,1)
+  # end examine basal diameter
 }
-
-# Examine basal diameter of SAs
-head(all.id[[1]])
-sap13 <- all.id[[1]]
-sap13 <- sap13[which(sap13$Type=='SA'),]
-dim(sap13)
-hist(sap13$dbh)
-summary(sap13$dbh)
-sort(sap13$dbh[which(sap13$dbh>1)])
-plot(sap13$SA.BD_cm,sap13$dbh,log='')
-sap13[which(sap13$dbh>3),]
-abline(0,1)
-# end examine basal diameter
 
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
@@ -328,15 +335,34 @@ length(nodbh)
 head(tAll[nodbh,])
 summary(tAll$dbh.13)
 
-## USE LOG DBH for analysis
-hist(tAll$dbh.13)
-tAll$ldbh <- log10(tAll$dbh.13)
-hist(tAll$ldbh)
+## USE LOG DBH for analysis - remember SA is basal and TR is dbh
+hist(tAll$dbh.18)
+tAll$ldbh.18 <- log10(tAll$dbh.18)
+tAll$ldbh.18[which(!is.finite(tAll$ldbh.18))] <- NA
+
+hist(tAll$ldbh.18[tAll$Type.18=='SA'])
+hist(tAll$ldbh.18[tAll$Type.18=='TR'])
+
+types <- c('SA','TR')
+for (i in 1:2) print(hist(tAll$ldbh.18[tAll$Type.18==types[i]]))
+
+summary(tAll$ldbh.18)
+dim(tAll)
+
 tAll$ldbh2 <- tAll$ldbh^2
 
 table(tAll$Live.18, tAll$fate.18)
 
-plot(tAll$ldbh,tAll$Live.18)
+plot(tAll$adj.ldbh.18,tAll$Live.18)
+plot(tAll$dbh.18,tAll$Live.18)
+
+# now try saplings and trees separately
+plot(Live.18~ldbh,data=tAll[tAll$Type.18=='TR',])
+plot(Live.18~SA.BD_cm.18,data=tAll[tAll$Type.18=='SA',])
+
+
+
+
 which(tAll$Live.18==0&tAll$fate.18=="LN")
 # all clear
 
