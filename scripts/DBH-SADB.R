@@ -1,5 +1,5 @@
 # file.choose gives you mac OPEN dialog to choose file
-bd <- read.csv('data/BDtoDBH.csv')
+bd <- read.csv('input_data/BDtoDBH.csv')
 dim(bd)
 head(bd)
 names(bd)
