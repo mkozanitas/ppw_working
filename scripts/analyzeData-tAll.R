@@ -144,12 +144,14 @@ rm('t123')
 table(tAll$Plot.13)
 table(tAll$Plot.18)
 
-
 # three subsets of new individuals
+# we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
 # newIndvs: new recruits, and recruited and dead, and newplots
 newIndvs <- which(is.na(tAll$Plot.13))
 length(newIndvs)
 table(tAll$Type.18[newIndvs])
+summary(tAll$Num[newIndvs])
+length(which(tAll$Num[newIndvs]>99000))
 
 # newly recruited and dead; subset of newIndvs
 n99 <- which(tAll$Num>99000)
@@ -165,6 +167,8 @@ table(tAll$Type.18[newPlot])
 newTrees <- which(!tAll$Num %in% tAll$Num[n99] & !tAll$Num %in% tAll$Num[newPlot] & tAll$Type.18=='TR' & is.na(tAll$Plot.13) & tAll$Num %% 1==0)
 length(newTrees)
 sort(tAll$Num[newTrees])
+table(tAll$Plot.18[newTrees])
+
 #tAll[newTrees[15],]
 # looks like 12 trees with Num < 5500 that were tagged and no data collected in 2013 - then there are a few new trees that may have recruited from <sapling to tree stage
 
@@ -175,24 +179,27 @@ length(intersect(n99,newPlot))
 summary(tAll$dbh.18[newPlot])
 summary(tAll$dbh.18[n99])
 
-# Now start filling in 2013 data from later data, for completeness
-tAll$Plot.13[newPlot] <- tAll$Plot.18[newPlot]
-tAll$Quad.13[newPlot] <- tAll$Quad.18[newPlot]
-tAll$Species.13[newPlot] <- tAll$Species.18[newPlot]
+# Now start filling in pre-fire data from 2018 data, for completeness, for all new individuals
+#create13Data <- c(newPlot,newTrees[1:12])
+tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
+tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
+tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
+tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
 
-tAll$Dead.13[newPlot] <- 0
-tAll$Live.13[newPlot] <- 1
-tAll$gCrown.13[newPlot] <- 1
+tAll$Dead.13[newIndvs] <- 0
+tAll$Live.13[newIndvs] <- 1
+tAll$gCrown.13[newIndvs] <- 1
+tAll$dbh.13[newIndvs] <- tAll$dbh.18[newIndvs]
 
-# ignore these individuals for basal area growth
+# ignore these individuals for basal area growth - commented out because we aren't creating proxy 2013 diameter data now
 tAll$UseForBAGrowth <- T
 tAll$UseForBAGrowth[newIndvs] <- F
 
 # initial growth analysis to identify potentially problematic size data
 # suggest taking median eliminating most negative and very large outliers. Suggests median diameter growth of 0.2 cm in five years
 tAll$ddbh.1318 <- tAll$dbh.18-tAll$dbh.13
-hist(tAll$ddbh.1318)
-summary(tAll$ddbh.1318)
+hist(tAll$ddbh.1318[tAll$UseForBAGrowth])
+summary(tAll$ddbh.1318[tAll$UseForBAGrowth])
 
 plot(tAll$dbh.13,tAll$ddbh.1318)
 abline(h=0)
@@ -203,7 +210,7 @@ tail(sort(tAll$absddbh.1318))
 
 write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquestions.csv')
 
-## END CREATE PROXY 2103 Data for new trees encountered post-fire, including new plots
+## END CREATE PROXY prefire data for new trees encountered post-fire, including new plots
 
 ## THIS CODE SECTION ANALYZES 2018 FATES ###
 
@@ -212,7 +219,6 @@ write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquesti
 
 # create fst dataframe - FateSummaryTable
 fst12 <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
-#fst12 <- data.frame(Species=rep(use.species,each=3),Type=rep(c('SA','TR','TS'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
 head(fst12)                  
 tail(fst12)
 
@@ -257,21 +263,11 @@ sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
-#almost working to generate % in each category per species and type
-#cbind(fst12[,1:2],fst12[,3:7]/fst12[,3])[which(fst12$Type=='TR'&is.finite(fst12[,3])),]
-
 #GHYTIGYFYGIGH - same as above but just for one category at a time (DN/DR/LR/LN)
 
 SArows <- which(fst12$Type=='SA')
 TRrows <- which(fst12$Type=='TR')
 #TSrows <- which(fst12$Type=='TS') 
-
-sum(fst12$N13)
-sum(fst12$N18.DN)
-sum(fst12$N18.DN)/sum(fst12$N13)
-sum(fst12$N18.DN[SArows])/sum(fst12$N13[SArows])
-sum(fst12$N18.DN[TRrows])/sum(fst12$N13[TRrows])
-#sum(fst12$N18.DN[TSrows])/sum(fst12$N13[TSrows]) #gives NaN error
 
 fst12$percSurv <- 1 - fst12$N18.DN/fst12$N13
 fst12$percSurv[fst12$N13==0] <- NA
@@ -282,8 +278,9 @@ AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL
 length(AbSp)
 fst12a <- fst12[which(fst12$Species %in% AbSp),]
 
-fst12a[fst12a$Type=='TR',][order(fst12a$percSurv[fst12a$Type=='TR']),]
-fst12a[fst12a$Type=='SA',][order(fst12a$percSurv[fst12a$Type=='SA']),]
+# look at TR and SA in order of percent Survival
+fst12a[fst12a$Type=='TR',][order(fst12a$Species[fst12a$Type=='TR']),]
+fst12a[fst12a$Type=='SA',][order(fst12a$Species[fst12a$Type=='SA']),]
 #fst12a[fst12a$Type=='TS',][order(fst12a$percSurv[fst12a$Type=='TS']),]
 
 
@@ -330,65 +327,76 @@ table(tAll$Plot.13[which(tAll$fsLevel==2)])
 table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # Use dbh for largest stem
+dim(tAll)
+length(which(tAll$Type.18=='TS'))
 nodbh <- which(is.na(tAll$dbh.13))
 length(nodbh)
 head(tAll[nodbh,])
 summary(tAll$dbh.13)
 
 ## USE LOG DBH for analysis - remember SA is basal and TR is dbh
+# if want to change and use size from a different year, change here. Then from here on ldbh is generic
 hist(tAll$dbh.18)
-tAll$ldbh.18 <- log10(tAll$dbh.18)
-tAll$ldbh.18[which(!is.finite(tAll$ldbh.18))] <- NA
+tAll$ldbh <- log10(tAll$dbh.18)
+tAll$ldbh[which(!is.finite(tAll$ldbh))] <- NA
 
-hist(tAll$ldbh.18[tAll$Type.18=='SA'])
-hist(tAll$ldbh.18[tAll$Type.18=='TR'])
-
+# create ts to switch between types
 types <- c('SA','TR')
-for (i in 1:2) print(hist(tAll$ldbh.18[tAll$Type.18==types[i]]))
+op=par(mfrow=c(1,2))
+for (i in 1:2) {
+  ty <- types[i]
+  print(hist(tAll$ldbh[tAll$Type.18==ty],main=paste('Type',ty)))
+}
+par(op)
 
-summary(tAll$ldbh.18)
-dim(tAll)
-
+# create squared variable for quadratic analysis
 tAll$ldbh2 <- tAll$ldbh^2
 
+# check on fates
 table(tAll$Live.18, tAll$fate.18)
 
-plot(tAll$adj.ldbh.18,tAll$Live.18)
-plot(tAll$dbh.18,tAll$Live.18)
-
 # now try saplings and trees separately
-plot(Live.18~ldbh,data=tAll[tAll$Type.18=='TR',])
-plot(Live.18~SA.BD_cm.18,data=tAll[tAll$Type.18=='SA',])
+op <- par(mfrow=c(1,2))
+for (i in 1:2) plot(Live.18~ldbh,data=tAll[tAll$Type.18==types[i],],main=paste('Type',types[i]))
+par(op)
 
+# check fate values
+table(tAll$Resprout.18,tAll$fate.18)
 
+#### SURVIVAL ANALYSIS - first cut!!
+ty <- c('TR','SA')
 
+# adjust values here to subset data, for TR and/or SA and fire severity level and species
+tmp <- tAll[which(tAll$Type.18 %in% ty[1] & tAll$fsLevel==3 & tAll$Species.18 %in% AbSp),]
+{
+  # sample size
+  (N <- length(which(!is.na(tmp$ldbh) & !is.na(tmp$Live.18))))
 
-which(tAll$Live.18==0&tAll$fate.18=="LN")
-# all clear
+  #set yvalue
+  yvalname <- 'DR.18'
+  tmp$yval <- tmp[,yvalname]
+  
+  #fit model
+  fit <- glm(yval~ldbh+ldbh2,data=tmp,family='binomial')
+  summary(fit)
+  
+  # made newdata for prediction
+  nd <- with(tmp,data.frame(ldbh=seq(min(tmp$ldbh,na.rm=T),max(tmp$ldbh,na.rm=T),length.out=1000)))
+  nd$ldbh2 <- nd$ldbh^2
+  head(nd)
+  # predict value from fit
+  nd$predVal <- predict(fit,newdata=nd,type='response')
+  head(nd)
+  
+  #plot data and predicted values
+  range(tmp$ldbh,na.rm=T)
+  plot(tmp$ldbh,tmp$yval,main=yvalname)
+  lines(nd$ldbh,nd$predVal,lwd=4)
+}
 
-#### SURVIVAL ANALYSIS
-(N <- length(which(!is.na(tAll$ldbh) & !is.na(tAll$Live.18))))
-fit <- glm(Live.18~ldbh,data=tAll,family='binomial')
-summary(fit)
-
-summary(tAll$ldbh)
-nd <- with(tAll,data.frame(ldbh=seq(min(tAll$ldbh,na.rm=T),max(tAll$ldbh,na.rm=T),length.out=1000)))
-head(nd)
-nd$pSurvAll <- predict(fit,newdata=nd,type='response')
-head(nd)
-
-range(tAll$ldbh,na.rm=T)
-plot(tAll$ldbh,tAll$Live.18)
-lines(nd$ldbh,nd$pSurvAll,lwd=4)
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
 
-#what is critical basal area to achieve 50% survival?
-(ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]])
-abline(v=ld50,lty=2)
-
-(spRes <- data.frame(species='All',N=N,ld50=ld50,slp=fit$coefficients[2]))
-spRes
 
 ## now run by species for species with lots of data
 spN <- table(tAll$Species.13)
@@ -407,56 +415,69 @@ length(AbSp)
 # use abundant species identified above for ESA
 (spA <- AbSp)
 
-i <- 3
-for (i in 1:length(spA))
-{
-  (species <- spA[i])
-  tmp <- tAll[which(tAll$Species.13==species),]
-  N <- length(which(!is.na(tmp$Basal.Area.13) & !is.na(tmp$Live.18)))
-  fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
-  pval <- predict(fit,newdata=nd,type='response')
-  nd <- data.frame(nd,pval)
-  names(nd)[length(names(nd))] <- paste('pSurv_',species,sep='')
-  lines(nd$ldbh,nd[,ncol(nd)])
+# next section not edited to separate TR and SA, not valid!!
+if (FALSE) {
+  #what is critical basal area to achieve 50% survival?
+  (ld50 <- nd$ldbh[which(nd$pSurvAll>=0.5)[1]])
+  abline(v=ld50,lty=2)
   
-  ld50 <- NA
-  if (fit$coefficients[2]>0) 
-    if (nd[1,ncol(nd)]<0.5) 
-      ld50 <- nd$ldbh[which(nd[,ncol(nd)]>=0.5)[1]] 
-  spRes <- rbind(spRes,c(species,N,ld50,fit$coefficients[2]))
-}
-spRes$ld50 <- as.numeric(spRes$ld50)
-spRes$d50 <- round(10^spRes$ld50,3)
-spRes$ld50 <- round(as.numeric(spRes$ld50),3)
-spRes$slp <- round(as.numeric(spRes$slp),3)
-spRes
+  (spRes <- data.frame(species='All',N=N,ld50=ld50,slp=fit$coefficients[2]))
+  spRes
 
-plotSP <- function(tAll,species=NULL,xlims=range(tAll$ldbh,na.rm=T))
-{
-  tmp <- tAll[which(tAll$Species.13==species),]
-  mindbh <- min(tmp$ldbh,na.rm=T)
-  maxdbh <- max(tmp$ldbh,na.rm=T)
-  plot(tmp$ldbh,tmp$Live.18,main=species,xlim=xlims)
-  fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
-  nd <- with(tAll,data.frame(ldbh=seq(mindbh,maxdbh,length.out=1001)))
-  pval <- predict(fit,newdata=nd,type='response')
-  lines(nd$ldbh,pval)  
+  
+  i <- 3
+  for (i in 1:length(spA))
+  {
+    (species <- spA[i])
+    tmp <- tAll[which(tAll$Species.13==species),]
+    N <- length(which(!is.na(tmp$Basal.Area.13) & !is.na(tmp$Live.18)))
+    fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
+    pval <- predict(fit,newdata=nd,type='response')
+    nd <- data.frame(nd,pval)
+    names(nd)[length(names(nd))] <- paste('pSurv_',species,sep='')
+    lines(nd$ldbh,nd[,ncol(nd)])
+    
+    ld50 <- NA
+    if (fit$coefficients[2]>0) 
+      if (nd[1,ncol(nd)]<0.5) 
+        ld50 <- nd$ldbh[which(nd[,ncol(nd)]>=0.5)[1]] 
+    spRes <- rbind(spRes,c(species,N,ld50,fit$coefficients[2]))
+  }
+  spRes$ld50 <- as.numeric(spRes$ld50)
+  spRes$d50 <- round(10^spRes$ld50,3)
+  spRes$ld50 <- round(as.numeric(spRes$ld50),3)
+  spRes$slp <- round(as.numeric(spRes$slp),3)
+  spRes
+  
+  plotSP <- function(tAll,species=NULL,xlims=range(tAll$ldbh,na.rm=T))
+  {
+    tmp <- tAll[which(tAll$Species.13==species),]
+    mindbh <- min(tmp$ldbh,na.rm=T)
+    maxdbh <- max(tmp$ldbh,na.rm=T)
+    plot(tmp$ldbh,tmp$Live.18,main=species,xlim=xlims)
+    fit <- glm(Live.18~ldbh,data=tmp,family='binomial')
+    nd <- with(tAll,data.frame(ldbh=seq(mindbh,maxdbh,length.out=1001)))
+    pval <- predict(fit,newdata=nd,type='response')
+    lines(nd$ldbh,pval)  
+  }
+  plotSP(tAll,'ARCMAN')
+  plotSP(tAll,'QUEAGR')
+  plotSP(tAll,'QUEDOU')
+  plotSP(tAll,'ARBMEN')
+  plotSP(tAll,'HETARB')
+  plotSP(tAll,'PSEMEN')
+  plotSP(tAll,'QUEGAR')
+  plotSP(tAll,'QUEKEL')
+  plotSP(tAll,'UMBCAL')
 }
-plotSP(tAll,'ARCMAN')
-plotSP(tAll,'QUEAGR')
-plotSP(tAll,'QUEDOU')
-plotSP(tAll,'ARBMEN')
-plotSP(tAll,'HETARB')
-plotSP(tAll,'PSEMEN')
-plotSP(tAll,'QUEGAR')
-plotSP(tAll,'QUEKEL')
-plotSP(tAll,'UMBCAL')
 
 ########### Starting with Models########
 
 ## Full model with species (can subset out data with mod/high fslevel(2:3) for visualization only- FS not in model-change back to c(0:3 to expand to all fslevels) to generate curves
-tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(2:3)),]
-
+ty <- 'TR'
+fsl <- 2:3
+tAlls <- tAll[which(tAll$Type.18==ty & tAll$Species.13 %in% spA & tAll$fsLevel %in% fsl),]
+dim(tAlls)
 
 # assign dependent variable to rVar # can switch between Live.18 and gCrown.18 to generate figures
 names(tAlls)
@@ -481,20 +502,20 @@ nd$Sp.Names <- c("aARCMAN","bPSEMEN", "cQUEDOU", "dQUEKEL", "eARBMEN", "fQUEGAR"
 
 
 # with shrubs
-selSize <- 1 #change size 1 above from 10cm to 2cm in order to look at shrubs
-barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+selSize <- 3 #change size 1 above from 10cm to 2cm in order to look at shrubs
+barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])),],ylim=c(0,1),main=paste('Type',ty,'FSLev',fsl,selVar,'predval@',predSizes[selSize],'cm dbh'))
 
 # remove shrubs for larger sizes cm plot
 # op=par will stack 3 figures (1,3) for horizontal & (3,1) for vertical
 op=par(mfrow=c(1,3)) 
 selSize <- 1
-barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste('Type',ty,'FSLev',fsl,selVar,'predval@',predSizes[selSize],'cm dbh'))
 
 selSize <- 2
-barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste('Type',ty,'FSLev',fsl,selVar,'predval@',predSizes[selSize],'cm dbh'))
 
 selSize <- 3
-barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste(selVar,'predicted value at ',predSizes[selSize],' cm dbh'))
+barplot(pValue~Species.13,data=nd[which(nd$ldbh==log10(predSizes[selSize])  & !nd$Species.13 %in% c('HETARB','ARCMAN')),],ylim=c(0,1),main=paste('Type',ty,'FSLev',fsl,selVar,'predval@',predSizes[selSize],'cm dbh'))
 
 
 #run to reset to single figure 
@@ -503,15 +524,17 @@ par(op)
 
 ### MODELS WITH FIRE SEVERITY - use 4 levels as factors
 # Change response variable here and then run model. Swap gCrown.18 or Live.18 to analyze crown survival
-tAlls <- tAll[which(tAll$Species.13 %in% spA & tAll$fsLevel %in% c(0:3)),]
+ty <- 'TR'
+tAlls <- tAll[which(tAll$Type.18==ty & tAll$Species.13 %in% spA & tAll$fsLevel %in% c(0:3)),]
+
 #did a fix here to set variable like we did above using selVar..
-selVar <- 'gCrown.18'
+selVar <- 'DN.18'
 tAlls$rVar <- tAlls[,selVar]
 fit <- glm(rVar~ldbh + as.factor(fsLevel),data=tAlls,family='binomial')
 summary(fit)
 
 nvals <- 101
-ldbh.vals <- seq(-0.5,2,length.out=nvals)
+ldbh.vals <- seq(min(tAlls$ldbh,na.rm=T),max(tAlls$ldbh,na.rm=T),length.out=nvals)
 #FireSev.vals <- seq(min(fs[,fsmet],na.rm=T),max(fs[,fsmet],na.rm=T),length.out=nvals)
 FireLevel.vals <- sort(unique(tAlls$fsLevel))
 nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(FireLevel.vals)),fsLevel=rep(FireLevel.vals,each=nvals)))
@@ -530,6 +553,7 @@ for (i in 1:length(FireLevel.vals)) {
   text(ldbh.vals[50],ndt$rVarPred[which(ndt$ldbh==ldbh.vals[50])],FireLevel.vals[i])
 }
 
+  
 #### THIS WON'T WORK NOW AS MODEL ABOVE WAS CHANGED TO USE FIRE SEVERITY LEVELS
 # Plot survival as a function of fire severity, with isoclines as a function ldbh. Lines are declining - survival is lower at higher fire severity, but larger trees have higher values
 # plot(tAlls$FireSev,tAlls$Live.18)
@@ -544,15 +568,15 @@ for (i in 1:length(FireLevel.vals)) {
 ## RECODED WITH FIRE LEVELS
 # model with size, fire, species, predicting survival
 {
-  fit2 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13,data=tAlls,family='binomial')
-  fit1 <- glm(Live.18~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=tAlls,family='binomial')
+  fit2 <- glm(rVar~ldbh + as.factor(fsLevel) + Species.13,data=tAlls,family='binomial')
+  fit1 <- glm(rVar~ldbh + as.factor(fsLevel) + Species.13+ as.factor(fsLevel):Species.13,data=tAlls,family='binomial')
   BIC(fit1)
   BIC(fit2)
   summary(fit1)
   summary(fit2)
   
   nvals <- 11
-  ldbh.vals <- seq(-0.5,2,length.out=nvals)
+  ldbh.vals <- seq(min(tAlls$ldbh,na.rm=T),max(tAlls$ldbh,na.rm=T),length.out=nvals)
   fsLevels.vals <- c(0:3)
   nd <- with(tAll,data.frame(ldbh=rep(ldbh.vals,length(fsLevels.vals)),fsLevels=rep(fsLevels.vals,each=nvals)))
   dim(nd)
@@ -589,6 +613,9 @@ for (i in 1:length(FireLevel.vals)) {
   plotSpecies('ARBMEN')
   plotSpecies('QUEAGR')
   plotSpecies('UMBCAL')
+  plotSpecies('ARBMEN')
+  
+  # 4/26/23 - everything working to here!!!!
   
   #using data from model w/ fire sev included- not subsetted out for visualization as above
   # obtain predicted main effects of fire severity for each species at a common size
@@ -719,6 +746,8 @@ selSpecies <- spA # use spA for all abundant species, rather than one species
 # comment in or out next two lines
 FireLevels <- c('Mod+High'); FVals <- 2:3
 #FireLevels <- c('ANY LEVEL'); FVals <- 1:3 #changes FireSev range to all c(1:3)
+
+#### NEED TO SUBSET BY TYPE HERE
 tAllsp <- tAll[which(tAll$Species.13 %in% c(selSpecies) & tAll$fsLevel %in% FVals),] #individual species?
 {
   #tAllsp <- tAll[which(tAll$Species.13 %in% spA),] #abundant species?
