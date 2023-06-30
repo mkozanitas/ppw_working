@@ -185,13 +185,13 @@ table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # if want to change and use size from a different year, change here. Then from here on ld10 is generic
 hist(tAll$d10.18)
-tAll$ld10 <- log10(tAll$d10.18)
+tAll$ld10 <- log10(tAll$d10.13)
 tAll$ld10[which(!is.finite(tAll$ld10))] <- NA
 hist(tAll$ld10)
 summary(tAll$ld10,useNA='always')
 
 # now move diameters forward from 2013, if it's missing in 2018 
-tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.13[which(is.na(tAll$ld10))])
+tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.18[which(is.na(tAll$ld10))])
 summary(tAll$ld10,useNA='always')
 hist(tAll$ld10)
 
@@ -228,6 +228,9 @@ types <- c('TR','SA')
 
 # adjust values here to subset data, for TR and/or SA and fire severity level and species
 tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
+
+# if needed trim data by stem size
+#tAlls <- tAlls[which(tAlls$ld10>=c(-0.5)),]
 
 # sample size
 tAlls$fPlot <- as.factor(tAlls$Plot.18)
@@ -281,12 +284,16 @@ coefficients(fit5)
 fit5x <- glm(yval~ld10+ld10.2+fsCat+Species.18,data=tAlls,family='binomial')
 BIC(fit5x)
 
+fit5l <- glm(yval~ld10+fsCat+northness+Species.18,data=tAlls,family='binomial')
+BIC(fit5l)
+
 #fit6 <- glmer(yval~ld10+ld10.2+fsCat+Species.18+(1|fPlot),data=tAlls,family='binomial')
 # DOESN'T CONVERGE combining species and random factor plots
 
 # made newdata for prediction
 nvals <- 11
 ld10vals <- seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals)
+ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,50,100)),max(tAlls$ld10,na.rm=T))
 
 nd <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
 names(nd) <- c('ld10','fPlot','fsCat','Species.18')
@@ -310,6 +317,7 @@ nd$predVal2 <- predict(fit2,newdata=nd,type='response')
 nd$predVal3 <- predict(fit3,newdata=nd,type='response')
 nd$predVal4 <- predict(fit4,newdata=nd,type='response')
 nd$predVal5 <- predict(fit5,newdata=nd,type='response')
+nd$predVal5l <- predict(fit5l,newdata=nd,type='response')
 head(nd)
 #plot(nd$predVal3,nd$predVal4)
 #plot(nd$predVal2,nd$predVal4)
@@ -324,9 +332,10 @@ points(nd$ld10,nd$predVal2,lwd=4) # qsize + plots only
 points(nd$ld10,nd$predVal3,lwd=4) # qsize + fire levels
 points(nd$ld10,nd$predVal4,lwd=4) # qsize + fire levels + plots
 points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
+points(nd$ld10,nd$predVal5l,lwd=4) # qsize + fire levels + species
 
-rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
-points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
+#rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
+#points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
 
 pAvg <- rep(NA,11)
 i=1
@@ -340,6 +349,8 @@ for (fsv in 1:4) {
   #print(pAvg)
   points(ld10vals,pAvg,col='red',lwd=4,type='b')
 }
+nd[which(nd$ld10==0&nd$fsCat==0),]
+
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
 

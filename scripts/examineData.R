@@ -68,22 +68,22 @@ catVals <- function(x) {
 
 ## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
 # These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error requiring further investigation. As of 5/15/22 there are no problem saplings, and just 7 and 24 problem trees in 2018 and 2019. But there are >1000 in 2020, so there's some deeper problem we need to figure out.
-SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
-TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
-
-i=2
-for (i in 2:4) {
-  all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
-  print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
-  badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
-  length(badSAs)
-  print(all.id[[i]][badSAs,c('Plot','Num','pattern')])
-  
-  print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
-  badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
-  length(badTRs)
-  print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
-}
+# SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
+# TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
+# 
+# i=2
+# for (i in 2:4) {
+#   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
+#   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
+#   badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
+#   length(badSAs)
+#   print(all.id[[i]][badSAs,c('Plot','Num','pattern')])
+#   
+#   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
+#   badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
+#   length(badTRs)
+#   print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
+# }
 
 # examine trees with particular problem patterns
 i=4
