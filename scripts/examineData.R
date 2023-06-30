@@ -309,3 +309,180 @@ for (i in 1:length(all.id))
 }
 saveRDS(all.id,'data/allid-nodups.Rdata')
 
+# load up all individual data (id) - list of 4 data.frames, one per year (133, 18, 19, 20)
+str(all.id)
+length(all.id)
+head(all.id[[1]])
+head(all.id[[1]][all.id[[1]]$Type=='SA',])
+
+# how many trees have BD but not DBH
+nodbh <- which(!is.na(all.id[[2]]$SA.BD_cm) & is.na(all.id[[2]]$DBH_cm))
+table(all.id[[2]]$Type[nodbh])
+length(nodbh)
+
+## CREATE A CALCULATED BASAL DIAMETER AT 10 CM FOR TREES (b10)
+if (TRUE) {
+  i=1
+  for (i in 1:length(all.id)) {
+    TRrows <- which(all.id[[i]]$Type=='TR')
+
+    all.id[[i]]$d10 <- all.id[[i]]$SA.BD_cm
+    # summary(all.id[[i]]$d10,useNA='always')
+    
+    # from DBH-SADB.R script
+    # D10 = DBH.cm * 1.176 + 1.070
+    all.id[[i]]$d10[TRrows] <- all.id[[i]]$dbh[TRrows] * 1.176 + 1.07
+    summary(all.id[[i]]$d10,useNA='always')
+}
+  
+  # Examine basal diameter of SAs
+  head(all.id[[1]])
+  sap13 <- all.id[[1]]
+  sap13 <- sap13[which(sap13$Type=='SA'),]
+  dim(sap13)
+  hist(sap13$dbh)
+  summary(sap13$dbh)
+  length(which(sap13$dbh<0.01))
+  nrow(sap13)
+  hist(sap13$SA.Height_cm)
+  plot(sap13$dbh,sap13$SA.Height_cm,xlim=c(-1,2))
+  
+  sort(sap13$dbh[which(sap13$dbh>1)])
+  plot(sap13$SA.BD_cm,sap13$dbh,log='')
+  sap13[which(sap13$dbh>3),]
+  abline(0,1)
+  # end examine basal diameter
+}
+
+spNames <- read.csv('data/all-spp-names.csv')
+head(spNames)
+names(spNames)[which(names(spNames)=='x')] <- 'spName'
+#allIndv <- readRDS('data/allIndv.Rdata')
+allIndv <- read.csv('data/allIndv.csv')
+head(allIndv)
+
+#### First round of analysis of post-fire states, 2013-2018
+## get percent survival by species and type
+
+# THIS SNIPPET WOULD IDENTIFY TREES THAT CHANGE PLOT OR ID AND SHOULD BE ELIMINATED - FOR NOW ANALYZING EVERYTHING
+# take any individuals where plot and species match for the first two years
+nrow(allIndv)
+#plot.ok <- NA
+#spec.ok <- NA
+#ps.ok <- intersect(plot.ok,spec.ok)
+#length(ps.ok)
+#head(ps.ok)
+#tail(ps.ok)
+
+# include trees from new plots
+# ps.ok <- c(ps.ok,allIndv$Num[which(allIndv$P18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))])
+# length(ps.ok)
+# head(ps.ok)
+# tail(ps.ok)
+
+# use this if we want to subset to valid trees - inactivated for now
+# t1 <- all.id[[1]][which(all.id[[1]]$Num %in% ps.ok),]
+# nrow(t1)
+# t2 <- all.id[[2]][which(all.id[[2]]$Num %in% ps.ok),]
+# nrow(t2)
+# t3 <- all.id[[3]][which(all.id[[3]]$Num %in% ps.ok),]
+# nrow(t3)
+## END TREE SELECTION SNIPPET
+
+# MERGE YEARS!!
+t1 <- all.id[[1]]
+t2 <- all.id[[2]]
+t3 <- all.id[[3]]
+t4 <- all.id[[4]]
+
+names(t1)
+names(t1)[-4] <- paste(names(t1)[-4],'.13',sep='')
+names(t1)
+names(t2)[-4] <- paste(names(t2)[-4],'.18',sep='')
+names(t2)
+names(t3)[-4] <- paste(names(t3)[-4],'.19',sep='')
+names(t3)
+names(t4)[-4] <- paste(names(t4)[-4],'.20',sep='')
+names(t4)
+
+# And merge!
+t12 <- merge(t1,t2,by = 'Num',all = T)
+names(t12)
+
+t123 <- merge(t12,t3,by = 'Num',all = T)
+names(t123)
+dim(t123)
+head(t123)
+tail(t123)
+
+tAll <- merge(t123,t4,by = 'Num',all = T)
+names(tAll)
+dim(tAll)
+head(tAll)
+tail(tAll)
+
+rm('t12')
+rm('t123')
+
+# All four years are now merged!!!!! ###
+
+# create 'proxy 2013 data'
+# rownums for new 2018 individuals from new plots
+table(tAll$Plot.13)
+table(tAll$Plot.18)
+
+# three subsets of new individuals
+# we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
+# newIndvs: new recruits, and recruited and dead, and newplots
+newIndvs <- which(is.na(tAll$Plot.13))
+length(newIndvs)
+table(tAll$Type.18[newIndvs])
+summary(tAll$Num[newIndvs])
+length(which(tAll$Num[newIndvs]>99000))
+
+# newly recruited and dead; subset of newIndvs
+n99 <- which(tAll$Num>99000)
+length(n99)
+table(tAll$Type.18[n99])
+
+# new plots; subset of newIndvs
+newPlot <- which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))
+length(newPlot)
+table(tAll$Type.18[newPlot])
+
+# New Trees - either not measured in 2013 or new recruits (or other error?)
+newTrees <- which(!tAll$Num %in% tAll$Num[n99] & !tAll$Num %in% tAll$Num[newPlot] & tAll$Type.18=='TR' & is.na(tAll$Plot.13) & tAll$Num %% 1==0)
+length(newTrees)
+sort(tAll$Num[newTrees])
+table(tAll$Plot.18[newTrees])
+
+#tAll[newTrees[15],]
+# looks like 12 trees with Num < 5500 that were tagged and no data collected in 2013 - then there are a few new trees that may have recruited from <sapling to tree stage
+
+length(intersect(newIndvs,n99))
+length(intersect(newIndvs,newPlot))
+length(intersect(n99,newPlot))
+
+summary(tAll$dbh.18[newPlot])
+summary(tAll$dbh.18[n99])
+
+# Now start filling in pre-fire data from 2018 data, for completeness, for all new individuals
+#create13Data <- c(newPlot,newTrees[1:12])
+tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
+tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
+tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
+tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
+
+tAll$Dead.13[newIndvs] <- 0
+tAll$Live.13[newIndvs] <- 1
+tAll$gCrown.13[newIndvs] <- 1
+tAll$dbh.13[newIndvs] <- tAll$dbh.18[newIndvs]
+
+# ignore these individuals for basal area growth - commented out because we aren't creating proxy 2013 diameter data now
+tAll$UseForBAGrowth <- T
+tAll$UseForBAGrowth[newIndvs] <- F
+
+tAll$TreeNum <- floor(tAll$Num)
+tAll$fPlot <- as.factor(tAll$Plot.18)
+
+write.csv(tAll,'data/tAll.csv')
