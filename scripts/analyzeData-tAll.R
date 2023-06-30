@@ -190,7 +190,7 @@ tAll$ld10[which(!is.finite(tAll$ld10))] <- NA
 hist(tAll$ld10)
 summary(tAll$ld10,useNA='always')
 
-# now move diameters forward from 2013, if it's missing in 2018 
+# now move diameters forward from 2013 (or 2018, if we use 2013 above), if it's missing in 2018. This can be commented out so that we only use data from one year or the other, and don't mix. I just tried this, for LN.18 analysis - it gets rid of the U-shaped result. So the result is coming from mixing data from plants censuses only in 2013 with those added in 2018. Now we have to figure out why!
 tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.18[which(is.na(tAll$ld10))])
 summary(tAll$ld10,useNA='always')
 hist(tAll$ld10)
