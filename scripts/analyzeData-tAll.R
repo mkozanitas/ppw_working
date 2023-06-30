@@ -295,9 +295,17 @@ nvals <- 11
 ld10vals <- seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals)
 ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,50,100)),max(tAlls$ld10,na.rm=T))
 
-nd <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
-names(nd) <- c('ld10','fPlot','fsCat','Species.18')
-nd$fPlot <- as.factor(nd$fPlot)
+ndf <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
+names(ndf) <- c('ld10','fPlot','fsCat','Species.18')
+ndf$fPlot <- as.factor(nd$fPlot)
+ndf$fsCat <- as.factor(nd$fsCat)
+ndf$ld10.2 <- nd$ld10^2
+ndf$northness <- 0
+head(ndf)
+dim(ndf)
+
+nd <- expand.grid(ld10vals,unique(tAlls$fsCat),AbSp)
+names(nd) <- c('ld10','fsCat','Species.18')
 nd$fsCat <- as.factor(nd$fsCat)
 nd$ld10.2 <- nd$ld10^2
 nd$northness <- 0
@@ -313,26 +321,25 @@ dim(nd)
 # predict value from fit
 nd$predVal0 <- predict(fit0,newdata=nd,type='response')
 nd$predVal1 <- predict(fit1,newdata=nd,type='response')
-nd$predVal2 <- predict(fit2,newdata=nd,type='response')
+ndf$predVal2 <- predict(fit2,newdata=ndf,type='response')
 nd$predVal3 <- predict(fit3,newdata=nd,type='response')
-nd$predVal4 <- predict(fit4,newdata=nd,type='response')
+ndf$predVal4 <- predict(fit4,newdata=ndf,type='response')
 nd$predVal5 <- predict(fit5,newdata=nd,type='response')
 nd$predVal5l <- predict(fit5l,newdata=nd,type='response')
 head(nd)
-#plot(nd$predVal3,nd$predVal4)
-#plot(nd$predVal2,nd$predVal4)
-#plot(nd$predVal4,nd$predVal5)
 
 #plot data and predicted values
 range(tAlls$ld10,na.rm=T)
 plot(tAlls$ld10,tAlls$yval,main=yvalname)
-points(nd$ld10,nd$predVal0,lwd=4) # linear size
-points(nd$ld10,nd$predVal1,lwd=4) # quadratic size
-points(nd$ld10,nd$predVal2,lwd=4) # qsize + plots only
-points(nd$ld10,nd$predVal3,lwd=4) # qsize + fire levels
-points(nd$ld10,nd$predVal4,lwd=4) # qsize + fire levels + plots
+#points(nd$ld10,nd$predVal0,lwd=4) # linear size
+#points(nd$ld10,nd$predVal1,lwd=4) # quadratic size
+#points(ndf$ld10,nd$predVal2,lwd=4) # qsize + plots only
+#points(nd$ld10,nd$predVal3,lwd=4) # qsize + fire levels
+#points(ndf$ld10,nd$predVal4,lwd=4) # qsize + fire levels + plots
+
+# comment out next line, and uncomment below if you want to see linear size model instead
 points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
-points(nd$ld10,nd$predVal5l,lwd=4) # qsize + fire levels + species
+#points(nd$ld10,nd$predVal5l,lwd=4) # qsize + fire levels + species
 
 #rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
 #points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
@@ -344,13 +351,20 @@ for (fsv in 1:4) {
   fs <- fsv-1
   for (i in 1:nvals) {
     ld <- ld10vals[i]
+    # comment/uncomment to switch between quadratic (5) and linear (5l)
     pAvg[i] <- mean(nd$predVal5[which(nd$ld10==ld & nd$fsCat==fs)])
+    #pAvg[i] <- mean(nd$predVal5l[which(nd$ld10==ld & nd$fsCat==fs)])
   }
   #print(pAvg)
   points(ld10vals,pAvg,col='red',lwd=4,type='b')
 }
-nd[which(nd$ld10==0&nd$fsCat==0),]
+# see predicted values for each species at selected size and fire severity. These can be plotted against bark thickness! Use predVal5 or predVal5l. Others don't have species so they are all the same. ld10=1 is for basal diameter of 10cm. Nice spread among species.
+nd[which(nd$ld10==1&nd$fsCat==1),]
 
+### read in bark thickness here!!!
+
+
+#### END FRIDAY 6/30/23
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
 
