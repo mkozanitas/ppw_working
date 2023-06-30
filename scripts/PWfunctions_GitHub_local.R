@@ -23,33 +23,42 @@ get.plot.info<-function(prefix='https://raw.githubusercontent.com/dackerly/Peppe
   # forces character strings to not be treated as factors 
   options(stringsAsFactors=FALSE) 
   # list of file names
-  url.plotinfo<- paste(prefix,"2013/Woody2013/Data/OriginalCSV/PlotInfo/PlotSurvey2013_", sep='')
-  plot.list<-get.plot()  
+  url.plotinfo1<- paste(prefix,"2013/Woody2013/Data/OriginalCSV/PlotInfo/PlotSurvey2013_", sep='')
+  url.plotinfo2<- paste(prefix,"2018/Woody2018/Data/OriginalCSV/PlotInfo/PlotSurvey2018_", sep='')
+  plot.list1<-get.plot(year = 2013)
+  plot.list2<-get.plot(year = 2018)[51:54]
   # read in all files for plot info
-  plot.data<-lapply(paste(url.plotinfo,plot.list,".csv",sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), skip=5, nrows=5, header=F))
+  plot.data1<-lapply(paste(url.plotinfo1,plot.list1,".csv",sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), skip=5, nrows=5, header=F))
+  plot.data2<-lapply(paste(url.plotinfo2,plot.list2,".csv",sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), skip=5, nrows=5, header=F))
   # make dataframe structure 
-  plot.info<-data.frame("Plot"=numeric(length(plot.data)),
-                        "UTM.E"=numeric(length(plot.data)),
-                        "UTM.N"=numeric(length(plot.data)),
-                        "Slope"=numeric(length(plot.data)),
-                        "Aspect"=numeric(length(plot.data))) 
-  plot.info$Plot<-plot.list 
-  for (i in 1:length(plot.data)){
-    plot.info$UTM.E[i]<-plot.data[[i]][1,2]
-    plot.info$UTM.N[i]<-plot.data[[i]][2,2]
-    plot.info$Slope[i]<-plot.data[[i]][3,5]
-    plot.info$Aspect[i]<-plot.data[[i]][3,8]
+  plot.info<-data.frame("Plot"=c(plot.list1,plot.list2),
+                        "UTM.E"=NA,
+                        "UTM.N"=NA,
+                        "Slope"=NA,
+                        "Aspect"=NA) 
+  for (i in 1:length(plot.data1)){
+    plot.info$UTM.E[i]<-plot.data1[[i]][1,2]
+    plot.info$UTM.N[i]<-plot.data1[[i]][2,2]
+    plot.info$Slope[i]<-plot.data1[[i]][3,5]
+    plot.info$Aspect[i]<-plot.data1[[i]][3,8]
+  }
+  for (i in 1:4){
+    plot.info$UTM.E[50+i]<-plot.data2[[i]][1,2]
+    plot.info$UTM.N[50+i]<-plot.data2[[i]][2,2]
+    plot.info$Slope[50+i]<-plot.data2[[i]][3,5]
+    plot.info$Aspect[50+i]<-plot.data2[[i]][3,8]
   }
   # Slope and aspect are missing for plot PPW1302 and not applicable for PPW1329 (on crest) 
-  plot.info$Slope[2]<-NA # changes slope for plot 1302 to NA
-  plot.info$Aspect[2]<-NA # same for 1329 aspect
-  plot.info$Slope[29]<-NA # changes slope for plot 1329 to NA
-  plot.info$Aspect[29]<-NA # same for 1329 aspect
-  # calculate Aspect from field data 
+  # plot.info$Slope[2]<-NA # changes slope for plot 1302 to NA
+  # plot.info$Aspect[2]<-NA # same for 1329 aspect
+  # plot.info$Slope[29]<-NA # changes slope for plot 1329 to NA
+  # plot.info$Aspect[29]<-NA # same for 1329 aspect
+  # # calculate Aspect from field data 
   plot.info$Aspect<- as.numeric(plot.info$Aspect)
+  plot.info$Slope<- as.numeric(plot.info$Slope)
   #plot.info$Aspect<-cos(2*pi*(as.numeric(plot.info$Aspect)/360))
   
-  super.plots<-c("PPW1301","PPW1307","PPW1325","PPW1349","PPW1310","PPW1309","PPW1344","PPW1312","PPW1321","PPW1322","PPW1338","PPW1339","PPW1324","PPW1335","PPW1315","PPW1332","PPW1340")
+  super.plots<-c("PPW1301","PPW1307","PPW1325","PPW1349","PPW1310","PPW1309","PPW1344","PPW1312","PPW1321","PPW1322","PPW1338","PPW1339","PPW1324","PPW1335","PPW1315","PPW1332","PPW1340","PPW1852")
   
   plot.info$Super.Plot<-0
   plot.info[plot.info$Plot%in%super.plots, "Super.Plot"]<-1  

@@ -1,6 +1,8 @@
 # RUN prepareData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 # data files are not synced by git, so prepareData does need to be run locally
 rm(list=ls())
+source('scripts/PW_functions_local-test.R')
+source('scripts/PWfunctions_GitHub_local.R')
 
 # read in list of 4 items, each item with the full data file for all trees in a given year
 years <- c(2013,2018,2019,2020)
@@ -484,5 +486,23 @@ tAll$UseForBAGrowth[newIndvs] <- F
 
 tAll$TreeNum <- floor(tAll$Num)
 tAll$fPlot <- as.factor(tAll$Plot.18)
+
+# Load plot characteristics
+northness <- function(asp,slp,units='deg') {
+  if (units=='deg') {
+    asp <- 2*pi*asp/360
+    slp <- 2*pi*slp/360
+  }
+  cos(asp)*sin(slp)
+}
+
+plotInfo <- get.plot.info()
+plotInfo
+plotInfo$northness <- northness(plotInfo$Aspect,plotInfo$Slope)
+###
+
+# transfer northness to tAll
+p2t <- match(tAll$Plot.18,plotInfo$Plot)
+tAll$northness <- plotInfo$northness[p2t]
 
 write.csv(tAll,'data/tAll.csv')

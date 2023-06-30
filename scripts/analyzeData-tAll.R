@@ -227,72 +227,124 @@ table(tAll$Resprout.18,tAll$fate.18)
 types <- c('TR','SA')
 
 # adjust values here to subset data, for TR and/or SA and fire severity level and species
-tmp <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
-{ # skip to run line by line
-  # sample size
-  tmp$fPlot <- as.factor(tmp$Plot.18)
-  nrow(tmp)
-  (N <- length(which(!is.na(tmp$ld10) & !is.na(tmp$Live.18))))
+tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
 
-  #set yvalue
-  yvalname <- 'Live.18'
-  tmp$yval <- tmp[,yvalname]
-  
-  #fit model
-  fit1 <- glm(yval~ld10+ld10.2,data=tmp,family='binomial')
-  summary(fit1)
-  BIC(fit1)
-  
-  fit2 <- glmer(yval~ld10+ld10.2+(1|fPlot),data=tmp,family='binomial')
-  summary(fit2)
-  BIC(fit2)
-  fitPlots <- rownames(coefficients(fit2)$fPlot)
-  
-  
-  # now add fire severity
-  # check whether model can fit fsLevel and random plot factor - converges!
-  fit3 <- glm(yval~ld10+ld10.2+fsCat,data=tmp,family='binomial')
-  summary(fit3)
-  BIC(fit3)
-  fit4 <- glmer(yval~ld10+ld10.2+fsCat+(1|fPlot),data=tmp,family='binomial')
-  summary(fit4)
-  BIC(fit4)
-  # YES! (for both types, absp, all fsLevels....)
-  
-  # made newdata for prediction
-  nvals <- 11
-  ld10vals <- seq(min(tmp$ld10,na.rm=T),max(tmp$ld10,na.rm=T))
-  nd <- expand.grid(ld10vals,fitPlots,unique(tmp$fsCat))
-  names(nd) <- c('ld10','fPlot','fsCat')
-  nd$fPlot <- as.factor(nd$fPlot)
-  nd$fsCat <- as.factor(nd$fsCat)
-  nd$ld10.2 <- nd$ld10^2
-  head(nd)
-  
-  #xx <- data.frame(ld10=seq(min(tmp$ld10,na.rm=T),max(tmp$ld10,na.rm=T),length.out=nvals))
-  #nd2 <- data.frame(fPlot=rep(as.factor(fitPlots),nrow(xx)),ld10=rep(xx$ld10,each=length(fitPlots)))
-  #nd3 <- data.frame(fPlot=rep(as.factor(fitPlots),nrow(nd2)),ld10=rep(nd2$ld10,nrow(nd2)),fsCat <- )
-  #rm('xx')
-  
+# sample size
+tAlls$fPlot <- as.factor(tAlls$Plot.18)
+nrow(tAlls)
+(N <- length(which(!is.na(tAlls$ld10) & !is.na(tAlls$Live.18))))
 
-  # predict value from fit
-  nd$predVal2 <- predict(fit2,newdata=nd,type='response')
-  nd$predVal3 <- predict(fit3,newdata=nd,type='response')
-  nd$predVal4 <- predict(fit4,newdata=nd,type='response')
-  head(nd)
-  plot(nd$predVal3,nd$predVal4)
-  plot(nd$predVal2,nd$predVal4)
-  
-  #plot data and predicted values
-  range(tmp$ld10,na.rm=T)
-  plot(tmp$ld10,tmp$yval,main=yvalname)
-  points(nd$ld10,nd$predVal2,lwd=4)
-  points(nd$ld10,nd$predVal3,lwd=4)
-  points(nd$ld10,nd$predVal4,lwd=4)
+#set yvalue
+yvalname <- 'LN.18'
+tAlls$yval <- tAlls[,yvalname]
+
+#fit model
+fit0 <- glm(yval~ld10,data=tAlls,family='binomial')
+BIC(fit0)
+
+fit1 <- glm(yval~ld10+ld10.2,data=tAlls,family='binomial')
+#summary(fit1)
+AIC(fit1)
+BIC(fit1)
+
+fit1n <- glm(yval~ld10+ld10.2+northness,data=tAlls,family='binomial')
+#summary(fit1)
+AIC(fit1n)
+BIC(fit1n)
+coefficients(fit1n)
+
+# we can check all combinations, but for Live.18 and the full data, northness wasn't justified to add to the full model, with FS and species. So for now we're including it, but need to check, for each variable, before reporting in the paper
+
+fit2 <- glmer(yval~ld10+ld10.2+northness+(1|fPlot),data=tAlls,family='binomial')
+#summary(fit2)
+AIC(fit2)
+BIC(fit2)
+fitPlots <- rownames(coefficients(fit2)$fPlot)
+
+# now add fire severity
+# check whether model can fit fsLevel and random plot factor - converges!
+fit3 <- glm(yval~ld10+ld10.2+northness+fsCat,data=tAlls,family='binomial')
+#summary(fit3)
+AIC(fit3)
+BIC(fit3)
+
+fit4 <- glmer(yval~ld10+ld10.2+northness+fsCat+(1|fPlot),data=tAlls,family='binomial')
+#summary(fit4)
+BIC(fit4)
+# YES! (for both types, absp, all fsLevels....)
+
+fit5 <- glm(yval~ld10+ld10.2+fsCat+northness+Species.18,data=tAlls,family='binomial')
+BIC(fit5)
+coefficients(fit5)
+
+# here's the full model with FS and species, and no northness - check via BIC whether it can be included in final results
+fit5x <- glm(yval~ld10+ld10.2+fsCat+Species.18,data=tAlls,family='binomial')
+BIC(fit5x)
+
+#fit6 <- glmer(yval~ld10+ld10.2+fsCat+Species.18+(1|fPlot),data=tAlls,family='binomial')
+# DOESN'T CONVERGE combining species and random factor plots
+
+# made newdata for prediction
+nvals <- 11
+ld10vals <- seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals)
+
+nd <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
+names(nd) <- c('ld10','fPlot','fsCat','Species.18')
+nd$fPlot <- as.factor(nd$fPlot)
+nd$fsCat <- as.factor(nd$fsCat)
+nd$ld10.2 <- nd$ld10^2
+nd$northness <- 0
+head(nd)
+dim(nd)
+
+#xx <- data.frame(ld10=seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals))
+#nd2 <- data.frame(fPlot=rep(as.factor(fitPlots),nrow(xx)),ld10=rep(xx$ld10,each=length(fitPlots)))
+#nd3 <- data.frame(fPlot=rep(as.factor(fitPlots),nrow(nd2)),ld10=rep(nd2$ld10,nrow(nd2)),fsCat <- )
+#rm('xx')
+
+
+# predict value from fit
+nd$predVal0 <- predict(fit0,newdata=nd,type='response')
+nd$predVal1 <- predict(fit1,newdata=nd,type='response')
+nd$predVal2 <- predict(fit2,newdata=nd,type='response')
+nd$predVal3 <- predict(fit3,newdata=nd,type='response')
+nd$predVal4 <- predict(fit4,newdata=nd,type='response')
+nd$predVal5 <- predict(fit5,newdata=nd,type='response')
+head(nd)
+#plot(nd$predVal3,nd$predVal4)
+#plot(nd$predVal2,nd$predVal4)
+#plot(nd$predVal4,nd$predVal5)
+
+#plot data and predicted values
+range(tAlls$ld10,na.rm=T)
+plot(tAlls$ld10,tAlls$yval,main=yvalname)
+points(nd$ld10,nd$predVal0,lwd=4) # linear size
+points(nd$ld10,nd$predVal1,lwd=4) # quadratic size
+points(nd$ld10,nd$predVal2,lwd=4) # qsize + plots only
+points(nd$ld10,nd$predVal3,lwd=4) # qsize + fire levels
+points(nd$ld10,nd$predVal4,lwd=4) # qsize + fire levels + plots
+points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
+
+rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
+points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
+
+pAvg <- rep(NA,11)
+i=1
+fs=1
+for (fsv in 1:4) {
+  fs <- fsv-1
+  for (i in 1:nvals) {
+    ld <- ld10vals[i]
+    pAvg[i] <- mean(nd$predVal5[which(nd$ld10==ld & nd$fsCat==fs)])
+  }
+  #print(pAvg)
+  points(ld10vals,pAvg,col='red',lwd=4,type='b')
 }
-
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
+
+## We have an issue with apparent higher survival in small individuals. Let's investigate
+#plot(Live.18~ld10,data=tAlls)
 
 # next section not edited to separate TR and SA, not valid!!
 if (FALSE) {
@@ -308,9 +360,9 @@ if (FALSE) {
   for (i in 1:length(spA))
   {
     (species <- spA[i])
-    tmp <- tAll[which(tAll$Species.13==species),]
-    N <- length(which(!is.na(tmp$Basal.Area.13) & !is.na(tmp$Live.18)))
-    fit <- glm(Live.18~ld10,data=tmp,family='binomial')
+    tAlls <- tAll[which(tAll$Species.13==species),]
+    N <- length(which(!is.na(tAlls$Basal.Area.13) & !is.na(tAlls$Live.18)))
+    fit <- glm(Live.18~ld10,data=tAlls,family='binomial')
     pval <- predict(fit,newdata=nd,type='response')
     nd <- data.frame(nd,pval)
     names(nd)[length(names(nd))] <- paste('pSurv_',species,sep='')
@@ -330,11 +382,11 @@ if (FALSE) {
   
   plotSP <- function(tAll,species=NULL,xlims=range(tAll$ld10,na.rm=T))
   {
-    tmp <- tAll[which(tAll$Species.13==species),]
-    mindbh <- min(tmp$ld10,na.rm=T)
-    maxdbh <- max(tmp$ld10,na.rm=T)
-    plot(tmp$ld10,tmp$Live.18,main=species,xlim=xlims)
-    fit <- glm(Live.18~ld10,data=tmp,family='binomial')
+    tAlls <- tAll[which(tAll$Species.13==species),]
+    mindbh <- min(tAlls$ld10,na.rm=T)
+    maxdbh <- max(tAlls$ld10,na.rm=T)
+    plot(tAlls$ld10,tAlls$Live.18,main=species,xlim=xlims)
+    fit <- glm(Live.18~ld10,data=tAlls,family='binomial')
     nd <- with(tAll,data.frame(ld10=seq(mindbh,maxdbh,length.out=1001)))
     pval <- predict(fit,newdata=nd,type='response')
     lines(nd$ld10,pval)  
@@ -473,11 +525,11 @@ for (i in 1:length(FireLevel.vals)) {
   nd2$pSurvAll <- predict(fit2,newdata=nd2,type='response')
   head(nd2)
   
-  plotSpecies <- function(spname,nd.tmp=nd2) {
-    tmp <- tAlls[which(tAlls$Species.13==spname),]
+  plotSpecies <- function(spname,nd.tAlls=nd2) {
+    tAlls <- tAlls[which(tAlls$Species.13==spname),]
     #op=par(mfrow=c(1,2))
     
-    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
+    # plot(tAlls$FireSev,tAlls$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
     # i=1
     # for (i in 1:nvals) {
     #   ndt <- nd2[which(nd2$Species.13==spname & nd2$ld10==ld10.vals[i]),]
@@ -485,10 +537,10 @@ for (i in 1:length(FireLevel.vals)) {
     #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ld10.vals[i])
     # }
     
-    plot(tmp$ld10,tmp$Live.18,xlim=range(tAlls$ld10,na.rm=T))
+    plot(tAlls$ld10,tAlls$Live.18,xlim=range(tAlls$ld10,na.rm=T))
     i=2
-    for (i in 1:length(unique(nd.tmp$fsLevel))) {
-      ndt <- nd.tmp[which(nd2$Species.13==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
+    for (i in 1:length(unique(nd.tAlls$fsLevel))) {
+      ndt <- nd.tAlls[which(nd2$Species.13==spname & nd.tAlls$fsLevel==fsLevels.vals[i]),]
       lines(ndt$ld10,ndt$pSurvAll)
       text(ld10.vals[5],ndt$pSurvAll[which(ndt$ld10==ld10.vals[5])],fsLevels.vals[i])
     }
@@ -547,11 +599,11 @@ for (i in 1:length(FireLevel.vals)) {
   head(nd2)
   
   spname='QUEAGR'
-  plotSpecies <- function(spname,nd.tmp=nd2) {
-    tmp <- tAlls[which(tAlls$Species.13==spname),]
+  plotSpecies <- function(spname,nd.tAlls=nd2) {
+    tAlls <- tAlls[which(tAlls$Species.13==spname),]
     #op=par(mfrow=c(1,2))
     
-    # plot(tmp$FireSev,tmp$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
+    # plot(tAlls$FireSev,tAlls$Live.18,main=spname,xlim=range(tAlls$FireSev,na.rm=T))
     # i=1
     # for (i in 1:nvals) {
     #   ndt <- nd2[which(nd2$Species.13==spname & nd2$ld10==ld10.vals[i]),]
@@ -559,10 +611,10 @@ for (i in 1:length(FireLevel.vals)) {
     #   text(FireSev.vals[5],ndt$pSurvAll[which(ndt$FireSev==FireSev.vals[5])],ld10.vals[i])
     # }
     
-    plot(tmp$ld10,tmp$gCrown.18,xlim=range(tAlls$ld10,na.rm=T))
+    plot(tAlls$ld10,tAlls$gCrown.18,xlim=range(tAlls$ld10,na.rm=T))
     i=2
-    for (i in 1:length(unique(nd.tmp$fsLevel))) {
-      ndt <- nd.tmp[which(nd2$Species.13==spname & nd.tmp$fsLevel==fsLevels.vals[i]),]
+    for (i in 1:length(unique(nd.tAlls$fsLevel))) {
+      ndt <- nd.tAlls[which(nd2$Species.13==spname & nd.tAlls$fsLevel==fsLevels.vals[i]),]
       lines(ndt$ld10,ndt$pSurvAll)
       text(ld10.vals[5],ndt$pSurvAll[which(ndt$ld10==ld10.vals[5])],fsLevels.vals[i])
     }
