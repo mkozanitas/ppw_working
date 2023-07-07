@@ -543,6 +543,8 @@ tAllsp <- tAlls[which(tAlls$fsCat %in% FVals & tAlls$Species.18 %in% 'UMBCAL'),]
 tAllsp <- tAllsp[which(!is.na(tAllsp$ld10)),]
 dim(tAllsp)
 
+# CODE MOVED TO BOTTOM TO CREATE THREE COLOR PLOT WITH BINOMIAL MODELS - NOT CLEANED UP YET
+
 # NOW FIT MULTINOMIAL
 require(nnet)
 
