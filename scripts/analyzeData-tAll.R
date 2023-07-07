@@ -229,6 +229,12 @@ types <- c('TR','SA')
 # adjust values here to subset data, for TR and/or SA and fire severity level and species
 tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
 
+# Optional - remove saplings from new plots, where we might be introducing detection bias towards small survivors
+plots <- sort(unique(tAlls$Plot.18))
+dim(tAlls)
+tAlls <- tAlls[which(tAlls$Plot.18 %in% plots[1:50] | tAlls$Type.18=='TR'),]
+dim(tAlls)
+
 # if needed trim data by stem size
 #tAlls <- tAlls[which(tAlls$ld10>=c(-0.5)),]
 
