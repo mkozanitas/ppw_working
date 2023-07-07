@@ -185,19 +185,19 @@ table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # if want to change and use size from a different year, change here. Then from here on ld10 is generic
 hist(tAll$d10.18)
-tAll$ld10 <- log10(tAll$d10.13)
+tAll$ld10 <- log10(tAll$d10.18)
 tAll$ld10[which(!is.finite(tAll$ld10))] <- NA
 hist(tAll$ld10)
 summary(tAll$ld10,useNA='always')
 
 # now move diameters forward from 2013 (or 2018, if we use 2013 above), if it's missing in 2018. This can be commented out so that we only use data from one year or the other, and don't mix. I just tried this, for LN.18 analysis - it gets rid of the U-shaped result. So the result is coming from mixing data from plants censuses only in 2013 with those added in 2018. Now we have to figure out why!
-tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.18[which(is.na(tAll$ld10))])
+tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.13[which(is.na(tAll$ld10))])
 summary(tAll$ld10,useNA='always')
 hist(tAll$ld10)
 
 # smallest tree now had d10 = 1*1.176+1.07. log10 of this = 0.3514
 
-# create ts to switch between types
+# create types to switch between types
 types <- c('SA','TR')
 op=par(mfrow=c(1,2))
 for (i in 1:2) {
@@ -229,11 +229,18 @@ types <- c('TR','SA')
 # adjust values here to subset data, for TR and/or SA and fire severity level and species
 tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
 
-# Optional - remove saplings from new plots, where we might be introducing detection bias towards small survivors
-plots <- sort(unique(tAlls$Plot.18))
+# Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
+newSap <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='SA')
+length(newSap)
+tAlls <- tAlls[-newSap,]
 dim(tAlls)
-tAlls <- tAlls[which(tAlls$Plot.18 %in% plots[1:50] | tAlls$Type.18=='TR'),]
-dim(tAlls)
+
+# how many new trees added
+newTrees <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='TR')
+table(tAlls$Plot.18[newTrees])
+
+# how many saplings grew into trees
+table(tAlls$Type.13,tAlls$Type.18)
 
 # if needed trim data by stem size
 #tAlls <- tAlls[which(tAlls$ld10>=c(-0.5)),]
@@ -244,7 +251,7 @@ nrow(tAlls)
 (N <- length(which(!is.na(tAlls$ld10) & !is.na(tAlls$Live.18))))
 
 #set yvalue
-yvalname <- 'LN.18'
+yvalname <- 'DR.18'
 tAlls$yval <- tAlls[,yvalname]
 
 #fit model
@@ -282,6 +289,7 @@ fit4 <- glmer(yval~ld10+ld10.2+northness+fsCat+(1|fPlot),data=tAlls,family='bino
 BIC(fit4)
 # YES! (for both types, absp, all fsLevels....)
 
+## MAIN MODEL WE'RE FOCUSING ON
 fit5 <- glm(yval~ld10+ld10.2+fsCat+northness+Species.18,data=tAlls,family='binomial')
 BIC(fit5)
 coefficients(fit5)
@@ -303,9 +311,9 @@ ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,50,100)),max(tA
 
 ndf <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
 names(ndf) <- c('ld10','fPlot','fsCat','Species.18')
-ndf$fPlot <- as.factor(nd$fPlot)
-ndf$fsCat <- as.factor(nd$fsCat)
-ndf$ld10.2 <- nd$ld10^2
+ndf$fPlot <- as.factor(ndf$fPlot)
+ndf$fsCat <- as.factor(ndf$fsCat)
+ndf$ld10.2 <- ndf$ld10^2
 ndf$northness <- 0
 head(ndf)
 dim(ndf)
@@ -350,6 +358,7 @@ points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
 #rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
 #points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
 
+# visualize mean fire severity
 pAvg <- rep(NA,11)
 i=1
 fs=1
@@ -364,11 +373,15 @@ for (fsv in 1:4) {
   #print(pAvg)
   points(ld10vals,pAvg,col='red',lwd=4,type='b')
 }
+
 # see predicted values for each species at selected size and fire severity. These can be plotted against bark thickness! Use predVal5 or predVal5l. Others don't have species so they are all the same. ld10=1 is for basal diameter of 10cm. Nice spread among species.
 nd[which(nd$ld10==1&nd$fsCat==1),]
 
 ### read in bark thickness here!!!
-
+bt <- data.frame(species=c('ARBMEN','HETARB'),t10=c(2,3))
+b2p <- match(nd$Species.18,bt$species)
+nd$t10 <- bt$t10[b2p]
+nd[which(nd$ld10==1&nd$fsCat==1),]
 
 #### END FRIDAY 6/30/23
 #abline(h=0.5,lty=2) 
