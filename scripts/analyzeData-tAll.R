@@ -517,7 +517,7 @@ par(op)
 
 # 7/7/23 - everything working to here!!!!
 
-# SECTION 'THREE_FATES'
+# SECTION 'THREE_FATES' - binomial and multinomial compared, for visual purposes
 tAlls$Dead.18 <- 1 - tAlls$Live.18
 tAlls$fate3.18 <- (-1)
 tAlls$fate3.18[which(tAlls$fate.18=='DN')] <- 0
@@ -527,6 +527,7 @@ table(tAlls$fate3.18)
 
 (f3Levels <- 0:2)
 (f3PlotVals <- c(0.95,1,1.05))
+f3Labs <- c('DN','DR','LR+LN')
 (f3PlotCols <- c('black','red','green'))
 
 tAlls$f3PlotVals <- f3PlotVals[match(tAlls$fate3.18,f3Levels)]
@@ -570,6 +571,21 @@ for (i in 1:3) points(tAllsp$ld10,fitted(fit.mn)[,i],col=f3PlotCols[i])
 
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
+
+# Full Multinomial model
+tAllsp <- tAlls[which(!is.na(tAlls$ld10)),]
+dim(tAllsp)
+
+fit.mn <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2 + northness + fsCat + Species.18, data=tAllsp)
+fit.mn
+dim(fitted(fit.mn))
+for (i in 1:3) plot(fitted(fit.mn)[,i]~tAllsp$ld10,col=f3PlotCols[i],main=paste('Full multinomial',f3Labs[i]))
+BIC(fit.mn)
+
+# drop northness to check if all justified
+fit.mnx <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2 + fsCat + Species.18, data=tAllsp)
+BIC(fit.mn);BIC(fit.mnx)
+# northness supported
 
 # END CLEAN CODE HERE!!! redundant stuff happening below
 
