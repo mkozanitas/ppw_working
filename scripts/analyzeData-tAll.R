@@ -263,6 +263,7 @@ tAlls$fPlot <- as.factor(tAlls$Plot.18)
 nrow(tAlls)
 (N <- length(which(!is.na(tAlls$ld10) & !is.na(tAlls$Live.18))))
 
+# START SECTION 'YVAR_MODEL' (search for that name below to see where it ends)
 ### START MODELING HERE
 #set yvalue
 yvalname <- 'gCrown.18'
@@ -431,8 +432,6 @@ tmp <- nd[which(nd$ld10==log10(30)&nd$fsCat==3),]
 plot(predVal5~t30,data=tmp)
 text(tmp$t30,tmp$predVal5,labels=tmp$Species.18)
 
-#### END FRIDAY 7/7/23
-
 #abline(h=0.5,lty=2) 
 #h draws horizontal line at .5, lty -dashed or solid, lwd is line width
 
@@ -513,11 +512,12 @@ for (selSize in 2:4) {
   tmp <- nd[which(!nd$Species.18 %in% c('HETARB','ARCMAN')),]
   barplot(predVal5~Species.18,data=tmp[which(tmp$ld10==log10(predSizes[selSize]) & tmp$fsCat==fsl),],ylim=c(0,1),main=paste(yvalname,'@ FSLev',fsl,'predval@',predSizes[selSize],'cm dbh'))
 }
+par(op)
+## END SECTION 'YVAR_MODEL'. THIS IS THE END OF THE ANALYSES AND VISUALIZATIONS THAT START WITH THE SELECTION OF A DEPENDENT VARIABLE.
 
 # 7/7/23 - everything working to here!!!!
 
-#changed TB.18 to DR.18 from here on... i think thats right bc TB meant topkilled with basal 
-
+# SECTION 'THREE_FATES'
 tAlls$Dead.18 <- 1 - tAlls$Live.18
 tAlls$fate3.18 <- (-1)
 tAlls$fate3.18[which(tAlls$fate.18=='DN')] <- 0
@@ -530,34 +530,44 @@ table(tAlls$fate3.18)
 (f3PlotCols <- c('black','red','green'))
 
 tAlls$f3PlotVals <- f3PlotVals[match(tAlls$fate3.18,f3Levels)]
-tAlls$f3PlotCols <- f3PlotCols[match(tAlls$fate3.18,f3Levels)]
 
-# comment in or out next two lines
+# comment in or out to select one of these options
 FireLevels <- c('Mod+High'); FVals <- 2:3
-#FireLevels <- c('ANY LEVEL'); FVals <- 1:3 #changes FireSev range to all c(1:3)
+FireLevels <- c('Low'); FVals <- 1
+#FireLevels <- c('None'); FVals <- 0
+#FireLevels <- c('Low:High'); FVals <- 1:3 #changes FireSev range to all c(1:3)
 
 #### NEED TO SUBSET BY TYPE HERE
-tAllsp <- tAlls[which(tAlls$fsCat %in% FVals & tAlls$Species.18 %in% 'UMBCAL'),]
+tAllsp <- tAlls[which(tAlls$fsCat %in% FVals & tAlls$Species.18 %in% spA),]
 
 # remove rows with no size data
 tAllsp <- tAllsp[which(!is.na(tAllsp$ld10)),]
 dim(tAllsp)
 
-# CODE MOVED TO BOTTOM TO CREATE THREE COLOR PLOT WITH BINOMIAL MODELS - NOT CLEANED UP YET
+# FIT EACH FATE SEPARATELY AND THEN COMPARE MULTINOMIAL
+plot(f3PlotVals~ld10,data=tAllsp,col=tAllsp$f3PlotCols,ylim=c(0,1.1),main=paste('Fire Level:',FireLevels))
+
+fit1 <- glm(Dead.18~ld10 +ld10.2,data=tAllsp)
+points(fitted(fit1)~tAllsp$ld10,col=f3PlotCols[1])
+
+fit2 <- glm(DR.18~ld10 +ld10.2,data=tAllsp)
+points(fitted(fit2)~tAllsp$ld10,col=f3PlotCols[2])
+
+fit3 <- glm(gCrown.18~ld10 +ld10.2,data=tAllsp)
+points(fitted(fit3)~tAllsp$ld10,col=f3PlotCols[3])
 
 # NOW FIT MULTINOMIAL
 require(nnet)
 
 # MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ld10.2' - changes results some
-fit1 <- multinom(as.factor(fate3.18) ~ ld10 +ld10.2, data=tAllsp)
-fit1
-head(round(fitted(fit1),2))
-dim(fitted(fit1))
+fit.mn <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2, data=tAllsp)
+fit.mn 
+head(round(fitted(fit.mn),2))
+dim(fitted(fit.mn))
 
-plot(tAllsp$ld10,tAllsp$Live.18)
-points(tAllsp$ld10,fitted(fit1)[,1],col='black')
-points(tAllsp$ld10,fitted(fit1)[,2],col='red')
-points(tAllsp$ld10,fitted(fit1)[,3],col='green')
+plot(f3PlotVals~ld10,data=tAllsp,col=tAllsp$f3PlotCols,ylim=c(0,1.1),main=paste('Fire Level:',FireLevels))
+for (i in 1:3) points(tAllsp$ld10,fitted(fit.mn)[,i],col=f3PlotCols[i])
+
 summary(apply(fitted(fit1)[,1:3],1,sum))
 #######################
 
