@@ -25,7 +25,20 @@ names(spNames)[which(names(spNames)=='x')] <- 'spName'
 
 # input merged dataframe
 tAll <- read.csv('data/tAll.csv',as.is=T)
+dim(tAll)
+table(tAll$Plot.13,useNA = 'always')
+table(tAll$Plot.18,useNA = 'always')
+table(tAll$Plot.19,useNA = 'always')
+table(tAll$Plot.20,useNA = 'always')
 
+# How many of the 2013s are TS - 250 - these are excluded from summary stats
+length(which(tAll$Type.13=='TS'))
+length(which(tAll$Type.18=='TS'))
+
+missStems <- which(is.na(tAll$Plot.13) & tAll$Type.19=='SA')
+head(tAll[missStems[1],])
+
+table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 # initial growth analysis to identify potentially problematic size data
 # suggest taking median eliminating most negative and very large outliers. Suggests median diameter growth of 0.2 cm in five years
 tAll$ddbh.1318 <- tAll$dbh.18-tAll$dbh.13
@@ -81,12 +94,17 @@ tail(fst12)
 sum(fst12$nMissing) #fixed 1330 dups we were previously ignoring- should now be zero
 
 # Summary across types #GHYTIGYFYGIGH - all fates in a table for TR, SA and overall- all species included
-tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
-(tree.sum-tree.sum[6])/(tree.sum[1]-tree.sum[6])
+tree.sum <- apply(fst12[fst12$Type=='TR',3:7],2,sum)
+tree.sum
+(tree.sum)/(tree.sum[1])
 
-sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
-(sap.sum-sap.sum[6])/(sap.sum[1]-sap.sum[6])
+sap.sum <- apply(fst12[fst12$Type=='SA',3:7],2,sum)
+sap.sum
+(sap.sum)/(sap.sum[1])
 
+all.sum <- tree.sum+sap.sum
+all.sum
+all.sum/all.sum[1]
 # NaN errors when calculating for TS bc only using -c(1:2)?
 #ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum,na.rm=T)
 #(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
@@ -125,6 +143,19 @@ fst12a <- fst12[which(fst12$Species %in% AbSp),]
 # look at TR and SA in order of percent Survival  #jkhfihiuiuh
 fst12a[fst12a$Type=='TR',][order(fst12a$Species[fst12a$Type=='TR']),]
 fst12a[fst12a$Type=='SA',][order(fst12a$Species[fst12a$Type=='SA']),]
+
+# summary of fates for common species
+tree.sum <- apply(fst12a[fst12a$Type=='TR',3:7],2,sum)
+tree.sum
+(tree.sum)/(tree.sum[1])
+
+sap.sum <- apply(fst12a[fst12a$Type=='SA',3:7],2,sum)
+sap.sum
+(sap.sum)/(sap.sum[1])
+
+all.sum <- tree.sum+sap.sum
+all.sum
+all.sum/all.sum[1]
 #fst12a[fst12a$Type=='TS',][order(fst12a$percSurv[fst12a$Type=='TS']),]
 
 

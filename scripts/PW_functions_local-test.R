@@ -33,7 +33,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   mega.data<-lapply(paste(file.list, plot.list, ".csv", sep=''), function(x) read.csv(text=getURL(x, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")), na.strings=c("","NA") , skip=3)) 
   names(mega.data) <- plot.list # assigns a name to each item of the list
   #print(names(mega.data[[1]]))
-  i=1
+  i=40
   for (i in 1:length(mega.data)) 
   {
     Plot<-plot.list[i]
