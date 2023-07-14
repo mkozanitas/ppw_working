@@ -588,10 +588,24 @@ fit.mn
 dim(fitted(fit.mn))
 for (i in 1:3) plot(fitted(fit.mn)[,i]~tAllsp$ld10,col=f3PlotCols[i],main=paste('Full multinomial',f3Labs[i]))
 BIC(fit.mn)
+str(fitted(fit.mn))
+
+plot(f3PlotVals~ld10,data=tAllsp,col=tAllsp$f3PlotCols,ylim=c(0,1.1),main='Full multinomial')
+selR <- which(tAllsp$Species.13=='QUEAGR' & tAllsp$fsCat==3)
+for (i in 1:3) points(tAllsp$ld10,fitted(fit.mn)[,i],col=f3PlotCols[i])
+for (i in 1:3) points(tAllsp$ld10[selR],fitted(fit.mn)[selR,i],col= 'purple',pch=19)
+
+# try drop 1
+#drop1(fit.mn,c('ld10'))
 
 # drop northness to check if all justified
 fit.mnx <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2 + fsCat + Species.18, data=tAllsp)
 BIC(fit.mn);BIC(fit.mnx)
+
+plot(f3PlotVals~ld10,data=tAllsp,col=tAllsp$f3PlotCols,ylim=c(0,1.1),main='Full multinomial')
+selR <- which(tAllsp$Species.13=='QUEAGR' & tAllsp$fsCat==2)
+for (i in 1:3) points(tAllsp$ld10,fitted(fit.mnx)[,i],col=f3PlotCols[i])
+for (i in 1:3) points(tAllsp$ld10[selR],fitted(fit.mnx)[selR,i],col= 'purple',pch=19)
 # northness supported
 
 # END CLEAN CODE HERE!!! redundant stuff happening below

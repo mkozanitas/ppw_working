@@ -496,13 +496,24 @@ northness <- function(asp,slp,units='deg') {
   cos(asp)*sin(slp)
 }
 
+eastness <- function(asp,slp,units='deg') {
+  if (units=='deg') {
+    asp <- 2*pi*asp/360
+    slp <- 2*pi*slp/360
+  }
+  sin(asp)*sin(slp)
+}
+
 plotInfo <- get.plot.info()
 plotInfo
 plotInfo$northness <- northness(plotInfo$Aspect,plotInfo$Slope)
+plotInfo$eastness <- eastness(plotInfo$Aspect,plotInfo$Slope)
 ###
 
 # transfer northness to tAll
 p2t <- match(tAll$Plot.18,plotInfo$Plot)
 tAll$northness <- plotInfo$northness[p2t]
+tAll$eastness <- plotInfo$eastness[p2t]
 
 write.csv(tAll,'data/tAll.csv')
+
