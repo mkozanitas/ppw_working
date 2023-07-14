@@ -35,10 +35,12 @@ table(tAll$Plot.20,useNA = 'always')
 length(which(tAll$Type.13=='TS'))
 length(which(tAll$Type.18=='TS'))
 
-missStems <- which(is.na(tAll$Plot.13) & tAll$Type.19=='SA')
+missStems <- which(is.na(tAll$Plot.18) & tAll$Type.19=='SA')
+length(missStems)
 head(tAll[missStems[1],])
 
 table(tAll$Type.18,tAll$Type.19,useNA = 'always')
+
 # initial growth analysis to identify potentially problematic size data
 # suggest taking median eliminating most negative and very large outliers. Suggests median diameter growth of 0.2 cm in five years
 tAll$ddbh.1318 <- tAll$dbh.18-tAll$dbh.13

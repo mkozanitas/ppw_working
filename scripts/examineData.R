@@ -468,6 +468,22 @@ length(intersect(n99,newPlot))
 summary(tAll$dbh.18[newPlot])
 summary(tAll$dbh.18[n99])
 
+# how many new plants added each year
+table(tAll$Type.13,tAll$Type.18,useNA = 'always')
+table(tAll$Type.18,tAll$Type.19,useNA = 'always')
+table(tAll$Type.19,tAll$Type.20,useNA = 'always')
+
+# output suspicious transitions
+s1 <- which(tAll$Type.13=='TR' & tAll$Type.18=='SA')
+tAll[s1,c('Plot.13','Num')]
+
+s1 <- which(tAll$Type.18=='TR' & tAll$Type.19=='SA')
+tAll[s1,c('Plot.13','Num')]
+
+new19sap <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
+tAll[new19sap,c('Plot.19','Num')]
+table(tAll$Plot.19[new19sap])
+
 # Now start filling in pre-fire data from 2018 data, for completeness, for all new individuals
 #create13Data <- c(newPlot,newTrees[1:12])
 tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]

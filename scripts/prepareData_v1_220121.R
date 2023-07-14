@@ -6,13 +6,13 @@ source('scripts/PW_functions_local-test.R')
 ## FOR NOW CODE TO EXPORT DATA WITH BRANCHES ALL COMMENTED OUT
 
 # Load the per-year data (without aggregating branches), then set to branches=F to collapse points
-id13 <- get.indv.data(year = 2013,branches=F)
+id13 <- get.indv.data(year = 2013,branches=F,stump=F,orig.dead=F)
 dim(id13)
 head(id13)
 head(sort(id13$Num))
 
 #to see all individual branches...points not collapsed use branches=T
-id13b <- get.indv.data(year = 2013,branches=T)
+id13b <- get.indv.data(year = 2013,branches=T,stump=F,orig.dead=F)
 dim(id13b)
 head(id13b)
 head(sort(id13b$Num))

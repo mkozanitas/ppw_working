@@ -75,16 +75,18 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
                                   "Dead.Stump", 
                                   "SA.Height_cm", "SA.BD_cm", 
                                   "SA.Stems", "DBH_cm", "X_cm", "Y_cm", "Notes") 
-      mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
-
-      # subset no stumps and original dead
-      if(stump==T & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump)))       
-      # subset no stumps and original dead
-      if(stump==F & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump))) 
-      # subset original dead individuals
-      if(stump==T & orig.dead==F) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | is.na(mega.data[[i]]$Dead.Stump)))
-      #subset both 
-      if(stump==F & orig.dead==F) {mega.data[[i]]<-subset(mega.data[[i]], subset=(is.na(mega.data[[i]]$Dead.Stump)))
+      if (TRUE) {
+        mega.data[[i]]$Num[which(mega.data[[i]]$Dead.Stump %in% c("D","S"))] <- 999
+        
+        # subset no stumps and original dead
+        if(stump==T & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump)))       
+        # subset no stumps and original dead
+        if(stump==F & orig.dead==T) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="D" | is.na(mega.data[[i]]$Dead.Stump))) 
+        # subset original dead individuals
+        if(stump==T & orig.dead==F) mega.data[[i]]<-subset(mega.data[[i]], subset=(mega.data[[i]]$Dead.Stump=="S" | is.na(mega.data[[i]]$Dead.Stump)))
+        #subset both 
+        if(stump==F & orig.dead==F) {mega.data[[i]]<-subset(mega.data[[i]], subset=(is.na(mega.data[[i]]$Dead.Stump)))
+        }
       }
     }
   }
@@ -173,7 +175,7 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$dbh[which(indv.data$Type=="TR")] <- indv.data$DBH_cm[which(indv.data$Type=="TR")]
   
   indv.data$Basal.Area <- ((indv.data$dbh/2)^2)*(pi)
-
+  
   # For saplings adjust basal area by number of stems < 10cm. As done here it overestimates by multiplying by stem number, and the other stems are smaller than main stem
   #indv.data$Basal.Area[which(indv.data$Type=="SA")] <-(indv.data$Basal.Area[which(indv.data$Type=="SA")])*(indv.data$SA.Stems[which(indv.data$Type=="SA")])
   
