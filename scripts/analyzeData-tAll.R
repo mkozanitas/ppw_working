@@ -48,7 +48,7 @@ write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquesti
 # ANALYZE BY SPECIES AND TYPE for 2018 post-fire fates
 (use.species <- spNames$spName)
 
-# create fst dataframe - FateSummaryTable
+# create fst dataframe - FateSummaryTable for time 1 -> 2 (2013 and 2018)
 fst12 <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
 head(fst12)                  
 tail(fst12)
@@ -80,21 +80,21 @@ head(fst12)
 tail(fst12)
 sum(fst12$nMissing) #fixed 1330 dups we were previously ignoring- should now be zero
 
-# Summary across all species and types #GHYTIGYFYGIGH - all categories at once in a table 
+# Summary across types #GHYTIGYFYGIGH - all fates in a table for TR, SA and overall- all species included
 tree.sum <- apply(fst12[fst12$Type=='TR',-c(1:2)],2,sum)
 (tree.sum-tree.sum[6])/(tree.sum[1]-tree.sum[6])
 
 sap.sum <- apply(fst12[fst12$Type=='SA',-c(1:2)],2,sum)
 (sap.sum-sap.sum[6])/(sap.sum[1]-sap.sum[6])
 
-# NaN errors?
+# NaN errors when calculating for TS bc only using -c(1:2)?
 #ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum,na.rm=T)
 #(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
 
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
-#GHYTIGYFYGIGH - same as above but just for one category at a time (DN/DR/LR/LN)
+# same as above but just for one category at a time (DN/DR/LR/LN) DOESN'T WORK ANYMORE- can we delete up to creation of spN?
 
 SArows <- which(fst12$Type=='SA')
 TRrows <- which(fst12$Type=='TR')
@@ -110,18 +110,19 @@ spN <- table(tAll$Species.13)
 spN[order(spN)]
 
 (spA <- names(spN)[which(spN>=25)])
-spA <- spA[-which(spA=='QUEBER')] # drop QUEBER - none died!
+spA <- spA[-which(spA=='QUEBER')] # dropping QUEBER - none died!
 
 # dropping QUEBER, FRACAL, AMOCAL for now
 AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
 length(AbSp)
 
-# use abundant species identified above for ESA
+# use only abundant species identified above
 (spA <- AbSp)
 
+# creating fst12a to only use abundant species 
 fst12a <- fst12[which(fst12$Species %in% AbSp),]
 
-# look at TR and SA in order of percent Survival
+# look at TR and SA in order of percent Survival  #jkhfihiuiuh
 fst12a[fst12a$Type=='TR',][order(fst12a$Species[fst12a$Type=='TR']),]
 fst12a[fst12a$Type=='SA',][order(fst12a$Species[fst12a$Type=='SA']),]
 #fst12a[fst12a$Type=='TS',][order(fst12a$percSurv[fst12a$Type=='TS']),]
@@ -174,7 +175,7 @@ table(tAll$Plot.13[which(tAll$fsLevel==3)])
 
 # # Initial examination of dbh
 # dim(tAll)
-# length(which(tAll$Type.18=='TS'))
+# length(which(tAll$Type.18=='TS')) #kuyihuiughiu
 # nodbh <- which(is.na(tAll$dbh.13))
 # length(nodbh)
 # head(tAll[nodbh,])
@@ -209,7 +210,7 @@ par(op)
 # create squared variable for quadratic analysis
 tAll$ld10.2 <- tAll$ld10^2
 
-# check on fates
+# check on fates (for all 6945 indvs)
 table(tAll$Live.18, tAll$fate.18,useNA='always')
 
 # gCrown not properly coded, fixed here using fates
@@ -221,7 +222,7 @@ table(tAll$gCrown.18, tAll$fate.18,useNA='always')
 table(tAll$bSprout.18,tAll$fate.18,useNA='always')
 
 # 704 plants have fate=NA in 2018, let's have a look
-# these are points added in 2019 - deal with it later
+# these appear to be points added in 2019 - that many? -deal with it later
 NA704 <- which(is.na(tAll$fate.18))
 tAll[NA704[3],]
 
@@ -233,7 +234,7 @@ par(op)
 # or plot together
 plot(Live.18~ld10,data=tAll,main=paste('All',types[i]))
 
-# check fate values
+# check fate values ( for 6241 indvs- excluding the 704 NA's)
 table(tAll$Resprout.18,tAll$fate.18)
 
 #### SURVIVAL ANALYSIS - first cut, size only!!
@@ -245,11 +246,13 @@ tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Specie
 # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
 newSap <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='SA')
 length(newSap)
+table(tAlls$Plot.18[newSap])
 tAlls <- tAlls[-newSap,]
 dim(tAlls)
 
 # how many new trees added
 newTrees <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='TR')
+length(newTrees)
 table(tAlls$Plot.18[newTrees])
 
 # how many saplings grew into trees
@@ -313,6 +316,7 @@ coefficients(fit5)
 fit5x <- glm(yval~ld10+ld10.2+fsCat+Species.18,data=tAlls,family='binomial')
 BIC(fit5x)
 
+#without quadratic?
 fit5l <- glm(yval~ld10+fsCat+northness+Species.18,data=tAlls,family='binomial')
 BIC(fit5l)
 
@@ -413,7 +417,10 @@ plotSpecies('ARBMEN')
 plotSpecies('QUEAGR')
 plotSpecies('QUEDOU')
 plotSpecies('UMBCAL')
-plotSpecies('ARBMEN')
+plotSpecies('QUEGAR')
+plotSpecies('QUEKEL')
+plotSpecies('HETARB')
+plotSpecies('ARCMAN')
 
 # see predicted values for each species at selected size and fire severity. These can be plotted against bark thickness! Use predVal5 or predVal5l. Others don't have species so they are all the same. ld10=1 is for basal diameter of 10cm. Nice spread among species.
 nd[which(nd$ld10==1&nd$fsCat==1),]
