@@ -16,6 +16,7 @@ id13b <- get.indv.data(year = 2013,branches=T,stump=F,orig.dead=F)
 dim(id13b)
 head(id13b)
 head(sort(id13b$Num))
+id13[id13$Num==1671,]
 
 # sloppy coding to be able to turn a code snippet on and off
 if (FALSE) 
