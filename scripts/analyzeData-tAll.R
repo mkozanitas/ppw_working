@@ -34,6 +34,8 @@ table(tAll$Plot.20,useNA = 'always')
 # How many of the 2013s are TS - 250 - these are excluded from summary stats
 length(which(tAll$Type.13=='TS'))
 length(which(tAll$Type.18=='TS'))
+length(which(tAll$Type.19=='TS'))
+length(which(tAll$Type.20=='TS'))
 
 missStems <- which(is.na(tAll$Plot.18) & tAll$Type.19=='SA')
 length(missStems)

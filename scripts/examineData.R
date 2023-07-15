@@ -473,7 +473,7 @@ table(tAll$Type.13,tAll$Type.18,useNA = 'always')
 table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 table(tAll$Type.19,tAll$Type.20,useNA = 'always')
 
-# output suspicious transitions
+# output suspicious transitions- can switch Type here to look at other combos
 s1 <- which(tAll$Type.13=='TR' & tAll$Type.18=='SA')
 tAll[s1,c('Plot.13','Num')]
 
