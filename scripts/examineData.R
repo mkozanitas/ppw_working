@@ -473,11 +473,14 @@ table(tAll$Type.13,tAll$Type.18,useNA = 'always')
 table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 table(tAll$Type.19,tAll$Type.20,useNA = 'always')
 
-# output suspicious transitions- can switch Type here to look at other combos
+# output suspicious transitions- can switch Type and year here to look at other combos
 s1 <- which(tAll$Type.13=='TR' & tAll$Type.18=='SA')
 tAll[s1,c('Plot.13','Num')]
 
 s1 <- which(tAll$Type.18=='TR' & tAll$Type.19=='SA')
+tAll[s1,c('Plot.13','Num')]
+
+s1 <- which(tAll$Type.19=='TR' & tAll$Type.20=='SA')
 tAll[s1,c('Plot.13','Num')]
 
 new19sap <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
