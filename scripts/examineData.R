@@ -474,13 +474,13 @@ table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 table(tAll$Type.19,tAll$Type.20,useNA = 'always')
 
 # output suspicious transitions- can switch Type and year here to look at other combos
-s1 <- which(tAll$Type.13=='TR' & tAll$Type.18=='SA')
+s1 <- which(tAll$Type.13=='TS' & tAll$Type.18=='TR')
+tAll[s1,c('Plot.13','Num','Species.13')]
+
+s1 <- which(tAll$Type.18=='TS' & tAll$Type.19=='TR')
 tAll[s1,c('Plot.13','Num')]
 
-s1 <- which(tAll$Type.18=='TR' & tAll$Type.19=='SA')
-tAll[s1,c('Plot.13','Num')]
-
-s1 <- which(tAll$Type.19=='TR' & tAll$Type.20=='SA')
+s1 <- which(tAll$Type.19=='TS' & tAll$Type.20=='TR')
 tAll[s1,c('Plot.13','Num')]
 
 new19sap <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
@@ -536,3 +536,39 @@ tAll$eastness <- plotInfo$eastness[p2t]
 
 write.csv(tAll,'data/tAll.csv')
 
+#Summarizing Basal Area using 2018 data and filling in missing trees using 
+
+library(dplyr)
+library(tidyverse)
+
+AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
+
+tAll$BAmerge <-ifelse(is.na(tAll$Basal.Area.18),tAll$Basal.Area.13,tAll$Basal.Area.18)
+tAll$Sp.Type <- paste(tAll$Type.13,tAll$Species.13,sep='_')
+
+tAll %>%
+  filter(Type.13=='TR') %>% 
+  group_by(Species.13,fate.18) %>%
+  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
+  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
+  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T)) %>% 
+  filter(Species.13 %in% AbSp) 
+
+tAll %>%
+  group_by(Sp.Type,fate.18) %>%
+  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
+  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
+  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T))
+
+table(tAll$Type.13,tAll$Type.18,useNA = 'always')
+table(tAll$Type.18,tAll$Type.19,useNA = 'always')
+table(tAll$Type.19,tAll$Type.20,useNA = 'always')
+
+
+
+tAll %>%
+  filter(Type.18=='TR') %>% 
+  group_by(fate.18) %>%
+  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
+  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
+  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T))

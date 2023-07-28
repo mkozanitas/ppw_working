@@ -400,6 +400,10 @@ head(nd)
 
 #plot data and predicted values
 range(tAlls$ld10,na.rm=T)
+
+plotToFile <- T
+getwd()
+if (plotToFile) png('figures/outputfig.png',width = 600,height = 400)
 plot(tAlls$ld10,tAlls$yval,main=yvalname)
 #points(nd$ld10,nd$predVal0,lwd=4) # linear size
 #points(nd$ld10,nd$predVal1,lwd=4) # quadratic size
@@ -410,6 +414,10 @@ plot(tAlls$ld10,tAlls$yval,main=yvalname)
 # comment out next line, and uncomment below if you want to see linear size model instead
 points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
 #points(nd$ld10,nd$predVal5l,lwd=4) # qsize + fire levels + species
+if (plotToFile) {
+  system('open figures/outputfig.png')
+  dev.off()
+}
 
 #rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
 #points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
