@@ -1,4 +1,9 @@
+## This script runs analyses to examine community weighted means of climate niche values, across landscapes and before and after fire. The central question is whether communities shift towards higher CWD niches (or other climate factors) due to fire induced mortality, and post-fire regeneration. This is the central hypothesis of the NSF RAPID grant, submitted post-Tubbs fire.
+
 # RUN prepareData and examineData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
+source('scripts/prepareData_v1_220121.R')
+source('scripts/examineData.R')
+
 
 rm(list=ls())
 library(lme4)
@@ -9,9 +14,9 @@ d2ba <- function(x) pi*(x/2)^2
 d2lba <- function(x) log10(pi*(x/2)^2)
 
 ## pull up plot info
-plotclim <- read.csv('data/clim_pts.csv')
-head(plotclim)
-tail(plotclim)
+plotinfo <- read.csv('input_data/plot_info/plot.info.csv')
+head(plotinfo)
+tail(plotinfo)
 
 # Load fire severity data
 library("RCurl")
@@ -20,29 +25,65 @@ head(fs)
 tail(fs)
 ####
 
-all.id <- readRDS('data/allid-nodups.Rdata')
-str(all.id)
-length(all.id)
+# load data
+tAll <- read.csv('data/tAll.csv',as.is=T)
+dim(tAll)
+table(tAll$Plot.13,useNA = 'always')
+table(tAll$Plot.18,useNA = 'always')
+table(tAll$Plot.19,useNA = 'always')
+table(tAll$Plot.20,useNA = 'always')
 
-## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression
-i=1
-for (i in 1:length(all.id)) {
-  SArows <- which(all.id[[i]]$Type=='SA')
-  print(tail(sort(all.id[[i]]$dbh[SArows])))
-  sdbh <- all.id[[i]]$dbh[SArows]
-  sdbh <- sdbh * 0.64426 - 0.06439
-  all.id[[i]]$dbh[SArows] <- sdbh
+names(tAll)
+
+tAll$b10.13 <- d2ba(tAll$d10.13)
+tAll$b10.18 <- d2ba(tAll$d10.18)
+tAll$b10.19 <- d2ba(tAll$d10.19)
+tAll$b10.20 <- d2ba(tAll$d10.20)
+
+#What is the total basal area of all trees, based on d10, in 2013, and then in 2018 for trees that survived, based on 2013 sizes
+ba13<- tapply(tAll$b10.13,list(tAll$Plot.13),sum,na.rm=T)
+ba13L18<- tapply(tAll$b10.13[which(tAll$Live.18==1)],list(tAll$Plot.13[which(tAll$Live.18==1)]),sum,na.rm=T)
+plot(ba13,ba13L18)
+abline(0,1)
+
+ba18L18<- tapply(tAll$b10.18[which(tAll$Live.18==1)],list(tAll$Plot.13[which(tAll$Live.18==1)]),sum,na.rm=T)
+plot(ba13L18,ba13L18)
+abline(0,1)
+
+# basal area summed by species
+baxsp.13 <- tapply(tAll$b10.13,list(tAll$Plot.13,tAll$Species.13),sum,na.rm=T)
+baxsp.18 <- tapply(tAll$b10.13,list(tAll$Plot.13,tAll$Species.13),sum,na.rm=T)
+
+# Prior code using all.id data.frames
+if (FALSE) {
+  # load data.frames of all tree data by year. Four objects are: 2013, 2018, 2019, 2020
+  all.id <- readRDS('data/allid-nodups.Rdata')
+  str(all.id)
+  length(all.id)
+  names(all.id[[2]])
+  
+  ## CONVERT Sapling diameters to adjusted values based on dbh~sadb regression
+  i=1
+  for (i in 1:length(all.id)) {
+    SArows <- which(all.id[[i]]$Type=='SA')
+    print(tail(sort(all.id[[i]]$dbh[SArows])))
+    sdbh <- all.id[[i]]$dbh[SArows]
+    sdbh <- sdbh * 0.64426 - 0.06439
+    all.id[[i]]$dbh[SArows] <- sdbh
+  }
+  
+  # Examine basal diameter of SAs
+  sap13 <- all.id[[1]]
+  sap13 <- sap13[which(sap13$Type=='SA'),]
+  dim(sap13)
+  hist(sap13$dbh,xlim=c(0,5),breaks=c(0,1,2,3,4,5,1000))
+  summary(sap13$dbh)
+  # end examine basal diameter
 }
 
-# Examine basal diameter of SAs
-sap13 <- all.id[[1]]
-sap13 <- sap13[which(sap13$Type=='SA'),]
-dim(sap13)
-hist(sap13$dbh,xlim=c(0,5),breaks=c(0,1,2,3,4,5,1000))
-summary(sap13$dbh)
-# end examine basal diameter
 
-spNames <- read.csv('data/pwd-species-codes.csv')
+
+spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
 #allIndv <- readRDS('data/allIndv.Rdata')
 allIndv <- read.csv('data/allIndv.csv')
@@ -51,6 +92,16 @@ head(allIndv)
 # read in climate niche values
 climNiche <- read.csv('data/pwd-species-niche.csv')
 head(climNiche)
+
+# extract cwd climate for the species in baxsp.13
+cnmp <- climNiche[which(climNiche$stat=='maxent_point'),]
+head(cnmp)
+
+
+
+#### GOT TO HERE!!! 12/4/23
+
+################ OLD CODE ###############
 
 ## transfer climate niche to all.id
 cn_stat <- 'maxent_point'
