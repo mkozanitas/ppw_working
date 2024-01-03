@@ -41,18 +41,19 @@ tAll$b10.19 <- d2ba(tAll$d10.19)
 tAll$b10.20 <- d2ba(tAll$d10.20)
 
 #What is the total basal area of all trees, based on d10, in 2013, and then in 2018 for trees that survived, based on 2013 sizes
-ba13<- tapply(tAll$b10.13,list(tAll$Plot.13),sum,na.rm=T)
+ba13 <- tapply(tAll$b10.13,list(tAll$Plot.13),sum,na.rm=T)
 ba13L18<- tapply(tAll$b10.13[which(tAll$Live.18==1)],list(tAll$Plot.13[which(tAll$Live.18==1)]),sum,na.rm=T)
 plot(ba13,ba13L18)
 abline(0,1)
 
 ba18L18<- tapply(tAll$b10.18[which(tAll$Live.18==1)],list(tAll$Plot.13[which(tAll$Live.18==1)]),sum,na.rm=T)
-plot(ba13L18,ba13L18)
+plot(ba13L18,ba18L18)
 abline(0,1)
 
 # basal area summed by species
 baxsp.13 <- tapply(tAll$b10.13,list(tAll$Plot.13,tAll$Species.13),sum,na.rm=T)
-baxsp.18 <- tapply(tAll$b10.13,list(tAll$Plot.13,tAll$Species.13),sum,na.rm=T)
+baxsp.18 <- tapply(tAll$b10.18,list(tAll$Plot.18,tAll$Species.18),sum,na.rm=T)
+
 
 # Prior code using all.id data.frames
 if (FALSE) {
@@ -81,8 +82,6 @@ if (FALSE) {
   # end examine basal diameter
 }
 
-
-
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
 #allIndv <- readRDS('data/allIndv.Rdata')
@@ -97,9 +96,61 @@ head(climNiche)
 cnmp <- climNiche[which(climNiche$stat=='maxent_point'),]
 head(cnmp)
 
+# Check that list of species in basal area tables is identical
+all(colnames(baxsp.13)==colnames(baxsp.18))
+
+# reduce basal area tables to match species with climate niche values
+baxsp.13.red <- baxsp.13[,match(cnmp$sp_code,colnames(baxsp.13))]
+
+# replace NA basal areas with zeros, for weighted means
+baxsp.13.red[is.na(baxsp.13.red)] <- 0
+
+# test weighted mean for first plot
+(CWMtest <- weighted.mean(cnmp$cwd,baxsp.13.red[1,],na.rm=T))
+
+# loop through (Rather than writing function to allow using apply)
+clim.CWM.13 <- rep(0,54)
+for (i in 1:54) clim.CWM.13[i] <- weighted.mean(cnmp$cwd,baxsp.13.red[i,],na.rm=T)
+clim.CWM.13
+
+# repeat for 2018 basal areas
+baxsp.18.red <- baxsp.18[,match(cnmp$sp_code,colnames(baxsp.18))]
+baxsp.18.red[is.na(baxsp.18.red)] <- 0
+clim.CWM.18 <- rep(0,54)
+for (i in 1:54) clim.CWM.18[i] <- weighted.mean(cnmp$cwd,baxsp.18.red[i,],na.rm=T)
+clim.CWM.18
+
+# compare!
+plot(clim.CWM.13,clim.CWM.18)
+abline(0,1)
+
+### NEXT Make table of basal area of 2013 fire survivors, based on their original size pre-fire, and do CWM on that.
+tAllSurv <- tAll[which(tAll$Live.18==1),]
+baxsp.18surv <- tapply(tAllSurv$b10.13,list(tAllSurv$Plot.18,tAllSurv$Species.18),sum,na.rm=T)
+
+baxsp.18s.red <- baxsp.18surv[,match(cnmp$sp_code,colnames(baxsp.18surv))]
+baxsp.18s.red[is.na(baxsp.18s.red)] <- 0
+clim.CWM.18s <- rep(0,54)
+for (i in 1:54) clim.CWM.18s[i] <- weighted.mean(cnmp$cwd,baxsp.18s.red[i,],na.rm=T)
+clim.CWM.18s
+
+plot(clim.CWM.13,clim.CWM.18s)
+abline(0,1)
+
+# which plot went from 400 to 1000!
+# PWD1342 - 100% mortality of big doug fir
+which.max(clim.CWM.18s-clim.CWM.13)
+baxsp.13[42,]
+baxsp.18surv[42,]
+
+# which plot went from 880 to 800!
+# PWD1336 - high mortality of QUEAGR
+which.min(clim.CWM.18s-clim.CWM.13)
+baxsp.13[36,]
+baxsp.18surv[36,]
 
 
-#### GOT TO HERE!!! 12/4/23
+#### GOT TO HERE!!! 1/1/24
 
 ################ OLD CODE ###############
 
