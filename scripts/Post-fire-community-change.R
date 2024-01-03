@@ -152,6 +152,33 @@ baxsp.18surv[36,]
 
 #### GOT TO HERE!!! 1/1/24
 
+# now look at whether predicted values for crown survival or other fates are related to climate niche
+nd <- read.csv('data/gCrown.18-predValues.csv')
+head(nd)
+head(cnmp)
+
+c2n <- match(nd$Species.18,cnmp$sp_code)
+nd$cwd <- cnmp$cwd[c2n]
+nd$djf <- cnmp$djf[c2n]
+nd$jja <- cnmp$jja[c2n]
+nd$ppt <- cnmp$ppt[c2n]
+
+# Is fire response correlated with climate niche!
+ndsel <- which(nd$fsCat==0 & nd$ld10 == 1)
+plot(predVal5~cwd,data=nd[ndsel,])
+
+ndsel <- which(nd$fsCat==1 & nd$ld10 == 1)
+plot(predVal5~cwd,data=nd[ndsel,])
+nd$Species.18[ndsel][which.max(nd$predVal5[ndsel])]
+
+ndsel <- which(nd$fsCat==2 & nd$ld10 == 1)
+plot(predVal5~cwd,data=nd[ndsel,])
+nd$Species.18[ndsel][which.max(nd$predVal5[ndsel])]
+
+ndsel <- which(nd$fsCat==3 & nd$ld10 == 1)
+plot(predVal5~cwd,data=nd[ndsel,])
+nd$Species.18[ndsel][which.max(nd$predVal5[ndsel])]
+  
 ################ OLD CODE ###############
 
 ## transfer climate niche to all.id
