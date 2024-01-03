@@ -100,6 +100,7 @@ tail(fst12)
 sum(fst12$nMissing) #fixed 1330 dups we were previously ignoring- should now be zero
 
 # Summary across types #GHYTIGYFYGIGH - all fates in a table for TR, SA and overall- all species included
+# I added spcode and species name to fst12, which broke code that used column numbers. So I've replaced them with column names, here and elsewhere below.
 tree.sum <- apply(fst12[fst12$Type=='TR',c('N13','N18.DN','N18.DR','N18.LN','N18.LR')],2,sum)
 tree.sum
 (tree.sum)/(tree.sum[1])
@@ -154,11 +155,11 @@ fst12a[fst12a$Type=='TR',][order(fst12a$Species[fst12a$Type=='TR']),]
 fst12a[fst12a$Type=='SA',][order(fst12a$Species[fst12a$Type=='SA']),]
 
 # summary of fates for common species
-tree.sum <- apply(fst12a[fst12a$Type=='TR',3:7],2,sum)
+tree.sum <- apply(fst12a[fst12a$Type=='TR',c('N13','N18.DN','N18.DR','N18.LN','N18.LR')],2,sum)
 tree.sum
 (tree.sum)/(tree.sum[1])
 
-sap.sum <- apply(fst12a[fst12a$Type=='SA',3:7],2,sum)
+sap.sum <- apply(fst12a[fst12a$Type=='SA',c('N13','N18.DN','N18.DR','N18.LN','N18.LR')],2,sum)
 sap.sum
 (sap.sum)/(sap.sum[1])
 
@@ -263,6 +264,7 @@ table(tAll$bSprout.18,tAll$fate.18,useNA='always')
 
 # 704 plants have fate=NA in 2018, let's have a look
 # these appear to be points added in 2019 - that many? -deal with it later
+# DA 1/2/24 - now only one plant. Others all fixed?
 NA704 <- which(is.na(tAll$fate.18))
 tAll[NA704[3],]
 
@@ -364,9 +366,11 @@ BIC(fit5l)
 # DOESN'T CONVERGE combining species and random factor plots
 
 # made newdata for prediction
-nvals <- 12
+nvals <- 13
 ld10vals <- seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals)
-ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,30,50,75)),max(tAlls$ld10,na.rm=T))
+
+#DA 1/2/24 - added 100 here, as well as max value 
+ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,30,50,75,100)),max(tAlls$ld10,na.rm=T))
 
 ndf <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
 names(ndf) <- c('ld10','fPlot','fsCat','Species.18')
@@ -378,7 +382,7 @@ ndf$northness <- 0
 head(ndf)
 dim(ndf)
 
-nd <- expand.grid(ld10vals,unique(tAlls$fsCat),AbSp)
+nd <- expand.grid(ld10vals,sort(unique(tAlls$fsCat)),AbSp)
 names(nd) <- c('ld10','fsCat','Species.18')
 nd$Species.18 <- as.character(nd$Species.18)
 nd$fsCat <- as.factor(nd$fsCat)
@@ -481,6 +485,15 @@ nd$t10 <- bt$t10[b2p]
 nd$t20 <- bt$t20[b2p]
 nd$t30 <- bt$t30[b2p]
 nd$t50 <- bt$t50[b2p]
+
+head(nd)
+dim(nd)
+table(nd$fsCat)
+table(10^(nd$ld10))
+
+write.csv(nd,paste('data/',yvalname,'-predValues.csv',sep=''))
+
+# DA 1/2/24 - everything working up to here!!
 
 # explore - NOT MUCH GOING ON!!!
 tmp <- nd[which(nd$ld10==log10(30)&nd$fsCat==3),]
