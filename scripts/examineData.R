@@ -391,14 +391,26 @@ nrow(allIndv)
 # nrow(t3)
 ## END TREE SELECTION SNIPPET
 
+# DUPLICATE 2013 DATA to create a baseline for 2017 proxy data
+
 # MERGE YEARS!!
+t0 <- all.id[[1]]
 t1 <- all.id[[1]]
 t2 <- all.id[[2]]
 t3 <- all.id[[3]]
 t4 <- all.id[[4]]
 
+# how many individuals in each year, before merging
+nrow(t0)
+nrow(t1)
+nrow(t2)
+nrow(t3)
+nrow(t4)
+
+names(t0)
+names(t0)[-4] <- paste(names(t1)[-4],'.13',sep='')
 names(t1)
-names(t1)[-4] <- paste(names(t1)[-4],'.13',sep='')
+names(t1)[-4] <- paste(names(t1)[-4],'.17',sep='')
 names(t1)
 names(t2)[-4] <- paste(names(t2)[-4],'.18',sep='')
 names(t2)
@@ -408,7 +420,10 @@ names(t4)[-4] <- paste(names(t4)[-4],'.20',sep='')
 names(t4)
 
 # And merge!
-t12 <- merge(t1,t2,by = 'Num',all = T)
+t01 <- merge(t0,t1,by = 'Num',all = T)
+names(t01)
+
+t12 <- merge(t01,t2,by = 'Num',all = T)
 names(t12)
 
 t123 <- merge(t12,t3,by = 'Num',all = T)
@@ -423,21 +438,49 @@ dim(tAll)
 head(tAll)
 tail(tAll)
 
+rm('t01')
 rm('t12')
 rm('t123')
 
-# All four years are now merged!!!!! ###
+# All 'five' years are now merged!!!!! ###
 
-# create 'proxy 2013 data'
+# create 'proxy 2017 data'
 # rownums for new 2018 individuals from new plots
-table(tAll$Plot.13)
+table(tAll$Plot.17)
 table(tAll$Plot.18)
+
+# identify several subsets of individuals
+# present and measured in 2013
+# inferred pre-fire in old plots, or tagged and not recorded in 2013, and dead (99000s and some lower numbers)
+# inferred pre-fire, old plots, and alive (new tags)
+# tagged in 2013 and not written down in data
+# new plot, alive after the fire
+
+tAll$Cat17 <- NA
+
+# tagged and recorded in data sheets in 2013
+tAll$Cat17[which(!is.na(tAll$Plot.13))] <- 'Tag13'
+
+# not recorded in 2013 (some tagged!) and dead, mostly 99000s
+tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0)] <- '99s.old'
+
+# not present in 2013, found alive in 18; or tagged but not recorded in 2013, found alive in 18
+tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==1)] <- 'new17'
+  
+tAll$Cat17[which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))] <- 'NewPlot'
+
+# summarize 2017 category data
+table(tAll$Cat17,useNA='always')
+
+tAll$Num[which(tAll$Num>10000)]
+table(tAll$Plot.18[which(tAll$Num>10000)])
 
 # three subsets of new individuals
 # we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
 # newIndvs: new recruits, and recruited and dead, and newplots
-newIndvs <- which(is.na(tAll$Plot.13))
-length(newIndvs)
+newIndvs <- which(is.na(tAll$Plot.13) & !is.na(tAll$Plot.18))
+length(newIndvs) # matches Cat17 which weren't tagged in 2013
+
 table(tAll$Type.18[newIndvs])
 summary(tAll$Num[newIndvs])
 length(which(tAll$Num[newIndvs]>99000))
@@ -487,17 +530,17 @@ new19sap <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
 tAll[new19sap,c('Plot.19','Num')]
 table(tAll$Plot.19[new19sap])
 
-# Now start filling in pre-fire data from 2018 data, for completeness, for all new individuals
+# Now start filling in pre-fire data from 2018 data, to complete 2017 proxy data, for all new individuals
 #create13Data <- c(newPlot,newTrees[1:12])
-tAll$Plot.13[newIndvs] <- tAll$Plot.18[newIndvs]
-tAll$Quad.13[newIndvs] <- tAll$Quad.18[newIndvs]
-tAll$Type.13[newIndvs] <- tAll$Type.18[newIndvs]
-tAll$Species.13[newIndvs] <- tAll$Species.18[newIndvs]
+tAll$Plot.17[newIndvs] <- tAll$Plot.18[newIndvs]
+tAll$Quad.17[newIndvs] <- tAll$Quad.18[newIndvs]
+tAll$Type.17[newIndvs] <- tAll$Type.18[newIndvs]
+tAll$Species.17[newIndvs] <- tAll$Species.18[newIndvs]
 
-tAll$Dead.13[newIndvs] <- 0
-tAll$Live.13[newIndvs] <- 1
-tAll$gCrown.13[newIndvs] <- 1
-tAll$dbh.13[newIndvs] <- tAll$dbh.18[newIndvs]
+tAll$Dead.17[newIndvs] <- 0
+tAll$Live.17[newIndvs] <- 1
+tAll$gCrown.17[newIndvs] <- 1
+tAll$dbh.17[newIndvs] <- tAll$dbh.18[newIndvs]
 
 # ignore these individuals for basal area growth - commented out because we aren't creating proxy 2013 diameter data now
 tAll$UseForBAGrowth <- T
@@ -536,39 +579,3 @@ tAll$eastness <- plotInfo$eastness[p2t]
 
 write.csv(tAll,'data/tAll.csv')
 
-#Summarizing Basal Area using 2018 data and filling in missing trees using 
-
-library(dplyr)
-library(tidyverse)
-
-AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
-
-tAll$BAmerge <-ifelse(is.na(tAll$Basal.Area.18),tAll$Basal.Area.13,tAll$Basal.Area.18)
-tAll$Sp.Type <- paste(tAll$Type.13,tAll$Species.13,sep='_')
-
-tAll %>%
-  filter(Type.13=='TR') %>% 
-  group_by(Species.13,fate.18) %>%
-  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
-  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
-  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T)) %>% 
-  filter(Species.13 %in% AbSp) 
-
-tAll %>%
-  group_by(Sp.Type,fate.18) %>%
-  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
-  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
-  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T))
-
-table(tAll$Type.13,tAll$Type.18,useNA = 'always')
-table(tAll$Type.18,tAll$Type.19,useNA = 'always')
-table(tAll$Type.19,tAll$Type.20,useNA = 'always')
-
-
-
-tAll %>%
-  filter(Type.18=='TR') %>% 
-  group_by(fate.18) %>%
-  summarize(BAspecies=sum(BAmerge,na.rm = T)) %>% 
-  pivot_wider(names_from = fate.18,values_from = BAspecies) %>% 
-  mutate(BAsum=sum(DN,DR,LN,LR,na.rm=T),BAdelta=-1*sum(DN,DR,na.rm=T))
