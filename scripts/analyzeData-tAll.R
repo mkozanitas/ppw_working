@@ -19,9 +19,11 @@ head(fs)
 tail(fs)
 ####
 
-spNames <- read.csv('data/all-spp-names.csv',row.names = 1)
+# DA 1/2/24: The script broke for me here, due to formatting of all-spp-names.csv. I might have changed that for my other script. It should have pushed, so if this all works now, we're fine. If not, I think it's because the input data file isn't pushing so it's different between our versions.
+#spNames <- read.csv('data/all-spp-names.csv',row.names = 1)
+spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
-names(spNames)[which(names(spNames)=='x')] <- 'spName'
+names(spNames) <- c('sp_code','spName')
 
 # input merged dataframe
 tAll <- read.csv('data/tAll.csv',as.is=T)
@@ -66,14 +68,14 @@ write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18')],'data/growthquesti
 (use.species <- spNames$spName)
 
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2013 and 2018)
-fst12 <- data.frame(Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
+fst12 <- data.frame(SpCode=rep(spNames$sp_code,each=2), Species=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N13=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
 head(fst12)                  
 tail(fst12)
 
 i=5
 for (i in 1:nrow(fst12))
 {
-  sp <- fst12$Species[i]
+  sp <- fst12$SpCode[i]
   ty <- fst12$Type[i]
   temp <- tAll[which(tAll$Species.13==sp & tAll$Type.13==ty),]
   
@@ -98,11 +100,11 @@ tail(fst12)
 sum(fst12$nMissing) #fixed 1330 dups we were previously ignoring- should now be zero
 
 # Summary across types #GHYTIGYFYGIGH - all fates in a table for TR, SA and overall- all species included
-tree.sum <- apply(fst12[fst12$Type=='TR',3:7],2,sum)
+tree.sum <- apply(fst12[fst12$Type=='TR',c('N13','N18.DN','N18.DR','N18.LN','N18.LR')],2,sum)
 tree.sum
 (tree.sum)/(tree.sum[1])
 
-sap.sum <- apply(fst12[fst12$Type=='SA',3:7],2,sum)
+sap.sum <- apply(fst12[fst12$Type=='SA',c('N13','N18.DN','N18.DR','N18.LN','N18.LR')],2,sum)
 sap.sum
 (sap.sum)/(sap.sum[1])
 
@@ -113,7 +115,7 @@ all.sum/all.sum[1]
 #ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum,na.rm=T)
 #(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
 
-fate.sum <- apply(fst12[,-c(1:2)],2,sum)
+fate.sum <- apply(fst12[,-c(1:3)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
 # same as above but just for one category at a time (DN/DR/LR/LN) DOESN'T WORK ANYMORE- can we delete up to creation of spN?
@@ -124,6 +126,7 @@ TRrows <- which(fst12$Type=='TR')
 
 fst12$percSurv <- 1 - fst12$N18.DN/fst12$N13
 fst12$percSurv[fst12$N13==0] <- NA
+head(fst12)
 
 #copied AbSp code from below to calculate percSurv of each species in each category
 
@@ -132,7 +135,7 @@ spN <- table(tAll$Species.13)
 spN[order(spN)]
 
 (spA <- names(spN)[which(spN>=25)])
-spA <- spA[-which(spA=='QUEBER')] # dropping QUEBER - none died!
+(spA <- spA[-which(spA=='QUEBER')]) # dropping QUEBER - none died!
 
 # dropping QUEBER, FRACAL, AMOCAL for now
 AbSp <- c('ARBMEN','ARCMAN','HETARB','PSEMEN','QUEAGR','QUEDOU','QUEGAR','QUEKEL','UMBCAL')
@@ -142,9 +145,11 @@ length(AbSp)
 (spA <- AbSp)
 
 # creating fst12a to only use abundant species 
-fst12a <- fst12[which(fst12$Species %in% AbSp),]
+fst12a <- fst12[which(fst12$SpCode %in% AbSp),]
+head(fst12a)
 
 # look at TR and SA in order of percent Survival  #jkhfihiuiuh
+# DA: This is alphabetical, not by percSurv, that's what's wanted, right?
 fst12a[fst12a$Type=='TR',][order(fst12a$Species[fst12a$Type=='TR']),]
 fst12a[fst12a$Type=='SA',][order(fst12a$Species[fst12a$Type=='SA']),]
 
