@@ -1,33 +1,33 @@
-sp_code,species
-ADEFAS,Adenostoma fasciculatum
-AESCAL,Aesculus californica
-AMOCAL,Amorpha californica
-ARBMEN,Arbutus menziesii
-ARCMAN,Arctostaphylos manzanita
-BACPIL,Baccharis pilularis
-CEACUN,Ceanothus cuneatus
-CEAPAR,Ceanothus parryi
-CERBET,Cercocarpus betuloides
-CORCOR,Corylus cornuta
-FRACAL,Frangula californica
-HETARB,Heteromeles arbutifolia
-HOLDIS,Holodiscus discolor
-NOTDEN,Notholithocarpus densiflorus
-PRUCER,Prunus cerasifera
-PSEMEN,Pseudotsuga menziesii
-QUEAGR,Quercus agrifolia
-QUEBEGA,QUEBEGA
-QUEBER,Quercus berberidifolia
-QUEdec,QUEdec
-QUEDOGA,QUEDOGA
-QUEDOU,Quercus douglasii
-QUEGAR,Quercus garryana
-QUEKEL,Quercus kelloggii
-QUELOB,Quercus lobata
-QUEWIS,Quercus wislizeni
-RHACRO,Rhamnus crocea
-SAL_SP,SAL_SP
-SAMNIG,Sambucus nigra
-TORCAL,Torreya californica
-UMBCAL,Umbellularia californica
-UNK,UNK
+"","x"
+"1","ADEFAS"
+"2","AESCAL"
+"3","AMOCAL"
+"4","ARBMEN"
+"5","ARCMAN"
+"6","BACPIL"
+"7","CEACUN"
+"8","CEAPAR"
+"9","CERBET"
+"10","CORCOR"
+"11","FRACAL"
+"12","HETARB"
+"13","HOLDIS"
+"14","NOTDEN"
+"15","PRUCER"
+"16","PSEMEN"
+"17","QUEAGR"
+"18","QUEBEGA"
+"19","QUEBER"
+"20","QUEdec"
+"21","QUEDOGA"
+"22","QUEDOU"
+"23","QUEGAR"
+"24","QUEKEL"
+"25","QUELOB"
+"26","QUEWIS"
+"27","RHACRO"
+"28","SAL_SP"
+"29","SAMNIG"
+"30","TORCAL"
+"31","UMBCAL"
+"32","UNK"
