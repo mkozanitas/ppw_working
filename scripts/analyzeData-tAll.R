@@ -322,6 +322,8 @@ types <- c('TR','SA')
 table(tAll$Type.18,useNA='always')
 table(tAll$fsLevel,tAll$Plot,useNA='always')
 
+write.csv(tAll,'data/tAll-analyzeData-update.csv')
+
 ### MODELING SECTION STARTS HERE
 # CREATE tAlls for modeling
 tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0),]
@@ -703,7 +705,7 @@ summary(apply(fitted(fit1)[,1:3],1,sum))
 tAllsp <- tAlls[which(!is.na(tAlls$ld10)),]
 dim(tAllsp)
 
-fit.mn <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2 + northness + fsCat + Species.18, data=tAllsp)
+fit.mn <- multinom(as.factor(fate3.18) ~ ld10 + ld10.2 + northness + fsCat + SpCd14, data=tAllsp)
 fit.mn
 dim(fitted(fit.mn))
 for (i in 1:3) plot(fitted(fit.mn)[,i]~tAllsp$ld10,col=f3PlotCols[i],main=paste('Full multinomial',f3Labs[i]))
