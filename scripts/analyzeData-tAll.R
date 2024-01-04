@@ -73,6 +73,7 @@ tAll$Species.17[which(tAll$Species.17=='QUEBEGA')] <- 'QUEBER'
 tAll$Species.18[which(tAll$Species.18=='QUEBEGA')] <- 'QUEBER'
 tAll$Species.19[which(tAll$Species.19=='QUEBEGA')] <- 'QUEBER'
 tAll$Species.20[which(tAll$Species.20=='QUEBEGA')] <- 'QUEBER'
+tAll$Species[which(tAll$Species=='QUEBEGA')] <- 'QUEBER'
 
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018)
 fst12 <- data.frame(SpCode=rep(spNames$Species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
