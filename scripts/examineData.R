@@ -445,6 +445,13 @@ tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.19[which(is.na(tAll$Plot))]
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.20[which(is.na(tAll$Plot))]
 table(tAll$Plot,useNA='always')
 
+# create master Species variable
+tAll$Species <- tAll$Species.13
+tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.18[which(is.na(tAll$Species))]
+tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.19[which(is.na(tAll$Species))]
+tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.20[which(is.na(tAll$Species))]
+table(tAll$Species,useNA='always')
+
 rm('t01')
 rm('t12')
 rm('t123')
