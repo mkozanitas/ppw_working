@@ -1,14 +1,20 @@
 # analyze single species multinomial models
+# if anything has changed in tAll, run examineData-tAll up to this line: ## XYZABC - run to here 
+
 rm(list=ls())
 tAllm <- read.csv('data/tAll-analyzeData-update.csv',as.is=T,row.names=1)
 head(tAllm)
 names(tAllm)
 dim(tAllm)
 
+# remove TS
+tAllm <- tAllm[which(tAllm$Type.17 %in% c('TR','SA')),]
+dim(tAllm)
+
 (spAm <- sort(unique(tAllm$Species)))
 (spN <- sort(table(tAllm$Species)))
 
-(spAm <- names(spN)[which(spN>=75)])
+(spAm <- names(spN)[which(spN>=50)])
 (spAm <- spAm[-which(spAm=='BACPIL')])
 
 # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
@@ -26,7 +32,7 @@ probSA <- which(tAllm$Species %in% spAm
                 & tAllm$fsLevel>1
                 & tAllm$Type.18=='SA'
                 & tAllm$fate.18 %in% c('LN','LR'))
-
+length(probSA)
 write.csv(tAllm[probSA,c('Plot','Num')],'data/prob-saplings.csv')
 
 # OPTION: comment this in or out to exercise option
@@ -35,7 +41,7 @@ table(tAllm$SpCd14)
 dim(tAllm)
 
 # OPTION: if needed trim data by stem size
-tAllm <- tAllm[which(tAllm$ld10>=c(0)),]
+# tAllm <- tAllm[which(tAllm$ld10>=c(0)),]
 dim(tAllm)
 table(tAllm$fsCat)
 table(tAllm$fsLevel)
@@ -47,7 +53,7 @@ tAllm$fate3.18[which(tAllm$fate.18=='DN')] <- 0
 tAllm$fate3.18[which(tAllm$fate.18=='DR')] <- 1
 tAllm$fate3.18[which(tAllm$fate.18 %in% c('LN','LR'))] <- 2
 table(tAllm$fate3.18) 
-if (length(which(tAllm$fate3.18==c(-1)))>0) tAllm <- tAllm[-which(tAllm$fate3.18<0),]
+tAllm <- tAllm[which(tAllm$fate3.18 %in% 0:2),]
 table(tAllm$fate3.18) 
 
 (f3Levels <- 0:2)
@@ -67,7 +73,7 @@ FireLevels <- c('None'); FVals <- 0
 FireLevels <- c('None:Low'); FVals <- 0:1 #changes FireSev range to all c(1:3)
 FireLevels <- c('All'); FVals <- 0:3 #changes FireSev range to all c(1:3)
 
-#### NEED TO SUBSET BY TYPE HERE
+#### Subset to selected fire values and species
 tAllmp <- tAllm[which(tAllm$fsCat %in% FVals & tAllm$Species %in% spAm),]
 dim(tAllmp)
 
@@ -75,17 +81,87 @@ dim(tAllmp)
 tAllmp <- tAllmp[which(!is.na(tAllmp$ld10)),]
 dim(tAllmp)
 
+# Translate type and size data to categories
+tAllmp$SizeCat <- NA
+tAllmp$SizeCat[which(tAllmp$Type.17=='SA' & tAllmp$SA.BD_cm.17 <= max(tAllmp$SA.BD_cm.17,na.rm=T))] <- 'SA2'
+#tAllmp$SizeCat[which(tAllmp$Type.17=='SA' & tAllmp$SA.BD_cm.17<1)] <- 'SA1'
+tAllmp$SizeCat[which(tAllmp$Type.17=='TR' & tAllmp$DBH_cm.17 <= max(tAllmp$DBH_cm.17,na.rm=T))] <- 'TR4'
+#tAllmp$SizeCat[which(tAllmp$Type.17=='TR' & tAllmp$DBH_cm.17 < 40)] <- 'TR3'
+tAllmp$SizeCat[which(tAllmp$Type.17=='TR' & tAllmp$DBH_cm.17 < 20)] <- 'TR2'
+tAllmp$SizeCat[which(tAllmp$Type.17=='TR' & tAllmp$DBH_cm.17 < 10)] <- 'TR1'
+table(tAllmp$SizeCat,useNA='always')
+
+head(which(is.na(tAllmp$SizeCat)))
+tAllmp[563,]
+
 # NOW FIT MULTINOMIAL
 require(nnet)
 
 # SPECIES SPECIFIC MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ld10.2' - changes results some
 spAm
-spsel <- "UMBCAL"
+TSp <- c('QUEKEL','QUEDOU','ARBMEN','QUEGAR','QUEAGR','PSEMEN','UMBCAL')
+HSp <- c('QUEKEL','QUEDOU','ARBMEN','QUEGAR','QUEAGR','UMBCAL')
+
+# CHOOSE ONE
+spname <- spsel;spname <- 'All'
+spsel <- TSp;spname <- 'Trees'
+spsel <- HSp;spname <- 'Hardwoods'
+spsel <- "ARBMEN";spname <- spsel
+
 
 temp <- tAllmp[which(tAllmp$Species %in% spsel),]
 nrow(temp)
 table(temp$fate3.18)
+table(temp$SizeCat,useNA='always')
 
+# multinomial discrete size
+temp <- temp[which(!is.na(temp$SizeCat)),]
+dim(temp)
+table(temp$SizeCat)
+
+fit.mn <- multinom(as.factor(fate3.18) ~ as.factor(SizeCat) + as.factor(fsCat), data=temp)
+fit.mn 
+BIC(fit.mn)
+head(round(fitted(fit.mn),2))
+dim(fitted(fit.mn))
+plot(fitted(fit.mn)[,3]~ld10,data=temp)
+
+(tot <- table(temp$SizeCat,temp$fsCat))
+barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,main=paste(spname,'Mortality'))
+barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,main=paste(spname,'Topkill-Resprout'))
+barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,main=paste(spname,'Green-Crown'))
+
+(tot <- table(temp$fsCat,temp$SizeCat))
+barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,1]/tot,beside = T,main=paste(spname,'Mortality'))
+barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,2]/tot,beside = T,main=paste(spname,'Topkill-Resprout'))
+barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,3]/tot,beside = T,main=paste(spname,'Green-Crown'))
+
+
+(tot <- table(temp$SizeCat,temp$fsCat))
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1],2)
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,2)
+round(tapply(fitted(fit.mn)[,1],list(temp$SizeCat,temp$fsCat),mean,na.rm=T),2)
+
+(tot <- table(temp$SizeCat,temp$fsCat))
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2],2)
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,2)
+round(tapply(fitted(fit.mn)[,2],list(temp$SizeCat,temp$fsCat),mean,na.rm=T),2)
+
+(tot <- table(temp$SizeCat,temp$fsCat))
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3],2)
+round(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,2)
+round(tapply(fitted(fit.mn)[,3],list(temp$SizeCat,temp$fsCat),mean,na.rm=T),2)
+
+plot(f3PlotVals~ld10,data=temp,col=temp$f3PlotCols,ylim=c(0,1.1),main=paste('Fire Level:',FireLevels,'; Species',spsel),pch=19)
+i=1
+j=1
+for (i in 1:3) for (j in 1:4) {
+  rsel <- which(temp$fsCat==j-1)
+  points(temp$ld10[rsel],fitted(fit.mn)[rsel,i],col=f3PlotCols[i],cex=fsPlotSize[j])
+}
+
+
+# multinomial continuous size
 fit.mn <- multinom(as.factor(fate3.18) ~ poly(ld10,2):as.factor(fsCat), data=temp)
 fit.mn 
 BIC(fit.mn)
@@ -99,6 +175,8 @@ for (i in 1:3) for (j in 1:4) {
   rsel <- which(temp$fsCat==j-1)
   points(temp$ld10[rsel],fitted(fit.mn)[rsel,i],col=f3PlotCols[i],cex=fsPlotSize[j])
 }
+
+
 
 #binomial
 #set yvalue

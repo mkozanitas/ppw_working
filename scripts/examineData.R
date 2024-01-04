@@ -551,30 +551,42 @@ table(tAll$Plot.19[new19sap])
 tAll$Plot.17[newIndvs] <- tAll$Plot.18[newIndvs]
 tAll$Quad.17[newIndvs] <- tAll$Quad.18[newIndvs]
 tAll$Type.17[newIndvs] <- tAll$Type.18[newIndvs]
+
+# changing type to TR if the new size shows it recruited up
+tc <- which(tAll$Type.18=='TR' & tAll$Type.17=='SA')
+tAll$Type.17[tc] <- tAll$Type.18[tc]
+
 tAll$Species.17[newIndvs] <- tAll$Species.18[newIndvs]
+
 
 tAll$Dead.17[newIndvs] <- 0
 tAll$Live.17[newIndvs] <- 1
 tAll$gCrown.17[newIndvs] <- 1
 
-# Now, what to do about size! Create unified d10 variable in 2017 for models
+# Now, what to do about size! Create unified d10 variable in 2017 for models. And transfer SA and tree DBH as well
 length(which(!is.na(tAll$d10.13)))
 length(which(!is.na(tAll$Plot.13)))
 
 # start by assigning 2018 dbh to 2017 proxy data
 tAll$d10.17 <- tAll$d10.18
+tAll$DBH_cm.17 <- tAll$DBH_cm.18
+tAll$SA.BD_cm.17 <- tAll$SA.BD_cm.18
 
 # then use 2013 if 2018 was missing, or if diameter shrunk - 995 trees
 rsel <- which(is.na(tAll$d10.17) & !is.na(tAll$d10.13))
-length(rsel)
 shr <- which(tAll$d10.18<tAll$d10.13)
-length(shr)
 rsel <- union(rsel,shr)
-length(rsel)
-
 tAll$d10.17[rsel] <- tAll$d10.13[rsel]
 
-hist(log(tAll$dbh.17))
+rsel <- which(is.na(tAll$DBH_cm.17) & !is.na(tAll$DBH_cm.13))
+shr <- which(tAll$DBH_cm.18<tAll$DBH_cm.13)
+rsel <- union(rsel,shr)
+tAll$DBH_cm.17[rsel] <- tAll$DBH_cm.13[rsel]
+
+rsel <- which(is.na(tAll$SA.BD_cm.17) & !is.na(tAll$SA.BD_cm.13))
+shr <- which(tAll$SA.BD_cm.18 < tAll$SA.BD_cm.13)
+rsel <- union(rsel,shr)
+tAll$SA.BD_cm.17[rsel] <- tAll$SA.BD_cm.13[rsel]
 
 # round tree nums for points
 tAll$TreeNum <- floor(tAll$Num)

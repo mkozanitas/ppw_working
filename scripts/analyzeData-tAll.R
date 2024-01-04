@@ -329,6 +329,8 @@ table(tAll$fsLevel,tAll$Plot,useNA='always')
 
 write.csv(tAll,'data/tAll-analyzeData-update.csv')
 
+## XYZABC - run to here 
+
 ### MODELING SECTION STARTS HERE
 # CREATE tAlls for modeling
 tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0),]
