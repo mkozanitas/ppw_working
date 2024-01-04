@@ -49,14 +49,13 @@ table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 # initial growth analysis to identify potentially problematic size data
 # suggest taking median eliminating most negative and very large outliers. Suggests median diameter growth of 0.2 cm in five years
 tAll$ddbh.1318 <- tAll$dbh.18-tAll$dbh.13
-hist(tAll$ddbh.1318[tAll$UseForBAGrowth])
-summary(tAll$ddbh.1318[tAll$UseForBAGrowth])
 
 plot(tAll$dbh.13,tAll$ddbh.1318)
 abline(h=0)
 
 tAll$absddbh.1318 <- abs(tAll$ddbh.1318)
 hist(tAll$absddbh.1318)
+median(tAll$ddbh.1318,na.rm=T)
 tail(sort(tAll$absddbh.1318))
 
 length(which(tAll$absddbh.1318>5))
@@ -66,6 +65,13 @@ write.csv(tAll[which(tAll$absddbh.1318>5),c('Num','Plot.18','ddbh.1318')],'data/
 
 # ANALYZE BY SPECIES AND TYPE for 2018 post-fire fates
 (use.species <- spNames$Species)
+
+# hard code conversion of QUEBEGA to QUEBER
+tAll$Species.13[which(tAll$Species.13=='QUEBEGA')] <- 'QUEBER'
+tAll$Species.17[which(tAll$Species.17=='QUEBEGA')] <- 'QUEBER'
+tAll$Species.18[which(tAll$Species.18=='QUEBEGA')] <- 'QUEBER'
+tAll$Species.19[which(tAll$Species.19=='QUEBEGA')] <- 'QUEBER'
+tAll$Species.20[which(tAll$Species.20=='QUEBEGA')] <- 'QUEBER'
 
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018)
 fst12 <- data.frame(SpCode=rep(spNames$Species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
@@ -112,14 +118,11 @@ sap.sum
 all.sum <- tree.sum+sap.sum
 all.sum
 all.sum/all.sum[1]
-# NaN errors when calculating for TS bc only using -c(1:2)?
 #ts.sum <- apply(fst12[fst12$Type=='TS',-c(1:2)],2,sum,na.rm=T)
 #(ts.sum-sap.sum[6])/(ts.sum[1]-ts.sum[6])
 
 fate.sum <- apply(fst12[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
-
-# same as above but just for one category at a time (DN/DR/LR/LN) DOESN'T WORK ANYMORE- can we delete up to creation of spN?
 
 SArows <- which(fst12$Type=='SA')
 TRrows <- which(fst12$Type=='TR')
@@ -129,15 +132,7 @@ fst12$percSurv <- 1 - fst12$N18.DN/fst12$N17
 fst12$percSurv[fst12$N17==0] <- NA
 head(fst12)
 
-#copied AbSp code from below to calculate percSurv of each species in each category
-
-# hard code conversion of QUEBEGA to QUEBER
-tAll$Species.13[which(tAll$Species.13=='QUEBEGA')] <- 'QUEBER'
-tAll$Species.18[which(tAll$Species.18=='QUEBEGA')] <- 'QUEBER'
-tAll$Species.19[which(tAll$Species.19=='QUEBEGA')] <- 'QUEBER'
-tAll$Species.20[which(tAll$Species.20=='QUEBEGA')] <- 'QUEBER'
-
-# Add SpCd10 variable, with "Other" for everything that isn't the 9 primary
+# Add SpCd14 variable, with "Other" for everything that isn't the 9 primary
 tAll$SpCd14 <- tAll$Species.18
 
 ## now run by species for species with lots of data
@@ -199,8 +194,6 @@ all.sum/all.sum[1]
 fate.sum <- apply(fst12a[,-c(1:2)],2,sum)
 (fate.sum-fate.sum[6])/(fate.sum[1]-fate.sum[6])
 
-# same as above but just for one category at a time (DN/DR/LR/LN) DOESN'T WORK ANYMORE- can we delete up to creation of spN?
-
 SArows <- which(fst12a$Type=='SA')
 TRrows <- which(fst12a$Type=='TR')
 #TSrows <- which(fst12a$Type=='TS') 
@@ -209,12 +202,9 @@ fst12a$percSurv <- 1 - fst12a$N18.DN/fst12a$N17
 fst12a$percSurv[fst12a$N17==0] <- NA
 head(fst12a)
 
-# DA: This is alphabetical, not by percSurv, that's what's wanted, right?
+# Table B - convert outcomes to percentages
 fst12a[fst12a$Type=='TR',]
 fst12a[fst12a$Type=='SA',]
-
-
-
 
 ## choose fire severity metric
 fsmet <- 'Tubbs.MTBS.RDNBR.30'
@@ -223,13 +213,12 @@ summary(fs[,fsmet])
 hist(fs[,fsmet])
 sort(fs[,fsmet])
 
-f2t <- match(tAll$Plot.13,fs$Plot)
+f2t <- match(tAll$Plot,fs$Plot)
 head(f2t)
 tail(f2t)
 tAll$FireSev <- fs[f2t,fsmet]
 dim(tAll)
 tail(tAll)
-table(tAll$Plot.13)
 
 # RDNBR fire severity levels
 # Unburned
@@ -256,10 +245,10 @@ table(tAll$fsCat)
 str(tAll$fsCat)
 
 # plots experiencing each fire severity level, and how many N13 individuals in each
-table(tAll$Plot.13[which(tAll$fsLevel==0)])
-table(tAll$Plot.13[which(tAll$fsLevel==1)])
-table(tAll$Plot.13[which(tAll$fsLevel==2)])
-table(tAll$Plot.13[which(tAll$fsLevel==3)])
+table(tAll$Plot.17[which(tAll$fsLevel==0)])
+table(tAll$Plot.17[which(tAll$fsLevel==1)])
+table(tAll$Plot.17[which(tAll$fsLevel==2)])
+table(tAll$Plot.17[which(tAll$fsLevel==3)])
 
 # # Initial examination of dbh
 # dim(tAll)
@@ -273,18 +262,19 @@ table(tAll$Plot.13[which(tAll$fsLevel==3)])
 # D10 = DBH.cm * 1.176 + 1.070
 
 # if want to change and use size from a different year, change here. Then from here on ld10 is generic
-hist(tAll$d10.18)
-tAll$ld10 <- log10(tAll$d10.18)
+hist(tAll$d10.17)
+tAll$ld10 <- log10(tAll$d10.17)
 tAll$ld10[which(!is.finite(tAll$ld10))] <- NA
 hist(tAll$ld10)
 summary(tAll$ld10,useNA='always')
+# smallest tree now had d10 = 1*1.176+1.07 = 2.246 for d10. log10 of this = 0.3514
+
+# We've now changed to using 2018 size data unless missing, and then using 2013 - this comment and 5 lines of code below are from prior analysis. Left here as reminder about how this influenced the U-shaped multinomials. 
 
 # now move diameters forward from 2013 (or 2018, if we use 2013 above), if it's missing in 2018. This can be commented out so that we only use data from one year or the other, and don't mix. I just tried this, for LN.18 analysis - it gets rid of the U-shaped result. So the result is coming from mixing data from plants censuses only in 2013 with those added in 2018. Now we have to figure out why!
-tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.13[which(is.na(tAll$ld10))])
-summary(tAll$ld10,useNA='always')
-hist(tAll$ld10)
-
-# smallest tree now had d10 = 1*1.176+1.07. log10 of this = 0.3514
+# which(is.na(tAll$ld10) & !is.na(tAll$d10.13))
+# tAll$ld10[which(is.na(tAll$ld10))] <- log10(tAll$d10.13[which(is.na(tAll$ld10))])
+# hist(tAll$ld10)
 
 # create types to switch between types
 types <- c('SA','TR')
@@ -298,7 +288,7 @@ par(op)
 # create squared variable for quadratic analysis
 tAll$ld10.2 <- tAll$ld10^2
 
-# check on fates (for all 6945 indvs)
+# check on fates (for all 6945-703 indvs)
 table(tAll$Live.18, tAll$fate.18,useNA='always')
 
 # gCrown not properly coded, fixed here using fates
@@ -309,9 +299,8 @@ table(tAll$gCrown.18, tAll$fate.18,useNA='always')
 
 table(tAll$bSprout.18,tAll$fate.18,useNA='always')
 
-# 704 plants have fate=NA in 2018, let's have a look
-# these appear to be points added in 2019 - that many? -deal with it later
-# DA 1/2/24 - now only one plant. Others all fixed?
+# 703 plants have fate=NA in 2018, let's have a look
+# these appear to be points added in 2019 and 2020 - that many? - Yes, especially lots of CEACUN!
 NA704 <- which(is.na(tAll$fate.18))
 tAll[NA704[3],]
 
@@ -323,32 +312,50 @@ par(op)
 # or plot together
 plot(Live.18~ld10,data=tAll,main=paste('All',types[i]))
 
-# check fate values ( for 6241 indvs- excluding the 704 NA's)
+# check fate values (for 6241 indvs- excluding the 703 NA's)
 table(tAll$Resprout.18,tAll$fate.18)
 
 #### SURVIVAL ANALYSIS - first cut, size only!!
 types <- c('TR','SA')
 
-# adjust values here to subset data, for TR and/or SA and fire severity level and species
-tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0 & tAll$Species.18 %in% AbSp),]
+# adjust values here to subset data, for TR and/or SA and fire severity level and species (if needed)
+table(tAll$Type.18,useNA='always')
+table(tAll$fsLevel,tAll$Plot,useNA='always')
+
+### MODELING SECTION STARTS HERE
+# CREATE tAlls for modeling
+tAlls <- tAll[which(tAll$Type.18 %in% types[1:2] & tAll$fsLevel>=0),]
+dim(tAll)
+dim(tAlls)
+table(tAlls$SpCd14)
+
+# NOW DECIDE WHICH SPECIES WE WANT FOR RUNNING MODELS
+tAlls <- tAlls[-which(tAlls$SpCd14 %in% c('BACPIL','QUEBER','OTHER')),]
+spAs <- spA[-which(spA %in% c('OTHER','BACPIL','QUEBER'))]
+dim(tAlls)
 
 # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
 newSap <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='SA')
 length(newSap)
-table(tAlls$Plot.18[newSap])
-tAlls <- tAlls[-newSap,]
+tAlls$Num[newSap]
+table(tAlls$Plot[newSap])
+
+# OPTION: comment this in or out to exercise option
+# tAlls <- tAlls[-newSap,]
+table(tAlls$SpCd14)
 dim(tAlls)
 
-# how many new trees added
+# OPTION: if needed trim data by stem size
+#tAlls <- tAlls[which(tAlls$ld10>=c(-0.5)),]
+dim(tAlls)
+
+# how many new trees added - includes new plots - not recruitment
 newTrees <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='TR')
 length(newTrees)
 table(tAlls$Plot.18[newTrees])
 
 # how many saplings grew into trees
 table(tAlls$Type.13,tAlls$Type.18)
-
-# if needed trim data by stem size
-#tAlls <- tAlls[which(tAlls$ld10>=c(-0.5)),]
 
 # sample size
 tAlls$fPlot <- as.factor(tAlls$Plot.18)
@@ -358,6 +365,7 @@ nrow(tAlls)
 # START SECTION 'YVAR_MODEL' (search for that name below to see where it ends)
 ### START MODELING HERE
 #set yvalue
+# For some outcomes, like NR, need to drop some species
 yvalname <- 'gCrown.18'
 tAlls$yval <- tAlls[,yvalname]
 
@@ -397,19 +405,20 @@ BIC(fit4)
 # YES! (for both types, absp, all fsLevels....)
 
 ## MAIN MODEL WE'RE FOCUSING ON
-fit5 <- glm(yval~ld10+ld10.2+fsCat+northness+Species.18,data=tAlls,family='binomial')
+fit5 <- glm(yval~ld10+ld10.2+fsCat+northness+SpCd14,data=tAlls,family='binomial')
 BIC(fit5)
 coefficients(fit5)
 
 # here's the full model with FS and species, and no northness - check via BIC whether it can be included in final results
-fit5x <- glm(yval~ld10+ld10.2+fsCat+Species.18,data=tAlls,family='binomial')
+fit5x <- glm(yval~ld10+ld10.2+fsCat+SpCd14,data=tAlls,family='binomial')
+length(fit5x$residuals)
 BIC(fit5x)
 
 #without quadratic?
-fit5l <- glm(yval~ld10+fsCat+northness+Species.18,data=tAlls,family='binomial')
+fit5l <- glm(yval~ld10+fsCat+northness+SpCd14,data=tAlls,family='binomial')
 BIC(fit5l)
 
-#fit6 <- glmer(yval~ld10+ld10.2+fsCat+Species.18+(1|fPlot),data=tAlls,family='binomial')
+#fit6 <- glmer(yval~ld10+ld10.2+fsCat+SpCd14+(1|fPlot),data=tAlls,family='binomial')
 # DOESN'T CONVERGE combining species and random factor plots
 
 # made newdata for prediction
@@ -419,19 +428,20 @@ ld10vals <- seq(min(tAlls$ld10,na.rm=T),max(tAlls$ld10,na.rm=T),length.out=nvals
 #DA 1/2/24 - added 100 here, as well as max value 
 ld10vals <- c(min(tAlls$ld10,na.rm=T),log10(c(1,1.5,2,5,10,15,20,30,50,75,100)),max(tAlls$ld10,na.rm=T))
 
-ndf <- expand.grid(ld10vals,fitPlots,unique(tAlls$fsCat),AbSp)
-names(ndf) <- c('ld10','fPlot','fsCat','Species.18')
+ndf <- expand.grid(ld10vals,fitPlots,sort(unique(tAlls$fsCat)),spAs)
+names(ndf) <- c('ld10','fPlot','fsCat','SpCd14')
 ndf$fPlot <- as.factor(ndf$fPlot)
 ndf$fsCat <- as.factor(ndf$fsCat)
-ndf$Species.18 <- as.character(ndf$Species.18)
+ndf$SpCd14 <- as.character(ndf$SpCd14)
 ndf$ld10.2 <- ndf$ld10^2
 ndf$northness <- 0
+ndf$eastness <- 0
 head(ndf)
 dim(ndf)
 
-nd <- expand.grid(ld10vals,sort(unique(tAlls$fsCat)),AbSp)
-names(nd) <- c('ld10','fsCat','Species.18')
-nd$Species.18 <- as.character(nd$Species.18)
+nd <- expand.grid(ld10vals,sort(unique(tAlls$fsCat)),spAs)
+names(nd) <- c('ld10','fsCat','SpCd14')
+nd$SpCd14 <- as.character(nd$SpCd14)
 nd$fsCat <- as.factor(nd$fsCat)
 nd$ld10.2 <- nd$ld10^2
 nd$northness <- 0
@@ -471,45 +481,45 @@ plot(tAlls$ld10,tAlls$yval,main=yvalname)
 points(nd$ld10,nd$predVal5,lwd=4) # qsize + fire levels + species
 #points(nd$ld10,nd$predVal5l,lwd=4) # qsize + fire levels + species
 if (plotToFile) {
-  system('open figures/outputfig.png')
+  #system('open figures/outputfig.png')
   dev.off()
 }
 
 #rowSel <- which(nd$Species.18=='UMBCAL' & nd$fsCat==1)
 #points(nd$ld10[rowSel],nd$predVal5[rowSel],lwd=4,col='red') # qsize + fire levels + species
 
-# visualize mean fire severity
-pAvg <- rep(NA,11)
-i=1
-fs=1
-for (fsv in 1:4) {
-  fs <- fsv-1
-  for (i in 1:nvals) {
-    ld <- ld10vals[i]
-    # comment/uncomment to switch between quadratic (5) and linear (5l)
-    pAvg[i] <- mean(nd$predVal5[which(nd$ld10==ld & nd$fsCat==fs)])
-    #pAvg[i] <- mean(nd$predVal5l[which(nd$ld10==ld & nd$fsCat==fs)])
-  }
-  #print(pAvg)
-  points(ld10vals,pAvg,col='red',lwd=4,type='b')
-}
+# visualize mean fire severity - no plot command!
+# pAvg <- rep(NA,11)
+# i=1
+# fs=1
+# for (fsv in 1:4) {
+#   fs <- fsv-1
+#   for (i in 1:nvals) {
+#     ld <- ld10vals[i]
+#     # comment/uncomment to switch between quadratic (5) and linear (5l)
+#     pAvg[i] <- mean(nd$predVal5[which(nd$ld10==ld & nd$fsCat==fs)])
+#     #pAvg[i] <- mean(nd$predVal5l[which(nd$ld10==ld & nd$fsCat==fs)])
+#   }
+#   #print(pAvg)
+#   points(ld10vals,pAvg,col='red',lwd=4,type='b')
+# }
 
 #Visualize individual species 
-par(op)
+par(mfrow=c(1,1))
 spname='ARBMEN'
 
 plotSpecies <- function(spname,tmp=tAlls,ndt=nd,ylab=yvalname) {
-  tmp <- tmp[which(tmp$Species.18==spname),]
+  tmp <- tmp[which(tmp$SpCd14 %in% spname),]
   plot(tmp$ld10,tmp$yval,xlim=range(tmp$ld10,na.rm=T),main=paste(ylab,spname))
-  ndt <- ndt[which(ndt$Species.18==spname),]
+  ndt <- ndt[which(ndt$SpCd14==spname),]
   i=2
   for (i in 1:length(unique(ndt$fsCat))) {
     ndt2 <- ndt[which(ndt$fsCat==(i-1)),]
     lines(ndt2$ld10,ndt2$predVal5)
     #text(ld10.vals[5],ndt$pSurvAll[which(ndt$ld10==ld10.vals[5])],fsLevels.vals[i])
   }
-  #par(op)
 }
+
 #This will plot isoclines of survival at each fire severity for any indv species 
 plotSpecies('PSEMEN')
 plotSpecies('ARBMEN')
@@ -520,6 +530,8 @@ plotSpecies('QUEGAR')
 plotSpecies('QUEKEL')
 plotSpecies('HETARB')
 plotSpecies('ARCMAN')
+plotSpecies('AMOCAL')
+plotSpecies('FRACAL')
 
 # see predicted values for each species at selected size and fire severity. These can be plotted against bark thickness! Use predVal5 or predVal5l. Others don't have species so they are all the same. ld10=1 is for basal diameter of 10cm. Nice spread among species.
 nd[which(nd$ld10==1&nd$fsCat==1),]
@@ -527,7 +539,7 @@ nd[which(nd$ld10==1&nd$fsCat==1),]
 ### read in bark thickness here and transfer to nd predicted value data.frame
 bt <- read.csv('input_data/barkthickness_spmeans.csv')
 head(bt)
-b2p <- match(nd$Species.18,bt$names)
+b2p <- match(nd$SpCd14,bt$names)
 nd$t10 <- bt$t10[b2p]
 nd$t20 <- bt$t20[b2p]
 nd$t30 <- bt$t30[b2p]
@@ -618,14 +630,14 @@ fsl <- 1
 
 # with shrubs
 selSize <- 1 #change size 1 above from 10cm to 2cm in order to look at shrubs
-barplot(predVal5~Species.18,data=nd[which(nd$ld10==log10(predSizes[selSize]) & nd$fsCat==fsl),],ylim=c(0,1),main=paste(yvalname,'@ FSLev',fsl,'predval@',predSizes[selSize],'cm dbh'))
+barplot(predVal5~SpCd14,data=nd[which(nd$ld10==log10(predSizes[selSize]) & nd$fsCat==fsl),],ylim=c(0,1),main=paste(yvalname,'@ FSLev',fsl,'predval@',predSizes[selSize],'cm dbh'))
 
 # remove shrubs for larger sizes cm plot
 # op=par will stack 3 figures (1,3) for horizontal & (3,1) for vertical
 op=par(mfrow=c(1,3)) 
 for (selSize in 2:4) {
-  tmp <- nd[which(!nd$Species.18 %in% c('HETARB','ARCMAN')),]
-  barplot(predVal5~Species.18,data=tmp[which(tmp$ld10==log10(predSizes[selSize]) & tmp$fsCat==fsl),],ylim=c(0,1),main=paste(yvalname,'@ FSLev',fsl,'predval@',predSizes[selSize],'cm dbh'))
+  tmp <- nd[which(!nd$SpCd14 %in% c('HETARB','ARCMAN')),]
+  barplot(predVal5~SpCd14,data=tmp[which(tmp$ld10==log10(predSizes[selSize]) & tmp$fsCat==fsl),],ylim=c(0,1),main=paste(yvalname,'@ FSLev',fsl,'predval@',predSizes[selSize],'cm dbh'))
 }
 par(op)
 ## END SECTION 'YVAR_MODEL'. THIS IS THE END OF THE ANALYSES AND VISUALIZATIONS THAT START WITH THE SELECTION OF A DEPENDENT VARIABLE.

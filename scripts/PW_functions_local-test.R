@@ -173,9 +173,9 @@ get.indv.data <- function(year, stump=F, orig.dead=F, survival=F, bsprout=F, epi
   indv.data$dbh <- NA
   indv.data$dbh[which(indv.data$Type=="SA")] <- indv.data$SA.BD_cm[which(indv.data$Type=="SA")]
   indv.data$dbh[which(indv.data$Type=="TR")] <- indv.data$DBH_cm[which(indv.data$Type=="TR")]
-  
+
   indv.data$Basal.Area <- ((indv.data$dbh/2)^2)*(pi)
-  
+
   # For saplings adjust basal area by number of stems < 10cm. As done here it overestimates by multiplying by stem number, and the other stems are smaller than main stem
   #indv.data$Basal.Area[which(indv.data$Type=="SA")] <-(indv.data$Basal.Area[which(indv.data$Type=="SA")])*(indv.data$SA.Stems[which(indv.data$Type=="SA")])
   

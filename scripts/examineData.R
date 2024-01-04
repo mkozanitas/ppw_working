@@ -333,7 +333,7 @@ if (TRUE) {
     
     # from DBH-SADB.R script
     # D10 = DBH.cm * 1.176 + 1.070
-    all.id[[i]]$d10[TRrows] <- all.id[[i]]$dbh[TRrows] * 1.176 + 1.07
+    all.id[[i]]$d10[TRrows] <- all.id[[i]]$DBH_cm[TRrows] * 1.176 + 1.07
     summary(all.id[[i]]$d10,useNA='always')
 }
   
@@ -438,6 +438,13 @@ dim(tAll)
 head(tAll)
 tail(tAll)
 
+# create master Plot variable
+tAll$Plot <- tAll$Plot.13
+tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.18[which(is.na(tAll$Plot))]
+tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.19[which(is.na(tAll$Plot))]
+tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.20[which(is.na(tAll$Plot))]
+table(tAll$Plot,useNA='always')
+
 rm('t01')
 rm('t12')
 rm('t123')
@@ -479,6 +486,7 @@ table(tAll$Plot.18[which(tAll$Num>10000)])
 # we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
 # newIndvs: new recruits, and recruited and dead, and newplots
 newIndvs <- which(is.na(tAll$Plot.13) & !is.na(tAll$Plot.18))
+all(sort(newIndvs),sort(which(tAll$Cat17 %in% c('NewPlot','new17','99s.old'))))
 length(newIndvs) # matches Cat17 which weren't tagged in 2013
 
 table(tAll$Type.18[newIndvs])
@@ -540,12 +548,27 @@ tAll$Species.17[newIndvs] <- tAll$Species.18[newIndvs]
 tAll$Dead.17[newIndvs] <- 0
 tAll$Live.17[newIndvs] <- 1
 tAll$gCrown.17[newIndvs] <- 1
-tAll$dbh.17[newIndvs] <- tAll$dbh.18[newIndvs]
 
-# ignore these individuals for basal area growth - commented out because we aren't creating proxy 2013 diameter data now
-tAll$UseForBAGrowth <- T
-tAll$UseForBAGrowth[newIndvs] <- F
+# Now, what to do about size! Create unified d10 variable in 2017 for models
+length(which(!is.na(tAll$d10.13)))
+length(which(!is.na(tAll$Plot.13)))
 
+# start by assigning 2018 dbh to 2017 proxy data
+tAll$d10.17 <- tAll$d10.18
+
+# then use 2013 if 2018 was missing, or if diameter shrunk - 995 trees
+rsel <- which(is.na(tAll$d10.17) & !is.na(tAll$d10.13))
+length(rsel)
+shr <- which(tAll$d10.18<tAll$d10.13)
+length(shr)
+rsel <- union(rsel,shr)
+length(rsel)
+
+tAll$d10.17[rsel] <- tAll$d10.13[rsel]
+
+hist(log(tAll$dbh.17))
+
+# round tree nums for points
 tAll$TreeNum <- floor(tAll$Num)
 tAll$fPlot <- as.factor(tAll$Plot.18)
 

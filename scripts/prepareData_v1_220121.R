@@ -9,6 +9,7 @@ source('scripts/PW_functions_local-test.R')
 id13 <- get.indv.data(year = 2013,branches=F,stump=F,orig.dead=F)
 dim(id13)
 head(id13)
+names(id13)
 head(sort(id13$Num))
 
 #to see all individual branches...points not collapsed use branches=T
