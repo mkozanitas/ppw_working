@@ -240,7 +240,7 @@ table(tAll$fsLevel)
 
 # manually code unburned as 0
 unburned.plots <- c('PPW1308','PPW1309','PPW1311','PPW1312','PPW1327','PPW1344','PPW1347')
-tAll$fsLevel[which(tAll$Plot.13 %in% unburned.plots)] <- 0
+tAll$fsLevel[which(tAll$Plot %in% unburned.plots)] <- 0
 table(tAll$fsLevel)
 tAll$fsCat <- as.factor(tAll$fsLevel)
 table(tAll$fsCat)
@@ -251,6 +251,9 @@ table(tAll$Plot.17[which(tAll$fsLevel==0)])
 table(tAll$Plot.17[which(tAll$fsLevel==1)])
 table(tAll$Plot.17[which(tAll$fsLevel==2)])
 table(tAll$Plot.17[which(tAll$fsLevel==3)])
+
+# check taht only one fire severity per plot
+table(tAll$Plot,tAll$fsLevel)
 
 # # Initial examination of dbh
 # dim(tAll)
@@ -343,6 +346,11 @@ newSap <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='SA'
 length(newSap)
 tAlls$Num[newSap]
 table(tAlls$Plot[newSap])
+
+# sizes ofnew saplings
+summary(tAlls$ld10[newSap])
+summary(tAlls$ld10[tAlls$Type.18=='SA'])
+summary(tAlls$ld10[tAlls$Type.18=='TR'])
 
 # OPTION: comment this in or out to exercise option
 # tAlls <- tAlls[-newSap,]
