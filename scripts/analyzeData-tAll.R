@@ -25,7 +25,8 @@ head(spNames)
 names(spNames) <- 'Species'
 
 # input merged dataframe
-tAll <- read.csv('data/tAll.csv',as.is=T)
+tAll <- read.csv('data/tAll.csv',as.is=T,row.names=1)
+head(tAll)
 dim(tAll)
 table(tAll$Plot.13,useNA = 'always')
 table(tAll$Plot.17,useNA = 'always')
