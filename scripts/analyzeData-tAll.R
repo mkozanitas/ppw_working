@@ -348,6 +348,12 @@ newSap <- which(is.na(tAlls$Year.13) & tAlls$Year.18==2018 & tAlls$Type.18=='SA'
 length(newSap)
 tAlls$Num[newSap]
 table(tAlls$Plot[newSap])
+names(tAlls)
+
+# export
+expt <- tAlls[newSap,c('Plot','Num','SA.Height_cm.18','SA.BD_cm.18','Basal.Resprout.Height_cm.18','fsLevel','fate.18','Notes.18')]
+tail(expt)
+write.csv(expt,'data/newSap-export.csv')
 
 # sizes ofnew saplings
 summary(tAlls$ld10[newSap])
