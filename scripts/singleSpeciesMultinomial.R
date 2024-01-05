@@ -100,14 +100,19 @@ require(nnet)
 # SPECIES SPECIFIC MULTINOMIAL - QUADRATIC CAN BE ADDED HERE '+ld10.2' - changes results some
 spAm
 TSp <- c('QUEKEL','QUEDOU','ARBMEN','QUEGAR','QUEAGR','PSEMEN','UMBCAL')
-HSp <- c('QUEKEL','QUEDOU','ARBMEN','QUEGAR','QUEAGR','UMBCAL')
+HSp <- c('QUEKEL','QUEDOU','ARBMEN','QUEGAR','QUEAGR','UMBCAL','QUEBER')
+WOSp <- c('QUEDOU','QUEGAR')
+RSHSp <- c('HETARB','AMOCAL','FRACAL')
+NRSHSp <- 'ARCMAN'
 
 # CHOOSE ONE
-spname <- spsel;spname <- 'All'
+spsel <- spAm;spname <- 'All'
 spsel <- TSp;spname <- 'Trees'
 spsel <- HSp;spname <- 'Hardwoods'
-spsel <- "ARBMEN";spname <- spsel
-
+spsel <- RSHSp;spname <- 'Resprouting Shrubs'
+spsel <- NRSHSp;spname <- 'Non-Resprouting Shrub (ARCMAN)'
+spsel <- WOSp;spname <- 'White Oaks'
+spsel <- "UMBCAL";spname <- spsel
 
 temp <- tAllmp[which(tAllmp$Species %in% spsel),]
 nrow(temp)
@@ -119,13 +124,6 @@ temp <- temp[which(!is.na(temp$SizeCat)),]
 dim(temp)
 table(temp$SizeCat)
 
-fit.mn <- multinom(as.factor(fate3.18) ~ as.factor(SizeCat) + as.factor(fsCat), data=temp)
-fit.mn 
-BIC(fit.mn)
-head(round(fitted(fit.mn),2))
-dim(fitted(fit.mn))
-plot(fitted(fit.mn)[,3]~ld10,data=temp)
-
 (tot <- table(temp$SizeCat,temp$fsCat))
 barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,main=paste(spname,'Mortality'))
 barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,main=paste(spname,'Topkill-Resprout'))
@@ -135,6 +133,15 @@ barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,main=pa
 barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,1]/tot,beside = T,main=paste(spname,'Mortality'))
 barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,2]/tot,beside = T,main=paste(spname,'Topkill-Resprout'))
 barplot(table(temp$fsCat,temp$SizeCat,temp$fate3.18)[,,3]/tot,beside = T,main=paste(spname,'Green-Crown'))
+
+
+fit.mn <- multinom(as.factor(fate3.18) ~ as.factor(SizeCat) + as.factor(fsCat), data=temp)
+fit.mn 
+BIC(fit.mn)
+head(round(fitted(fit.mn),2))
+dim(fitted(fit.mn))
+plot(fitted(fit.mn)[,3]~ld10,data=temp)
+
 
 
 (tot <- table(temp$SizeCat,temp$fsCat))
