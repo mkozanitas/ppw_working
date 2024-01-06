@@ -109,9 +109,13 @@ tsets[[1]] <- spA[which(spAtt$Shrub.Tree[s2s]=="T")]
 tset.names[1] <- 'All trees'
 tsets[[2]] <- tsets[[1]][-which(tsets[[1]]=='PSEMEN')]
 tset.names[2] <- 'Hardwood trees'
+tsets[[3]] <- intersect(tsets[[1]],spAc)
+tset.names[3] <- 'Common trees'
+tsets[[4]] <- intersect(tsets[[2]],spAc)
+tset.names[4] <- 'Common hardwoods'
 
 i=1
-for (i in 1:2)
+for (i in 1:length(tsets))
 {
   spsel <- tsets[[i]]
   spname <- tset.names[i]
@@ -145,9 +149,13 @@ ssets[[1]] <- ssets[[1]][-which(ssets[[1]]=='BACPIL')]
 sset.names[1] <- 'All shrubs'
 ssets[[2]] <- ssets[[1]][-which(ssets[[1]]=='ARCMAN')]
 sset.names[2] <- 'Resprouting shrubs'
+ssets[[3]] <- intersect(ssets[[1]],spAc)
+sset.names[3] <- 'Common shrubs'
+ssets[[4]] <- intersect(ssets[[2]],spAc)
+sset.names[4] <- 'Common resprouting shrubs'
 
 i=1
-for (i in 1:2)
+for (i in 1:4)
 {
   spsel <- ssets[[i]]
   spname <- sset.names[i]
@@ -173,6 +181,7 @@ for (i in 1:2)
   par(op)
   dev.off()
 }
+
 # one of the surprising results here is high green crown for shrubs in high severity fire. How many were there?
 table(temp$Species[which(temp$fsCat==3)]) #13
 
