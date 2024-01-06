@@ -22,7 +22,7 @@ tail(fs)
 # Read in species codes - in this script, called 'Species'
 spNames <- read.csv('data/all-spp-names.csv',row.names = 1)
 head(spNames)
-names(spNames) <- 'Species'
+names(spNames)[1] <- 'Species'
 
 # input merged dataframe
 tAll <- read.csv('data/tAll.csv',as.is=T,row.names=1)

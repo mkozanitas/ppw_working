@@ -11,12 +11,26 @@ dim(tAllm)
 tAllm <- tAllm[which(tAllm$Type.17 %in% c('TR','SA')),]
 dim(tAllm)
 
-(spAm <- sort(unique(tAllm$Species)))
+# read in species attribute table
+spAtt <- read.csv('data/all-spp-names.csv',row.names = 1)
+head(spAtt)
+nrow(spAtt)
+
+# extract list of species in data
+(spA <- sort(unique(tAllm$Species)))
+
+# check all species in data are in list
+all(spA %in% spAtt$Species)
+
+# make match var to extract attributes from table
+s2s <- match(spA,spAtt$Species)
+
 (spN <- sort(table(tAllm$Species)))
 
-(spAm <- names(spN)[which(spN>=50)])
-(spAm <- spAm[-which(spAm=='BACPIL')])
-(spAm <- sort(spAm))
+# make list of common species for plotting
+(spAc <- names(spN)[which(spN>=50)])
+(spAc <- spAc[-which(spAc=='BACPIL')])
+(spAc <- sort(spAc))
 
 # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
 newSap <- which(is.na(tAllm$Year.13) & tAllm$Year.18==2018 & tAllm$Type.18=='SA')
@@ -25,7 +39,7 @@ tAllm$Num[newSap]
 table(tAllm$Plot[newSap])
 table(tAllm$fate.18[newSap],tAllm$fsLevel[newSap])
 
-temp <- tAllm[which(tAllm$Species %in% spAm),]
+temp <- tAllm[which(tAllm$Species %in% spAc),]
 table(temp$fate.18[temp$Type.18=='SA'],temp$fsLevel[temp$Type.18=='SA'])
 
 # OPTION: comment this in or out to exercise option
@@ -67,7 +81,7 @@ FireLevels <- c('None:Low'); FVals <- 0:1 #changes FireSev range to all c(1:3)
 FireLevels <- c('All'); FVals <- 0:3 #changes FireSev range to all c(1:3)
 
 #### Subset to selected fire values and species
-tAllmp <- tAllm[which(tAllm$fsCat %in% FVals & tAllm$Species %in% spAm),]
+tAllmp <- tAllm[which(tAllm$fsCat %in% FVals & tAllm$Species %in% spA),]
 dim(tAllmp)
 
 # remove rows with no size data
@@ -88,16 +102,92 @@ tAllmp$SSizeCat[which(tAllmp$Type.17=='SA')] <- 'SA'
 tAllmp$SSizeCat[which(tAllmp$Type.17=='TR')] <- 'TR'
 table(tAllmp$SSizeCat,useNA='always')
 
-# code s/t type for individual species
-spAm
-stypes <- c('S','T','S','S','S','T','T','S',rep('T',4))
-cbind(spAm,stypes)
+# Plot for all trees and hardwoods species
+tsets <- list()
+tset.names <- c()
+tsets[[1]] <- spA[which(spAtt$Shrub.Tree[s2s]=="T")]
+tset.names[1] <- 'All trees'
+tsets[[2]] <- tsets[[1]][-which(tsets[[1]]=='PSEMEN')]
+tset.names[2] <- 'Hardwood trees'
+
+i=1
+for (i in 1:2)
+{
+  spsel <- tsets[[i]]
+  spname <- tset.names[i]
+  temp <- tAllmp[which(tAllmp$Species %in% spsel),]
+  nrow(temp)
+  
+  temp <- temp[which(temp$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+  temp$SizeCat <- temp$TSizeCat
+  nrow(temp)
+  
+  (tot <- table(temp$SizeCat,temp$fsCat))
+  
+  pdf(paste('fates-figs/fates-',spname,'.pdf',sep=''),6,6)
+  op=par(mfrow=c(2,2))
+  
+  tree.cols <- c('grey90','grey60','grey30','black')
+  barplot(tot,beside=T,col=tree.cols,main=paste(spname,'Sample Sizes'))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=tree.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=tree.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
+  
+  par(op)
+  dev.off()
+}
+
+# Plot for all shrubs and resprouting species
+ssets <- list()
+sset.names <- c()
+ssets[[1]] <- spA[which(spAtt$Shrub.Tree[s2s]=="S")]
+ssets[[1]] <- ssets[[1]][-which(ssets[[1]]=='BACPIL')]
+sset.names[1] <- 'All shrubs'
+ssets[[2]] <- ssets[[1]][-which(ssets[[1]]=='ARCMAN')]
+sset.names[2] <- 'Resprouting shrubs'
+
+i=1
+for (i in 1:2)
+{
+  spsel <- ssets[[i]]
+  spname <- sset.names[i]
+  temp <- tAllmp[which(tAllmp$Species %in% spsel),]
+  nrow(temp)
+  
+  temp <- temp[which(temp$SSizeCat %in% c('SA','TR')),]
+  temp$SizeCat <- temp$SSizeCat
+  nrow(temp)    
+  
+  (tot <- table(temp$SizeCat,temp$fsCat))
+  
+  pdf(paste('fates-figs/fates-',spname,'.pdf',sep=''),6,6)
+  op=par(mfrow=c(2,2))
+  
+  tree.cols <- c('grey90','grey60','grey30','black')
+  shrub.cols <- c('grey90','black')
+  barplot(tot,beside=T,col=shrub.cols,main=paste(spname,'Sample Sizes'))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=shrub.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=shrub.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=shrub.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
+  
+  par(op)
+  dev.off()
+}
+# one of the surprising results here is high green crown for shrubs in high severity fire. How many were there?
+table(temp$Species[which(temp$fsCat==3)]) #13
+
+# which ones had green crown?
+table(temp$Species[which(temp$fsCat==3 & temp$fate3.18=='2')]) # 1 CEACUN, 4 CEAPAR, 2 SAMNIG
+
+# should these be recoded as topkill-resprout? Or might some (CEACUN) have germinated after the fire. Here are the numbers and plots
+# is it possible these regrew in summer following fire, rather than surviving. Certainly seems likely for CEAPAR. If so, they should be removed, like BACPIL.
+temp[which(temp$fsCat==3 & temp$fate3.18=='2'),c('Plot','Species')]
 
 i <- 6
 # Start loop here, through individual species
-for (i in 1:length(spAm)) 
+for (i in 1:length(spAc)) 
 {
-  spsel <- spAm[i];spname <- spsel
+  spsel <- spAc[i];spname <- spsel
   temp <- tAllmp[which(tAllmp$Species %in% spsel),]
   if (length(spsel)==1) type <- stypes[i]
   nrow(temp)
@@ -148,62 +238,15 @@ for (i in 1:length(spAm))
 }
 
 
-(TSp <- spAm[which(stypes=='T')])
+(TSp <- spAc[which(stypes=='T')])
 (HSp <- TSp[-which(TSp=='PSEMEN')])
 WOSp <- c('QUEDOU','QUEGAR')
 RSSp <- c('HETARB','AMOCAL','FRACAL','QUEBER')
 
-spsel <- HSp;spname <- 'Hardwoods';type <- 'T'
-{
-  temp <- tAllmp[which(tAllmp$Species %in% spsel),]
-  nrow(temp)
-  
-  temp <- temp[which(temp$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
-  temp$SizeCat <- temp$TSizeCat
-  nrow(temp)
-  
-  (tot <- table(temp$SizeCat,temp$fsCat))
-  
-  pdf(paste('fates-figs/fates-',spname,'.pdf',sep=''),6,6)
-  op=par(mfrow=c(2,2))
-  
-  tree.cols <- c('grey90','grey60','grey30','black')
-  barplot(tot,beside=T,col=tree.cols,main=paste(spname,'Sample Sizes'))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=tree.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=tree.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
-  
-  par(op)
-  dev.off()
-}
 
-spsel <- RSSp;spname <- 'R-Shrubs';type <- 'S'
-{
-  temp <- tAllmp[which(tAllmp$Species %in% spsel),]
-  nrow(temp)
-  
-  temp <- temp[which(temp$SSizeCat %in% c('SA','TR')),]
-  temp$SizeCat <- temp$SSizeCat
-  nrow(temp)    
-  
-  (tot <- table(temp$SizeCat,temp$fsCat))
-  
-  pdf(paste('fates-figs/fates-',spname,'.pdf',sep=''),6,6)
-  op=par(mfrow=c(2,2))
-  
-  tree.cols <- c('grey90','grey60','grey30','black')
-  shrub.cols <- c('grey90','black')
-  barplot(tot,beside=T,col=shrub.cols,main=paste(spname,'Sample Sizes'))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=shrub.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=shrub.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
-  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=shrub.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
-  
-  par(op)
-  dev.off()
-}
 
 
 # CHOOSE ONE
-spsel <- spAm;spname <- 'All';type <- 'T'
+spsel <- spAc;spname <- 'All';type <- 'T'
 spsel <- TSp;spname <- 'Trees';type <- 'T'
 spsel <- WOSp;spname <- 'White Oaks';type <- 'T'
