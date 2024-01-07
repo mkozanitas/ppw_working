@@ -182,6 +182,9 @@ for (i in 1:4)
   dev.off()
 }
 
+spsel <- ssets[[2]]
+spname <- sset.names[2]
+temp <- tAllmp[which(tAllmp$Species %in% spsel),]
 # one of the surprising results here is high green crown for shrubs in high severity fire. How many were there?
 table(temp$Species[which(temp$fsCat==3)]) #13
 
@@ -198,7 +201,7 @@ for (i in 1:length(spAc))
 {
   spsel <- spAc[i];spname <- spsel
   temp <- tAllmp[which(tAllmp$Species %in% spsel),]
-  if (length(spsel)==1) type <- stypes[i]
+  type <- spAtt$Shrub.Tree[which(spsel==spAtt$Species)]
   nrow(temp)
   if (type=='S')
   {
@@ -247,15 +250,91 @@ for (i in 1:length(spAc))
 }
 
 
-(TSp <- spAc[which(stypes=='T')])
-(HSp <- TSp[-which(TSp=='PSEMEN')])
-WOSp <- c('QUEDOU','QUEGAR')
-RSSp <- c('HETARB','AMOCAL','FRACAL','QUEBER')
+
+## now run multinomial models for hardwoods and resprouting shrubs. What terms are justified to include
+require(nnet)
+
+# Common Hardwood Trees
+(spsel <- tsets[[4]])
+(spname <- tset.names[4])
+temp <- tAllmp[which(tAllmp$Species %in% spsel),]
+nrow(temp)
+
+temp$fsCat <- as.factor(temp$fsCat)
+temp$TSizeCat <- as.factor(temp$TSizeCat)
+
+fit.mn0 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + Species + northness, data=temp)
+BIC(fit.mn0) #4064
+
+fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + Species, data=temp)
+BIC(fit.mn1) # 4078, clearly fit.mn0 is better, keep northness
+
+fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
+BIC(fit.mn2) # 4030 Much better, drop species
+
+fit.mn3 <- multinom(as.factor(fate3.18) ~ TSizeCat + Species + northness, data=temp)
+BIC(fit.mn3) # 5547 fsCat has huge effect
+
+fit.mn4 <- multinom(as.factor(fate3.18) ~ fsCat + Species + northness, data=temp)
+BIC(fit.mn4) # 4873 TSizeCat has huge effect
+
+# so, start with model 2
+fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
+BIC(fit.mn2) # 4030
+
+# add interactions one at a time
+fit.mn.i1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + TSizeCat:fsCat, data=temp)
+BIC(fit.mn.i1) # 4053 No, don't keep
+
+fit.mn.i2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + TSizeCat:northness, data=temp)
+BIC(fit.mn.i2) # 4031 No, don't need
+
+fit.mn.i3 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat, data=temp)
+BIC(fit.mn.i3) # 4032 Yes, keep
+
+fit.mn.i4 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat + fsCat:northness:fsCat, data=temp)
+BIC(fit.mn.i4) # 4032 No, third order not needed
+
+# No interaction models are strongly supported as better, so go with simplest: model 2
+fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
+BIC(fit.mn2) # 4030
+coefficients(fit.mn2)
+
+# Common Resprouting Shrubs
+(spsel <- ssets[[4]])
+(spname <- sset.names[4])
+temp <- tAllmp[which(tAllmp$Species %in% spsel),]
+nrow(temp)
+
+temp$fsCat <- as.factor(temp$fsCat)
+temp$TSizeCat <- as.factor(temp$TSizeCat)
+
+fit.mn0 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + Species + northness, data=temp)
+BIC(fit.mn0) #2180
+
+fit.mn1 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + Species, data=temp)
+BIC(fit.mn1) # 2169, Lower, drop northness
+
+fit.mn2 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + northness, data=temp)
+BIC(fit.mn2) # 2235 Much worse, keep species
+
+fit.mn3 <- multinom(as.factor(fate3.18) ~ SSizeCat + Species + northness, data=temp)
+BIC(fit.mn3) # 2505 fsCat has huge effect
+
+fit.mn4 <- multinom(as.factor(fate3.18) ~ fsCat + Species + northness, data=temp)
+BIC(fit.mn4) # 2173 Not supporeted relative to model 1
+
+fit.mn5 <- multinom(as.factor(fate3.18) ~ fsCat + Species, data=temp)
+BIC(fit.mn5) #2162 - best model
+
+# so, start with model 5
+
+# add interaction
+fit.mn.i1 <- multinom(as.factor(fate3.18) ~ fsCat*Species, data=temp)
+BIC(fit.mn.i1) # 2187 No, don't keep
 
 
-
-
-# CHOOSE ONE
-spsel <- spAc;spname <- 'All';type <- 'T'
-spsel <- TSp;spname <- 'Trees';type <- 'T'
-spsel <- WOSp;spname <- 'White Oaks';type <- 'T'
+# No interaction models are strongly supported as better, so go with simplest: model 5
+fit.mn5 <- multinom(as.factor(fate3.18) ~ fsCat + Species, data=temp)
+BIC(fit.mn5) #2162 - best model
+coefficients(fit.mn5)
