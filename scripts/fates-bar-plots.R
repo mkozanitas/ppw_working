@@ -29,7 +29,7 @@ s2s <- match(spA,spAtt$Species)
 
 # make list of common species for plotting
 (spAc <- names(spN)[which(spN>=50)])
-(spAc <- spAc[-which(spAc=='BACPIL')])
+(spAc <- spAc[-which(spAc %in% c('BACPIL','QUEBER'))])
 (spAc <- sort(spAc))
 
 # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors

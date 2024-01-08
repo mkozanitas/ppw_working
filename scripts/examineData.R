@@ -393,6 +393,12 @@ nrow(allIndv)
 
 # DUPLICATE 2013 DATA to create a baseline for 2017 proxy data
 
+### NOTE: Proxy data for shrubs needs to be reevaluated before doing community analyses:
+# SAMNIG should be coded as topkill-resprout
+# CEACUN and CEAPAR should not be added to 2017, these are new recruits
+# Most BACPIL esp in high severity also new, not topkill-resprout
+# These species are not being considered in demography paper
+
 # MERGE YEARS!!
 t0 <- all.id[[1]]
 t1 <- all.id[[1]]
