@@ -12,7 +12,7 @@ tAllm <- tAllm[which(tAllm$Type.17 %in% c('TR','SA')),]
 dim(tAllm)
 
 # read in species attribute table
-spAtt <- read.csv('data/all-spp-names.csv',row.names = 1)
+spAtt <- read.csv('data/all-spp-attributes.csv',row.names = 1)
 head(spAtt)
 nrow(spAtt)
 
@@ -264,41 +264,41 @@ temp$fsCat <- as.factor(temp$fsCat)
 temp$TSizeCat <- as.factor(temp$TSizeCat)
 
 fit.mn0 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + Species + northness, data=temp)
-BIC(fit.mn0) #4064
+BIC(fit.mn0) #4049
 
 fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + Species, data=temp)
-BIC(fit.mn1) # 4078, clearly fit.mn0 is better, keep northness
+BIC(fit.mn1) # 4062, clearly fit.mn0 is better, keep northness
 
 fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
-BIC(fit.mn2) # 4030 Much better, drop species
+BIC(fit.mn2) # 4013 Much better, drop species
 
 fit.mn3 <- multinom(as.factor(fate3.18) ~ TSizeCat + Species + northness, data=temp)
-BIC(fit.mn3) # 5547 fsCat has huge effect
+BIC(fit.mn3) # 5551 fsCat has huge effect
 
 fit.mn4 <- multinom(as.factor(fate3.18) ~ fsCat + Species + northness, data=temp)
-BIC(fit.mn4) # 4873 TSizeCat has huge effect
+BIC(fit.mn4) # 4876 TSizeCat has huge effect
 
 # so, start with model 2
 fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
-BIC(fit.mn2) # 4030
+BIC(fit.mn2) # 4014
 
 # add interactions one at a time
 fit.mn.i1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + TSizeCat:fsCat, data=temp)
-BIC(fit.mn.i1) # 4053 No, don't keep
+BIC(fit.mn.i1) # 4029 No, don't keep
 
 fit.mn.i2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + TSizeCat:northness, data=temp)
-BIC(fit.mn.i2) # 4031 No, don't need
+BIC(fit.mn.i2) # 4014 Equal, don't need
 
 fit.mn.i3 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat, data=temp)
-BIC(fit.mn.i3) # 4032 Yes, keep
+BIC(fit.mn.i3) # 4009 Yes, keep
 
 fit.mn.i4 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat + fsCat:northness:fsCat, data=temp)
-BIC(fit.mn.i4) # 4032 No, third order not needed
+BIC(fit.mn.i4) # 4009 Same, third order not needed
 
-# No interaction models are strongly supported as better, so go with simplest: model 2
-fit.mn2 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
-BIC(fit.mn2) # 4030
-coefficients(fit.mn2)
+# Interaction model 3 supported
+fit.mn.i3 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat, data=temp)
+BIC(fit.mn.i3) # 4009
+coefficients(fit.mn.i3)
 write.csv(coefficients(fit.mn2),'fates-figs/coeff-common-hardwoods.csv')
 
 # Model for PSEMEN
@@ -311,26 +311,26 @@ temp$fsCat <- as.factor(temp$fsCat)
 temp$TSizeCat <- as.factor(temp$TSizeCat)
 
 fit.mn0 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat + northness, data=temp)
-BIC(fit.mn0) #706
+BIC(fit.mn0) #698
 
 fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat, data=temp)
-BIC(fit.mn1) # 699, better, drop northness
+BIC(fit.mn1) # 690, better, drop northness
 
 fit.mn3 <- multinom(as.factor(fate3.18) ~ TSizeCat + northness, data=temp)
-BIC(fit.mn3) # 1037 fsCat has huge effect
+BIC(fit.mn3) # 1034 fsCat has huge effect
 
 fit.mn4 <- multinom(as.factor(fate3.18) ~ fsCat + northness, data=temp)
 BIC(fit.mn4) # 972 TSizeCat has huge effect
 
-# so, start with model 2
+# so, start with model 1
 fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat, data=temp)
-BIC(fit.mn1) # 699, better, drop northness
+BIC(fit.mn1) # 691, better, drop northness
 
 # add interactions one at a time
 fit.mn.i1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + TSizeCat:fsCat, data=temp)
-BIC(fit.mn.i1) # 749 No, don't keep
+BIC(fit.mn.i1) # 739 No, don't keep
 
-# No interaction models are strongly supported as better, so go with simplest: model 2
+# No interaction models are strongly supported as better, so go with simplest: model 1
 fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat, data=temp)
 BIC(fit.mn1) # 699, better, drop northness
 coefficients(fit.mn1)
@@ -346,33 +346,33 @@ temp$fsCat <- as.factor(temp$fsCat)
 temp$TSizeCat <- as.factor(temp$TSizeCat)
 
 fit.mn0 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + Species + northness, data=temp)
-BIC(fit.mn0) #2180
+BIC(fit.mn0) #2008
 
 fit.mn1 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + Species, data=temp)
-BIC(fit.mn1) # 2169, Lower, drop northness
+BIC(fit.mn1) # 1994, Lower, drop northness
 
 fit.mn2 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat + northness, data=temp)
-BIC(fit.mn2) # 2235 Much worse, keep species
+BIC(fit.mn2) # 2064 Much worse, keep species
 
 fit.mn3 <- multinom(as.factor(fate3.18) ~ SSizeCat + Species + northness, data=temp)
-BIC(fit.mn3) # 2505 fsCat has huge effect
+BIC(fit.mn3) # 2369 fsCat has huge effect
 
 fit.mn4 <- multinom(as.factor(fate3.18) ~ fsCat + Species + northness, data=temp)
-BIC(fit.mn4) # 2173 Not supporeted relative to model 1
+BIC(fit.mn4) # 2000 Not supported relative to model 1
 
 fit.mn5 <- multinom(as.factor(fate3.18) ~ fsCat + Species, data=temp)
-BIC(fit.mn5) #2162 - best model
+BIC(fit.mn5) #1987 - best model
 
 # so, start with model 5
 
 # add interaction
 fit.mn.i1 <- multinom(as.factor(fate3.18) ~ fsCat*Species, data=temp)
-BIC(fit.mn.i1) # 2187 No, don't keep
+BIC(fit.mn.i1) # 2033 No, don't keep
 
 
 # No interaction models are strongly supported as better, so go with simplest: model 5
 fit.mn5 <- multinom(as.factor(fate3.18) ~ fsCat + Species, data=temp)
-BIC(fit.mn5) #2162 - best model
+BIC(fit.mn5) #1987 - best model
 coefficients(fit.mn5)
 write.csv(coefficients(fit.mn5),'fates-figs/coeff-resp-shrubs.csv')
 
@@ -411,8 +411,8 @@ BIC(fit.mn6) # 82.7 Lowest BIC - just fire severity
 coefficients(fit.mn5)
 
 # so, start with model 2
-fit.mn1 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat, data=temp)
-BIC(fit.mn1) # 70, better, drop northness
+fit.mn1 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat, data=temp)
+BIC(fit.mn1) # 67, better, drop northness
 
 # add interactions one at a time
 fit.mn.i1 <- multinom(as.factor(fate3.18) ~ SSizeCat + fsCat  + SSizeCat:fsCat, data=temp)
@@ -423,3 +423,5 @@ fit.mn5 <- multinom(as.factor(fate3.18) ~ fsCat , data=temp)
 BIC(fit.mn5) # 62.7 Lowest BIC - just fire severity
 coefficients(fit.mn5)
 write.csv(t(coefficients(fit.mn5)),'fates-figs/coeff-ARCMAN.csv')
+
+table(temp$fsCat)
