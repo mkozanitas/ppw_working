@@ -299,7 +299,7 @@ BIC(fit.mn.i4) # 4009 Same, third order not needed
 fit.mn.i3 <- multinom(as.factor(fate3.18) ~ TSizeCat + fsCat  + northness + fsCat:northness + TSizeCat:fsCat, data=temp)
 BIC(fit.mn.i3) # 4009
 coefficients(fit.mn.i3)
-write.csv(coefficients(fit.mn2),'fates-figs/coeff-common-hardwoods.csv')
+write.csv(coefficients(fit.mn.i3),'fates-figs/coeff-common-hardwoods.csv')
 
 # Model for PSEMEN
 (spsel <- "PSEMEN")
