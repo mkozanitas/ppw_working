@@ -2,7 +2,7 @@
 # if anything has changed in tAll, run examineData-tAll up to this line: ## XYZABC - run to here 
 
 rm(list=ls())
-library('MuMln')
+#library('MuMln')
 
 tAllm <- read.csv('data/tAll-analyzeData-update.csv',as.is=T,row.names=1)
 head(tAllm)
@@ -115,10 +115,15 @@ tsets[[3]] <- intersect(tsets[[1]],spAc)
 tset.names[3] <- 'Common trees'
 tsets[[4]] <- intersect(tsets[[2]],spAc)
 tset.names[4] <- 'Common hardwoods'
+tsets[[5]] <- c('QUEDOU','QUEGAR')
+tset.names[5] <- 'White Oaks'
+tsets[[6]] <- c('ARBMEN','QUEAGR','QUEKEL','UMBCAL')
+tset.names[6] <- 'EverHard+RedOaks'
 
 i=1
 for (i in 1:length(tsets))
 {
+  print(i)
   spsel <- tsets[[i]]
   spname <- tset.names[i]
   temp <- tAllmp[which(tAllmp$Species %in% spsel),]
