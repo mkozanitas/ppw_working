@@ -353,6 +353,11 @@ if (TRUE) {
   plot(sap13$SA.BD_cm,sap13$dbh,log='')
   sap13[which(sap13$dbh>3),]
   abline(0,1)
+  
+  tr13 <- all.id[[1]]
+  tr13 <- tr13[which(tr13$Type=='TR'),]
+  names(tr13)
+  plot(tr13$DBH_cm,tr13$dbh,log='')
   # end examine basal diameter
 }
 

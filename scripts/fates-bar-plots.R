@@ -2,6 +2,8 @@
 # if anything has changed in tAll, run examineData-tAll up to this line: ## XYZABC - run to here 
 
 rm(list=ls())
+library('MuMln')
+
 tAllm <- read.csv('data/tAll-analyzeData-update.csv',as.is=T,row.names=1)
 head(tAllm)
 names(tAllm)
@@ -248,8 +250,6 @@ for (i in 1:length(spAc))
   par(op)
   dev.off()
 }
-
-
 
 ## now run multinomial models for hardwoods and resprouting shrubs. What terms are justified to include
 require(nnet)
