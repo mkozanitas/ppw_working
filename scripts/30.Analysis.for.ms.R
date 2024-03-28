@@ -7,6 +7,7 @@ require(glmmTMB)
 require(Ternary)
 require(vegan)
 require(RCurl)
+require(nnet)
 
 source('scripts/31.functionsForAnalysis.R')
 
@@ -38,6 +39,13 @@ dim(tAll)
 tAll$fsCat <- fs$fsCat[match(tAll$Plot,fs$Plot)]
 table(tAll$fsCat,useNA='always')
 
+# archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
+tAll.archive <- tAll
+
+# use this to restore and recretate tAll
+tAll <- tAll.archive
+tAll <- tAll[,c('Num','Plot','fsCat','Species','Year.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Live.19','fate.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
+
 # First result - ternary plot ordination of plots to describe veg types, intersected with fire severity
 pt <- drawTernaryPlots()
 if (all(pt$plot==fs$Plot)) pt$fsCat <- fs$fsCat else print('error')
@@ -49,8 +57,8 @@ write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 
 # Second result - overall numbers
 table(tAll$Type.17)
-(allAb <- sum(table(tAll$Type.17[which(tAll$Type.17!='TS')])))
-(spAbund <- sort(table(tAll$Species.17)))
+(allAb <- sum(table(tAll$Type.17[which(tAll$Live.17==1)])))
+(spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)])))
 
 #### Summary stats
 (use.species <- spAtt$Species)
@@ -59,7 +67,22 @@ table(tAll$Type.17)
 (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
 sumAb/allAb
 
-# summary of species types (tree includes QUEdec)
+# MELINA: QUESTION
+if (FALSE) {
+  # how many 'new' saplings 
+  newSap <- which(is.na(tAll$Year.13) & tAll$Year.18==2018 & tAll$Type.18=='SA')
+  table(tAll$Plot[newSap])
+  length(newSap)
+  table(tAll$Year.13,tAll$Year.17,useNA='always')
+  
+  tAllm$Num[newSap]
+  table(tAllm$Plot[newSap])
+  table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
+  
+  # MELINA: Remind me about these - they were either tagged but data failed to record in 2013, or newly recruited from 2013 to 2017 and inferred in 2017 data. They are detected here by NA in Year.17 which I think means 
+}
+
+# summary of species types
 table(spAtt$Shrub.Tree)
 
 # summary of fates
@@ -80,7 +103,113 @@ fst12c
 write.csv(fst12c,'results/summary-table.csv')
 
 #### make bar plots for different subgroups and individual species
-## NEED TO CLEAN UP AND MOVE CODE FROM fates-bar-plots.R
+tAllm <- prepareForBarPlots()
+
+# barplot for PSEMEN and ARCMAN, first to see here, and then to pdf
+tdat <- barplotNonSprouters(print.to.pdf=F)
+barplotNonSprouters(print.to.pdf=T)
+
+# model fitting - PSEMEN
+temp <- tdat[[1]]
+table(temp$Species)
+fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
+AIC(fit2)
+drop1(fit2)
+fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
+AIC(fit1)
+drop1(fit1)
+# fit1 is best model
+
+# model fitting - ARCMAN
+temp <- tdat[[2]]
+fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
+AIC(fit2)
+drop1(fit2)
+fit1 <- glm(gCrown.18~SizeCat + fsCat,data=temp,family='binomial')
+AIC(fit1)
+drop1(fit1)
+fit0 <- glm(gCrown.18~fsCat ,data=temp,family='binomial')
+AIC(fit0)
+# fit0 and fit1 are best models
+
+# barplots for common EHRO, WO, and resprouting shrubs
+tdat <- barplotSprouters(print.to.pdf=F)
+barplotSprouters(print.to.pdf=T)
+
+# model fitting - resprouters
+# white oaks
+temp <- tdat[[1]]
+fit0 <- multinom(as.factor(fate3.18) ~ fsCat * SizeCat * Species,data=temp)
+AIC(fit0)
+fit1 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species + SizeCat:Species,data=temp)
+AIC(fit1)
+fit2a <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species,data=temp)
+AIC(fit2a)
+fit2b <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + SizeCat:Species,data=temp)
+AIC(fit2b)
+fit2c <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:Species + SizeCat:Species,data=temp)
+AIC(fit2c)
+fit3 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species ,data=temp)
+AIC(fit3)
+fit4a <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat  ,data=temp)
+AIC(fit4a)
+fit4b <- multinom(as.factor(fate3.18) ~ fsCat + Species  ,data=temp)
+AIC(fit4b)
+fit4c <- multinom(as.factor(fate3.18) ~ SizeCat + Species  ,data=temp)
+AIC(fit4c)
+fit5 <- multinom(as.factor(fate3.18) ~ SizeCat,data=temp)
+AIC(fit5)
+
+# EHRO
+temp <- tdat[[2]]
+fit0 <- multinom(as.factor(fate3.18) ~ fsCat * SizeCat * Species,data=temp)
+AIC(fit0)
+fit1 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species + SizeCat:Species,data=temp)
+AIC(fit1) # drop three way interaction
+
+# try all combinations of 2 way interactions
+fit2a <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species,data=temp)
+fit2b <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + SizeCat:Species,data=temp)
+fit2c <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:Species + SizeCat:Species,data=temp)
+fit2d <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + SizeCat:Species,data=temp)
+fit2e <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:Species,data=temp)
+fit2f <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat,data=temp)
+
+AIC(fit2a)
+AIC(fit2b)
+AIC(fit2c) # BEST
+AIC(fit2d)
+AIC(fit2e)
+AIC(fit2f)
+
+# best model - I don't think main effects should be dropped when terms are present in interactions
+fit2c <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:Species + SizeCat:Species,data=temp)
+
+# resprouting shrubs
+temp <- tdat[[3]]
+fit3 <- multinom(as.factor(fate3.18) ~ fsCat * SizeCat * Species,data=temp)
+AIC(fit3)
+fit2 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species + SizeCat:Species,data=temp)
+AIC(fit2) # keep three way interaction, so I'll keep everything else
+
+#### some continuous regressions
+# binomial  regression of 'live' and 'green crown' - won't try topkill as quadratic didn't work
+
+tAll$gCrown.18 <- apply(tAll[,c('LN.18','LR.18')],1,max,na.rm=T)
+table(tAll$gCrown.18)
+
+spsel <- 'PSEMEN'
+yvalname <- 'gCrown.18'
+
+tAlls <- tAll[which(tAll$Species==spsel),]
+tAlls$yval <- tAlls[,yvalname]
+
+fit5 <- glm(yval~ld10+ld10.2+fsCat+northness+SpCd14,data=tAlls,family='binomial')
+BIC(fit5)
+coefficients(fit5)
+
+
+# plot resilience??
 
 #### END HERE 3/23/26
 

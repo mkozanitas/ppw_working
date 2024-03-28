@@ -93,12 +93,13 @@ drawTernaryPlots <- function()
   
   # classify plots
   pt <- data.frame(plot=row.names(pSGBA),vt=NA)
-  pt$vt[which(pSGBA3[,1]>70)] <- 'CON'
-  pt$vt[which(pSGBA3[,2]>70)] <- 'MH'
-  pt$vt[which(pSGBA3[,3]>70)] <- 'WO'
-  pt$vt[which(is.na(pt$vt) & pSGBA3[,1]<20)] <- 'MH-WO'
-  pt$vt[which(is.na(pt$vt) & pSGBA3[,3]<20)] <- 'MH-CON'
+  pt$vt[which(pSGBA3[,1]>=50)] <- 'CON'
+  pt$vt[which(pSGBA3[,2]>=50)] <- 'MH'
+  pt$vt[which(pSGBA3[,3]>=50)] <- 'WO'
+  #pt$vt[which(is.na(pt$vt) & pSGBA3[,1]<20)] <- 'MH-WO'
+  #pt$vt[which(is.na(pt$vt) & pSGBA3[,3]<20)] <- 'MH-CON'
   pt$vt[which(is.na(pt$vt))] <- 'Mix3'
+  pt
   write.csv(pt,'data/vegtypes.csv')
   return(pt)
 }
@@ -109,12 +110,13 @@ calcFatesTableBySpecies <- function()
   head(fst12)                  
   tail(fst12)
   
-  i=56
+  i=1
   for (i in 1:nrow(fst12))
   {
     sp <- fst12$SpCode[i]
     ty <- fst12$Type[i]
-    temp <- tAll[which(tAll$Species.17==sp & tAll$Type.17==ty),]
+    temp <- tAll[which(tAll$Species==sp & tAll$Type.17==ty),]
+    nrow(temp)
     
     fst12$N17[i] <- sum(temp$Live.17,na.rm=T)
     
@@ -126,8 +128,8 @@ calcFatesTableBySpecies <- function()
     fst12$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
     fst12$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
     fst12$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
-    miss <- which(temp$Live.13==1 & is.na(temp$DN.18)==1)
-    if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot.13','Num')])
+    miss <- which(temp$Live.17==1 & is.na(temp$DN.18)==1)
+    if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot','Num')])
     fst12$nMissing <- fst12$N17-(fst12$N18.DN+fst12$N18.DR+fst12$N18.LN+fst12$N18.LR)
   }
   return(fst12)
@@ -156,4 +158,180 @@ reduce_fst12 <- function()
   fst12c <- rbind(fst12c,c('OTHTRS','TR',newrow))
   row.names(fst12c) <- 1:nrow(fst12c)
   return(fst12c)
+}
+
+prepareForBarPlots <- function()
+{
+  tAllm <- tAll
+  # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
+  newSap <- which(is.na(tAllm$Year.17) & tAllm$Year.18==2018 & tAllm$Type.18=='SA')
+  length(newSap)
+  tAllm$Num[newSap]
+  table(tAllm$Plot[newSap])
+  table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
+  
+  # OPTION: comment this in or out to exercise option
+  # tAllm <- tAllm[-newSap,]
+  
+  # OPTION: if needed trim data by stem size
+  # tAllm <- tAllm[which(tAllm$ld10>=c(0)),]
+
+  # SECTION 'THREE_FATES' - binomial and multinomial compared, for visual purposes
+  tAllm$Dead.18 <- 1 - tAllm$Live.18
+  tAllm$fate3.18 <- (-1)
+  tAllm$fate3.18[which(tAllm$fate.18=='DN')] <- 0
+  tAllm$fate3.18[which(tAllm$fate.18=='DR')] <- 1
+  tAllm$fate3.18[which(tAllm$fate.18 %in% c('LN','LR'))] <- 2
+  table(tAllm$fate3.18) 
+  tAllm <- tAllm[which(tAllm$fate3.18 %in% 0:2),]
+  table(tAllm$fate3.18) 
+  
+  (f3Levels <- 0:2)
+  (f3PlotVals <- c(0.95,1,1.05))
+  f3Labs <- c('DN','DR','LR+LN')
+  (f3PlotCols <- c('black','red','green'))
+  fsPlotSize <- c(0.5,0.75,1,1.25)
+  
+  tAllm$f3PlotVals <- f3PlotVals[match(tAllm$fate3.18,f3Levels)]
+  tAllm$f3PlotCols <- f3PlotCols[match(tAllm$fate3.18,f3Levels)]
+  tAllm$fsPlotSize <- fsPlotSize[match(tAllm$fsCat,fsPlotSize)]
+  
+  # comment in or out to select one of these options
+  #FireLevels <- c('Mod+High'); FVals <- 2:3
+  #FireLevels <- c('Low'); FVals <- 1
+  #FireLevels <- c('None'); FVals <- 0
+  #FireLevels <- c('None:Low'); FVals <- 0:1 #changes FireSev range to all c(1:3)
+  FireLevels <- c('All'); FVals <- 0:3 #changes FireSev range to all c(1:3)
+  
+  #### Subset to selected fire values and species
+  tAllm <- tAllm[which(tAllm$fsCat %in% FVals),]
+  dim(tAllm)
+  
+  # remove rows with no size data
+  #tAllm <- tAllm[which(!is.na(tAllm$ld10)),]
+  #dim(tAllm)
+  
+  # Translate type and size data to categories
+  tAllm$TSizeCat <- NA
+  tAllm$TSizeCat[which(tAllm$Type.17=='SA' & tAllm$d10.17 <= max(tAll$d10.17,na.rm=T))] <- 'SA'
+  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 <= max(tAllm$DBH_cm.17,na.rm=T))] <- 'TR3'
+  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 20)] <- 'TR2'
+  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 10)] <- 'TR1'
+  table(tAllm$TSizeCat,useNA='always')
+  
+  tAllm$SSizeCat <- NA
+  tAllm$SSizeCat[which(tAllm$Type.17=='SA')] <- 'SA'
+  tAllm$SSizeCat[which(tAllm$Type.17=='TR')] <- 'TR'
+  table(tAllm$SSizeCat,useNA='always')
+  
+  return(tAllm)
+}
+
+barplotNonSprouters <- function(print.to.pdf=T)
+{
+  tree.cols <- c('grey90','grey60','grey30','black')
+  shrub.cols <- c('grey90','black')
+  tdat <- list()
+  
+  if (print.to.pdf) pdf(paste('results/fates-non-sprouters.pdf',sep=''),6,6)
+
+  op=par(mfrow=c(2,2))
+  spsel <- 'PSEMEN';spname <- spsel
+  temp <- tAllm[which(tAllm$Species %in% spsel),]
+  
+  temp <- temp[which(temp$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+  temp$SizeCat <- temp$TSizeCat
+  (tot <- table(temp$SizeCat,temp$fsCat))
+  
+  barplot(tot,beside = T,col=tree.cols,main=paste(spname,'N'))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+  tdat[[1]] <- temp
+
+  
+  spsel <- 'ARCMAN';spname <- spsel
+  temp <- tAllm[which(tAllm$Species %in% spsel),]
+  
+  temp <- temp[which(temp$SSizeCat %in% c('SA','TR')),]
+  temp$SizeCat <- temp$SSizeCat
+  
+  # include the very few high severity in medium
+  temp$fsCat[which(temp$fsCat==3)] <- 2
+  (tot <- table(temp$SizeCat,temp$fsCat))
+  
+  barplot(tot,beside = T,col=shrub.cols,main=paste(spname,'N'))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=shrub.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+  tdat[[2]] <- temp
+  
+
+  par(op)
+  if (print.to.pdf) dev.off()
+  return(tdat)
+}
+
+barplotSprouters <- function(print.to.pdf=T)
+{
+  tree.cols <- c('grey90','grey60','grey30','black')
+  shrub.cols <- c('grey90','black')
+  tdat <- list()
+  
+  tsets <- list()
+  tset.names <- c()
+  tsets[[1]] <- c('QUEDOU','QUEGAR')
+  tset.names[1] <- 'White Oaks'
+  tsets[[2]] <- c('ARBMEN','QUEAGR','QUEKEL','UMBCAL')
+  tset.names[2] <- 'EHRO'
+  
+  if (print.to.pdf) pdf(paste('results/fates-sprouters.pdf',sep=''),10,8)
+  op=par(mfrow=c(3,4))
+  
+  i=1
+  for (i in 1:length(tsets))
+  {
+    spsel <- tsets[[i]]
+    spname <- tset.names[i]
+    temp <- tAllm[which(tAllm$Species %in% spsel),]
+    nrow(temp)
+    
+    temp <- temp[which(temp$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+    temp$SizeCat <- temp$TSizeCat
+    nrow(temp)
+    
+    # move high severity sample into medium
+    if (i==1) temp$fsCat[which(temp$fsCat==3)] <- 2
+    (tot <- table(temp$SizeCat,temp$fsCat))
+    
+    tree.cols <- c('grey90','grey60','grey30','black')
+    barplot(tot,beside=T,col=tree.cols,main=paste(spname,'Sample Sizes'))
+    barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+    barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=tree.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
+    barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=tree.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
+    tdat[[i]] <- temp
+  }
+  
+  tsets[[1]] <- c('AMOCAL','FRACAL','HETARB')
+  tset.names[1] <- 'Rshrubs'
+  
+  spsel <- tsets[[1]]
+  spname <- tset.names[1]
+  temp <- tAllm[which(tAllm$Species %in% spsel),]
+  
+  temp <- temp[which(temp$SSizeCat %in% c('SA','TR')),]
+  temp$SizeCat <- temp$SSizeCat
+  nrow(temp)    
+  
+  # only two at high severity, move to medium for analysis
+  temp$fsCat[which(temp$fsCat==3)] <- 2
+  
+  (tot <- table(temp$SizeCat,temp$fsCat))
+  
+  shrub.cols <- c('grey90','black')
+  barplot(tot,beside=T,col=shrub.cols,main=paste(spname,'Sample Sizes'))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=shrub.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,2]/tot,beside = T,col=shrub.cols,main=paste(spname,'Topkill-Resprout'),ylim=c(0,1))
+  barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,3]/tot,beside = T,col=shrub.cols,main=paste(spname,'Green-Crown'),ylim=c(0,1))
+  tdat[[3]] <- temp
+  
+  par(op)
+  if (print.to.pdf) dev.off()
+  return(tdat)
 }
