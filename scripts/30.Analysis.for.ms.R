@@ -110,14 +110,17 @@ tdat <- barplotNonSprouters(print.to.pdf=F)
 barplotNonSprouters(print.to.pdf=T)
 
 # model fitting - PSEMEN
-temp <- tdat[[1]]
-table(temp$Species)
-fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
-AIC(fit2)
-drop1(fit2)
+{
+  temp <- tdat[[1]]
+  table(temp$Species)
+  fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
+  AIC(fit2)
+  drop1(fit2)
+  fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
+  AIC(fit1)
+  drop1(fit1)
+}
 fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
-AIC(fit1)
-drop1(fit1)
 # fit1 is best model
 
 # model fitting - ARCMAN
@@ -193,6 +196,22 @@ fit2 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat
 AIC(fit2) # keep three way interaction, so I'll keep everything else
 
 #### some continuous regressions
+
+## resprout height growth
+names(tAll)
+tAll$Basal.Resprout.Height_cm.18 <- as.numeric(tAll$Basal.Resprout.Height_cm.18)
+tAll$Basal.Resprout.Height_cm.19 <- as.numeric(tAll$Basal.Resprout.Height_cm.19)
+# fix one outlier
+tAll$Basal.Resprout.Height_cm.18[which.max(tAll$Basal.Resprout.Height_cm.18)] <- NA
+op=par(mfrow=c(1,2))
+boxplot(tAll$Basal.Resprout.Height_cm.18~tAll$Species,ylim=c(0,500))
+boxplot(tAll$Basal.Resprout.Height_cm.19~tAll$Species,ylim=c(0,500))
+par(op)
+
+plot(tAll$Basal.Resprout.Height_cm.18,tAll$Basal.Resprout.Height_cm.19,log='xy')
+abline(0,1,lty=2)
+abline(lm(tAll$Basal.Resprout.Height_cm.19~tAll$Basal.Resprout.Height_cm.18))
+
 # binomial  regression of 'live' and 'green crown' - won't try topkill as quadratic didn't work
 
 tAll$gCrown.18 <- apply(tAll[,c('LN.18','LR.18')],1,max,na.rm=T)
