@@ -124,7 +124,9 @@ tdat <- barplotNonSprouters()
 # model fitting - PSEMEN
 {
   temp <- tdat[[1]]
+  head(temp)
   table(temp$Species)
+  
   fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
   AIC(fit2)
   drop1(fit2)
