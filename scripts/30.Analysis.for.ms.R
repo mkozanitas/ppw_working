@@ -20,7 +20,7 @@ head(fs[,c('Plot','fsvar','fsCat')])
 table(fs$fsCat)
 
 # Read in species codes - in this script, called 'Species'
-spAtt <- read.csv('data/all-spp-attributes.csv')
+spAtt <- read.csv('data/all-spp-attributes.csv',row.names = 1)
 head(spAtt)
 tail(spAtt)
 
@@ -44,12 +44,14 @@ table(tAll$fsCat,useNA='always')
 # archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
 tAll.archive <- tAll
 
-# use this to restore and recretate tAll
+# use this to restore and recreate tAll
 tAll <- tAll.archive
 tAll <- tAll[,c('Num','iNum.13','Point.13','Plot','fsCat','Species','Year.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
 
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
 sum(tAll$Live.17,na.rm=T)
+
+# Number of live species prefire
 length(table(tAll$Species[which(tAll$Live.17==1)]))
 spAtt
 

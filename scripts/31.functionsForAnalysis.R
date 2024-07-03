@@ -609,6 +609,15 @@ basalDiameterLogisticRegressions <- function()
     barplot(gCrown.18~fsCat+SpOrd,data=spRes[which(spRes$cdr==i),],beside=T,xlab='',ylab='Green Crown',col=fsCols)
   }
   par(op.reset)
+  
+  par(mfrow=c(2,2),mar=c(3,5,3,1))
+  spRes2 <- spRes[which(spRes$Species %in% c('PSEMEN','QUEAGR','QUEKEL')),]
+  FS4 <- c('PSME','QUAG','QUKE')
+  spRes2$FS4 <- FS4[match(spRes2$SpOrd,c('0Pm','3Qa','4Qk'))]
+  for (i in c(1,2,3,5)) {
+    barplot(Live.18~fsCat+FS4,data=spRes2[which(spRes2$cdr==i),],beside=T,xlab='',ylab='Live',col=fsCols,cex.lab=1.5,ylim=c(0,1))
+  }
+  par(op.reset)
 }
 
 basalResprouts <- function()
