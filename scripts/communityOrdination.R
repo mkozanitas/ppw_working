@@ -7,6 +7,9 @@ library(lme4)
 library(glmmTMB)
 require(Ternary)
 
+source('scripts/31.functionsForAnalysis.R')
+fsCols <- c('blue','brown','orange','red')
+
 # Functions to convert basal area to diameter and log-diameter, and back
 lba2d <- function(x) 2*sqrt((10^x)/pi)
 ba2d <- function(x) 2*sqrt((x)/pi)
@@ -68,17 +71,18 @@ names(tAlls)[brc] <- c('BRC.18','BRC.19','BRC.20')
 # 
 (tAlls[which(tAlls$Plot=='PPW1302' & tAlls$fate.18=='DR'),])
 
-abline(0,1)
 table(tAll$fate.18,tAll$gCrown.18)
 
 # ternary plot of the three major groups
-spatt <- read.csv('data/all-spp-attributes.csv')
-head(spatt)
-s2sg <- match(tAlls$Species,spatt$OrigSpecies)
+spAtt <- read.csv('data/all-spp-attributes.csv')
+head(spAtt)
+s2sg <- match(tAlls$Species,spAtt$OrigSpecies)
 isna <- which(is.na(s2sg))
 tAlls$Species[isna]
-tAlls$SGroup <- spatt$SGroup[s2sg]
+tAlls$SGroup <- spAtt$SGroup[s2sg]
 tAlls$BA.17 <- d2ba(tAlls$d10.17)
+
+pt <- drawTernaryPlots()
 
 SGBA <- tapply(tAlls$BA.17,list(tAlls$Plot,tAlls$SGroup),sum,na.rm=T)
 SGBA[is.na(SGBA)] <- 0
@@ -88,22 +92,14 @@ pSGBA3 <- pSGBA
 pSGBA3[,4] <- pSGBA3[,3] + pSGBA3[,4]
 (pSGBA3 <- round(100*pSGBA3[,-3],1))
 
-TernaryPlot(alab='CON',blab='EHRO',clab='WHTO')
-TernaryText(pSGBA3,substr(row.names(pSGBA3),6,7))
-
 # classify plots
 pt <- data.frame(plot=row.names(pSGBA),vt=NA)
-pt$vt[which(pSGBA3[,1]>70)] <- 'CON'
-pt$vt[which(pSGBA3[,2]>70)] <- 'MH'
-pt$vt[which(pSGBA3[,3]>70)] <- 'WO'
-pt$vt[which(is.na(pt$vt) & pSGBA3[,1]<20)] <- 'MH-WO'
-pt$vt[which(is.na(pt$vt) & pSGBA3[,3]<20)] <- 'MH-CON'
+pt$vt[which(pSGBA3[,1]>=50)] <- 'CON'
+pt$vt[which(pSGBA3[,2]>=50)] <- 'MH'
+pt$vt[which(pSGBA3[,3]>=50)] <- 'WO'
 pt$vt[which(is.na(pt$vt))] <- 'Mix3'
 pt
-write.csv(pt,'data/vegtypes.csv')
-
-# now I added fs to the file, read it back in to check crosstab
-pt <- read.csv('data/vegtypes-fs.csv',row.names=1)
+pt$fs <- fs$fsCat[match(pt$plot,fs$Plot)]
 head(pt)
 table(pt$vt,pt$fs)
 
@@ -199,6 +195,7 @@ for (j in 1:length(plots))
 ps$PY <- paste(ps$plot,ps$year,sep='.')
 head(ps)
 tail(ps)
+ps[ps$plot=='PPW1346',]
 write.csv(ps,'data/plot-structure-x-year.csv')
 
 calcProp <- function(x) x/sum(x)
@@ -377,6 +374,7 @@ if (useProp) {
 }
 
 dim(pct2)
+head(pct2)
 ordct <- decorana(pct2[,-c(1,2,ncol(pct2))])
 plot(ordct)
 attributes(summary(ordct))
@@ -459,7 +457,6 @@ for (i in 1:54)
     pcd$cvlen[i] <- dd
     if (pcd$cvlen[i]==0) pcd$cvang[i] <- 0 else 
       if ((x2-x1)==0) {
-        if ((y2-y1)>0) pcd$cvang[i] <- 1 else pcd$cvang[i] <- -1
       }
     else 
       pcd$cvang[i] <- atan((y2-y1)/(x2-x1))
@@ -472,6 +469,21 @@ pcd[order(pcd$cvlen),]
 
 boxplot(pcd$cvlen~as.factor(psd$fsLevel))
 plot(psd$vlen,pcd$cvlen)
+
+pairs(data.frame(pcd$cvlen,pctd$cvlen,psd$vlen))
+head(psd)
+psd$plot[which(psd$vlen>1.75 & pctd$cvlen<0.4)]
+
+lvar <- pctd$cvlen
+fit <- glm(lvar ~ factor(psd$fsLevel) + pt$vt)
+summary(fit)
+
+fit2 <- glm(lvar ~ factor(psd$fsLevel))
+anova(fit,fit2,"LRT")
+
+fit3 <- glm(lvar ~ pt$vt)
+summary(fit3)
+anova(fit,fit3,"LRT")
 
 # order plots by compositional characteristics
 head(pct2)

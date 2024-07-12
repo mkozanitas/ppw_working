@@ -376,6 +376,11 @@ fitModelsDiscreteFates <- function()
   # EHRO
   {
     temp <- tdat[[2]]
+    multifit1 <- brm(factor(fate3.18) ~ d10.17*mo(as.integer(fsCat))*Species, data=temp,
+                     family="categorical", chains = 2, cores = 2, seed=726, 
+                     #backend="cmdstanr",
+                     refresh=100)
+    
     fit0 <- multinom(as.factor(fate3.18) ~ fsCat * SizeCat * Species,data=temp)
     AIC(fit0)
     fit1 <- multinom(as.factor(fate3.18) ~ fsCat + SizeCat + Species + fsCat:SizeCat + fsCat:Species + SizeCat:Species,data=temp)

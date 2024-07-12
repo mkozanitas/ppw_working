@@ -8,6 +8,8 @@ require(Ternary)
 require(vegan)
 require(RCurl)
 require(nnet)
+require(brms)
+#require(cmdstanr)
 
 source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
@@ -122,25 +124,91 @@ dim(tAllm)
 tdat <- barplotNonSprouters()
 
 # model fitting - PSEMEN
-{
-  temp <- tdat[[1]]
-  head(temp)
-  table(temp$Species)
-  
+  d <- tdat[[1]]
+  head(d)
+  table(d$Species)
+  # Model comparison in here - can skip 
+  {
+    # obsolete models
+   {  
   fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
+  summary(fit2)
   AIC(fit2)
   drop1(fit2)
+  
   fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
+  summary(fit1)
   AIC(fit1)
   drop1(fit1)
+  
+  fit3 <- glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
+  summary(fit3)
+  AIC(fit3)
+  
+  fit3 <- lme4::glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
+  summary(fit3)
+  AIC(fit3)
+  
+  fit3t <- glmmTMB(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
+  summary(fit3t)
+  AIC(fit3t)
+  
+  fit4 <- lme4::glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot) + (1|iNum.13),data=temp,family='binomial')
+  summary(fit4)
+  
+  fit4 <- glmmTMB(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot) + (1|iNum.13),data=temp,family='binomial')
+  summary(fit4)
+  AIC(fit4)
 }
-fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
-# fit1 is best model
+  fit5d <- glmmTMB(gCrown.18~factor(TSizeCat)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5d)
+  AIC(fit5d)
+  
+  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5)
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  anova(fit5, fit5_for_lrt, "LRT")
+  AIC(fit5_for_lrt)
+  
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  anova(fit5, fit5_for_lrt2, "LRT")
+  AIC(fit5_for_lrt2)
+  
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  anova(fit5, fit5_for_lrt3, "LRT")
+  AIC(fit5_for_lrt3)
+  
+  # fit6 <- brm(gCrown.18 ~
+  #               d10.17*mo(as.integer(fsCat)) + # mo() treats the fire severity effect as monotonic
+  #               (1|Plot)+
+  #               (1|iNum.13),
+  #             data=temp,
+  #             family="Bernoulli",
+  #             chains=2, # run two Stan sampler chains
+  #             cores=2, # use two cores, so the two chains can run in parallel
+  #             seed=238, # for reprodocibility
+  #             #backend = "cmdstanr"  # this makes the output easier to read on some operating systems
+  #             )
+  # summary(fit6) # positive size effect, negative severity effect, negative interaction.
+  # 
+  # # quick viz of main effects and interaction
+  # conditional_effects(fit6)
+}
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+summary(fit5)
 
 # model fitting - ARCMAN
 {
-  temp <- tdat[[2]]
-  fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
+  d <- tdat[[2]]
+  #obsolete models
+  {
+    fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
   AIC(fit2)
   drop1(fit2)
   fit1 <- glm(gCrown.18~SizeCat + fsCat,data=temp,family='binomial')
@@ -148,11 +216,35 @@ fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
   drop1(fit1)
   fit0 <- glm(gCrown.18~fsCat ,data=temp,family='binomial')
   AIC(fit0)
+  }
+  fit5d <- glmmTMB(gCrown.18~factor(SSizeCat)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5d)
+  AIC(fit5d)
+  
+  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5)
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  anova(fit5, fit5_for_lrt, "LRT")
+  AIC(fit5_for_lrt)
+  
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  anova(fit5, fit5_for_lrt2, "LRT")
+  AIC(fit5_for_lrt2)
+  
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  anova(fit5, fit5_for_lrt3, "LRT")
+  AIC(fit5_for_lrt3)
 }
-fit0 <- glm(gCrown.18~fsCat ,data=temp,family='binomial')
-fit1 <- glm(gCrown.18~SizeCat + fsCat,data=temp,family='binomial')
-# fit0 and fit1 are best models
+# Best fit model or ARCMAN - no interaction of size and FS - summary can't calculate significance values, but model comparison worked to identify as best fit
+fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+summary(fit5_for_lrt3)
 
+##### TO HERE
 # barplots for common EHRO, WO, and resprouting shrubs
 tdat <- barplotSprouters()
 
