@@ -70,7 +70,8 @@ abline(h=1,lty=2)
 abline(fit.5)
 
 # log regression is better in terms of the distribution of points. But by definition logs can't go to zero. In contrast, for this data set, DBH really does go to zero for saplings with height < 1.5m, so I think linear is better. So we would use the equation above (fit) to convert linear sapling basal area to dbh.4
-fit.all
+summary(fit.all)
+length(complete.cases(bd[,c('SA.BD.cm','DBH.cm')]))
 # D10 = DBH.cm * 1.176 + 1.070
 
 # to revert back

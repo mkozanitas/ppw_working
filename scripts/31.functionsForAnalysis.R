@@ -95,7 +95,7 @@ drawTernaryPlots <- function()
     #TernaryText(pSGBA3,substr(row.names(pSGBA3),6,7)) 
     if (i) dev.off()
   }
-
+  
   
   # classify plots
   pt <- data.frame(plot=row.names(pSGBA),vt=NA)
@@ -165,6 +165,41 @@ reduce_fst12 <- function()
   fst12c <- rbind(fst12c,c('OTHTRS','TR',newrow))
   row.names(fst12c) <- 1:nrow(fst12c)
   return(fst12c)
+}
+
+barplotFates <- function(d=tAll)
+{
+  ffs <- table(d$fate.18,d$fsCat)
+  ffs
+  ft <- apply(ffs,2,sum)
+  ffsp <- ffs
+  for (i in 1:ncol(ffsp)) ffsp[,i] <- ffs[,i]/ft[i]
+  ffsp
+  if (nrow(ffsp)==4) 
+  {
+    ffsp[3,] <- ffsp[3,]+ffsp[4,]
+    ffsp <- ffsp[-4,]
+  }
+  ffsp
+  barplot(ffsp,beside=F)
+  
+  d$fsCat3 <- d$fsCat
+  d$fsCat3[which(d$fsCat3==2)] <- 1
+  ffs3 <- table(d$fate.18,d$fsCat3)
+  (ffs3 <- ffs3[,-3])
+  ft <- apply(ffs3,2,sum)
+  ffsp3 <- ffs3
+  for (i in 1:3) ffsp3[,i] <- ffs3[,i]/ft[i]
+  ffsp3
+  if (nrow(ffsp3)==4) 
+  {
+    ffsp3[3,] <- ffsp3[3,]+ffsp3[4,]
+    ffsp3 <- ffsp3[-4,]
+  }
+  ffsp3
+  barplot(ffsp3,beside=F)
+  
+  return(list(ffsp,ffsp3))
 }
 
 prepareForBarPlots <- function()
@@ -252,7 +287,8 @@ barplotNonSprouters <- function(print.to.pdf=c(F,T))
     (tot <- table(temp$SizeCat,temp$fsCat))
     
     barplot(tot,beside = T,col=tree.cols,main=paste(spname,'N'))
-    barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+    #barplot(table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Mortality'),ylim=c(0,1))
+    barplot(1-table(temp$SizeCat,temp$fsCat,temp$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(spname,'Survival'),ylim=c(0,1))
     tdat[[1]] <- temp
     
     
@@ -275,6 +311,102 @@ barplotNonSprouters <- function(print.to.pdf=c(F,T))
     if (p2p) dev.off()
   }
   return(tdat)
+}
+
+barplotOneNonSprouter <- function(ss,print.to.pdf=c(F,T),skip.op=T,plot.live=T)
+{
+  tree.cols <- c('grey90','grey60','grey30','black')
+  shrub.cols <- c('grey90','black')
+  tree.names <- spAtt$Species[which(spAtt$Shrub.Tree=='T')]
+  shrub.names <- spAtt$Species[which(spAtt$Shrub.Tree=='S')]
+  
+  d <- tAllm[which(tAllm$Species %in% ss),]
+  dim(d)
+  
+  if (ss %in% tree.names) {
+    for (p2p in print.to.pdf) {
+      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      if (skip.op) op=par(mfrow=c(1,4))
+      d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+      d$SizeCat <- d$TSizeCat
+      nrow(d)
+      
+      (tot <- table(d$SizeCat,d$fsCat))
+      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      barplot(tot,beside=T,col=tree.cols,main=paste(ss,'Sample Sizes'))
+      if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
+      barplot(0/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
+      barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Green Crown'),ylim=c(0,1))
+      if (plot.live) barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Live'),ylim=c(0,1))
+      if (skip.op) par(op)
+    }
+  } else {
+    for (p2p in print.to.pdf) {
+      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      if (skip.op) op=par(mfrow=c(1,4))
+      d <- d[which(d$SSizeCat %in% c('SA','TR')),]
+      d$SizeCat <- d$SSizeCat
+      nrow(d)
+      
+      (tot <- table(d$SizeCat,d$fsCat))
+      barplot(tot,beside=T,col=tree.cols,main=paste(ss,'Sample Sizes'))
+      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
+      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
+      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,3]/tot,beside = T,col=tree.cols,main=paste(ss,'Green-Crown'),ylim=c(0,1))
+      if (skip.op) par(op)
+    }
+  }
+  return(d)
+}
+
+barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,ss.name=NA)
+{
+  tree.cols <- c('grey90','grey60','grey30','black')
+  shrub.cols <- c('grey90','black')
+  tree.names <- spAtt$Species[which(spAtt$Shrub.Tree=='T')]
+  shrub.names <- spAtt$Species[which(spAtt$Shrub.Tree=='S')]
+  if (is.na(ss.name)) ss.name <- ss
+  
+  d <- tAllm[which(tAllm$Species %in% ss),]
+  if (ss[1]=='QUEGAR') d$fsCat[which(d$fsCat==3)] <- 2
+  dim(d)
+  
+  if (ss[1] %in% tree.names) {
+    for (p2p in print.to.pdf) {
+      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      if (skip.op) op=par(mfrow=c(1,4))
+      d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+      d$SizeCat <- d$TSizeCat
+      nrow(d)
+      
+      (tot <- table(d$SizeCat,d$fsCat))
+      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      barplot(tot,beside=T,col=tree.cols,main=paste(ss.name,'Sample Sizes'))
+      if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Mortality'),ylim=c(0,1))
+      barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Topkill-Resprout'),ylim=c(0,1))
+      barplot(fates[,,3]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Green-Crown'),ylim=c(0,1))
+      if (plot.live) barplot(1-(fates[,,1]/tot),beside = T,col=tree.cols,main=paste(ss.name,'Live'),ylim=c(0,1))
+      if (skip.op) par(op)
+    }
+  } else {
+    for (p2p in print.to.pdf) {
+      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      if (skip.op) op=par(mfrow=c(1,4))
+      d <- d[which(d$SSizeCat %in% c('SA','TR')),]
+      d$SizeCat <- d$SSizeCat
+      nrow(d)
+      
+      (tot <- table(d$SizeCat,d$fsCat))
+      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      barplot(tot,beside=T,col=shrub.cols,main=paste(ss.name,'Sample Sizes'))
+      if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Mortality'),ylim=c(0,1))
+      barplot(fates[,,2]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Topkill-Resprout'),ylim=c(0,1))
+      barplot(fates[,,3]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Green-Crown'),ylim=c(0,1))
+      if (plot.live) barplot(1-(fates[,,1]/tot),beside = T,col=shrub.cols,main=paste(ss.name,'Live'),ylim=c(0,1))
+      if (skip.op) par(op)
+    }
+  }
+  return(d)
 }
 
 barplotSprouters <- function(print.to.pdf=c(F,T))
@@ -344,6 +476,416 @@ barplotSprouters <- function(print.to.pdf=c(F,T))
     if (p2p) dev.off()
   }
   return(tdat)
+}
+
+fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  
+  # model fitting
+  P50r <- data.frame(Species=spName,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  #head(d)
+  table(d$Species)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  table(d$fsCat)
+  if ('all' %in% fs) fslevels <- 'fs.all'
+  if ('drop-high' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==3)] <- 2
+    fslevels <- 'fs.nohi'
+    
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==2)] <- 1
+    fslevels <- 'fs.dm'
+  }
+  
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  table(d$fsCat)
+  
+  if (live.only) d <- d[-which(d$fate.18=='DN'),]
+  
+  d$yvar <- d[,yvar]
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar),]
+  nrow(d)
+  length(unique(d$iNum.13))
+  #head(d)
+  
+  fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(yvar ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    saveRDS(fit5s,paste('results/brm-',yvar,'-',spName,'-',fslevels,'-',logt,'.RDS',sep=''))
+  } else {
+    fit5s <- readRDS(paste('results/brm-',yvar,'-',spName,'-',fslevels,'-',logt,'.RDS',sep=''))
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,yvar,logt=logt,drawverts=F)
+  p50
+  P50r[1,1:6] <- c(spName,yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar,logt=logt,drawverts=F)
+  p50
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  
+  # model fitting
+  table(d$Species)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  table(d$fsCat)
+  if ('all' %in% fs) fslevels <- 'fs.all'
+  if ('drop-high' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==3)] <- 2
+    fslevels <- 'fs.nohi'
+    
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==2)] <- 1
+    fslevels <- 'fs.dm'
+  }
+  
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  table(d$fsCat)
+  
+  yvar <- 'Live.18'
+  d$yvar <- d[,yvar]
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar),]
+  table(d$Plot)
+  dim(d)
+  
+  fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  pr <- predict_response(fit5,terms=c('d10.17','fsCat2'),margin = 'empirical')
+  plot(pr,limits=c(0,1))
+
+  fit5_pred <- ggpredict(fit5, c("d10.17", "fsCat2"))
+  fit5_plot <- plot(fit5_pred)
+  fit5_plot
+  
+  #mod2 <- lm(mpg ~ wt  qsec  factor(gear), data = mtcars)
+  plot_comparisons(fit5, variables = "d10.17", condition = c("fsCat2"),vcov=T,re.form=NA)
+  
+  p50Live <- plotPredictedValuesFit5(fit5,F,yvar,logt=logt,drawverts=F,ret.pv=T)
+  
+  # trouble shooting convergence failure - is it due to random effects
+  if (FALSE) {
+    fit5xi <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot), data=d, family='binomial')
+    print(summary(fit5xi))
+    plotPredictedValuesFit5(fit5xi,F,yvar,logt=logt,drawverts=F,ret.pv=F)
+    
+    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|iNum.13), data=d, family='binomial')
+    print(summary(fit5xp))
+    plotPredictedValuesFit5(fit5xp,F,yvar,logt=logt,drawverts=F,ret.pv=F)
+  }
+  
+  # now analyze live only
+  dd <- d[-which(d$fate.18=='DN'),]
+  table(dd$gCrown.18)
+  table(dd$Plot)
+  dim(dd)
+  yvar <- 'gCrown.18'
+  dd$yvar <- dd[,yvar]
+  fit5 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+  #fit5 <- glmmTMB(yvar~d10.17 + fsCat2 , data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+  if (FALSE) {
+    require(car)
+    vif(fit5)
+    plot(d10.17~fsCat2,data=dd)
+  }
+  print(summary(fit5))
+  AIC(fit5)
+  pr <- predict_response(fit5,terms=c('d10.17','fsCat2'),margin = 'empirical')
+  plot(pr,)
+  p50GC <- plotPredictedValuesFit5(fit5,F,yvar,logt=logt,drawverts=F,ret.pv=T)
+  
+  # trouble shooting convergence failure - is it due to random effects
+  if (FALSE) {
+    fit5xi <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot), data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+    print(summary(fit5xi))
+    plotPredictedValuesFit5(fit5xi,F,yvar,logt=logt,drawverts=F,ret.pv=F)
+    
+    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|iNum.13), data=dd, family='binomial',,control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+    print(summary(fit5xp))
+    plotPredictedValuesFit5(fit5xp,F,yvar,logt=logt,drawverts=F,ret.pv=F)
+  }
+  
+  p50L <- p50Live[[2]]
+  p50G <- p50GC[[2]]
+  all(p50L$d10.17==p50G$d10.17)
+  p50J <- p50L[,c(1,2,6)]
+  names(p50J)[3] <- 'pLive'  
+  
+  p50J$pGCxLive <- p50G$pval
+  head(p50J)
+  p50J$pGC <- p50J$pLive * p50J$pGCxLive
+  p50J$pDR <- p50J$pLive * (1-p50J$pGCxLive)
+  p50J$pDN <- 1 - p50J$pLive
+  head(p50J)
+  
+  op=par(mfrow=c(1,3))
+  for (i in c(0,1,3))
+  {
+    d <- p50J[which(p50J$fsCat==i),]
+    plot(pDN~d10.17,data=d,ylim=c(0,1),main=paste(spName,'FS =',i))
+    points(pDR~d10.17,data=d,col='brown')
+    points(pGC~d10.17,data=d,col='green')
+  }
+  par(op)
+  # fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # summary(fit5_for_lrt)
+  # print('fire severity effect')
+  # print(anova(fit5, fit5_for_lrt, "LRT"))
+  # 
+  # fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # summary(fit5_for_lrt2)
+  # print('size effect')
+  # print(anova(fit5, fit5_for_lrt2, "LRT"))
+  # 
+  # fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # summary(fit5_for_lrt3)
+  # print('severity*size interaction effect')
+  # print(anova(fit5, fit5_for_lrt3, "LRT"))
+  # 
+  # if (FALSE) 
+  # {
+  #   fit5s <- brm(yvar ~ 
+  #                  s(d10.17, by=fsCat2, k=20)+
+  #                  fsCat2+
+  #                  (1|Plot)+
+  #                  (1|iNum.13),
+  #                data=d,
+  #                family="Bernoulli",
+  #                chains = 2, cores = 2, seed=237, 
+  #                #backend="cmdstanr",
+  #                control=list(adapt_delta=0.99))
+  #   conditional_effects(fit5s)
+  #   saveRDS(fit5s,paste('results/brm-',yvar,'-',spName,'-',fslevels,'-',logt,'.RDS',sep=''))
+  # } else {
+  #   fit5s <- readRDS(paste('results/brm-',yvar,'-',spName,'-',fslevels,'-',logt,'.RDS',sep=''))
+  # }
+  # 
+  # # second argument is F for glmmTMB models and T for brm models
+  # p50 <- plotPredictedValuesFit5(fit5,F,yvar,logt=logt,drawverts=F)
+  # p50
+  # P50r[1,1:6] <- c(spName,yvar,p50)
+  # p50 <- plotPredictedValuesFit5(fit5s,T,yvar,logt=logt,drawverts=F)
+  # p50
+  # P50r[1,7:10]<- p50
+  # 
+  # return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitMultiNomMod <- function()
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop-high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  
+  head(d)
+  table(d$Species)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  table(d$fsCat)
+  if ('all' %in% fs) fslevels <- 'fs.all'
+  if ('drop-high' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==3)] <- 2
+    fslevels <- 'fs.nohi'
+    
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==2)] <- 1
+    fslevels <- 'fs.dm'
+  }
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  table(d$fsCat)
+  
+  table(d$fate.18)
+  d$fate3 <- d$fate.18
+  d$fate3[which(d$fate3 %in% c('LN','LR'))] <- 'GC'
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$fate3),]
+  dim(d)
+  table(d$fate3)
+  table(d$fate3,d$fsCat)
+  
+  multifit1 <- brm(fate3 ~ s(d10.17, k=20, by=fsCat2) + fsCat2 + (1|Plot) + (1|iNum.13), data=d,
+                   family="categorical", chains = 2, cores = 2, 
+                   seed=726, 
+                   #backend="cmdstanr",
+                   refresh=100,
+                   control=list(adapt_delta=0.95))
+  summary(multifit1)
+  
+  summary(d$d10.17)
+  summary(d$iNum.13)
+  dtemp <- seq(0,max(d$d10.17,na.rm=T),length.out=1000)
+  (dfsCat <- sort(unique(d$fsCat)))
+  pd <- data.frame(d10.17=rep(dtemp,length(dfsCat)),fsCat=rep(dfsCat,each=length(dtemp)))
+  pd$fsCat2 <- factor(pd$fsCat)
+  pd$Plot <- sort(unique(d$Plot))[1]
+  pd$iNum.13 <- min(d$iNum.13,na.rm=T)
+  
+  pd$pval <- predict(multifit1,newdata = pd,type='response',allow_new_levels = T)
+  head(pd)
+  names(pd)
+  
+  stacked <- F
+  fslevel <- 1
+  fsr <- which(pd$fsCat==fslevel)
+  if (stacked) yval <- apply(pd$pval[fsr,1:3],1,sum) else yval <- pd$pval[fsr,1]
+  plot(pd$d10.17[fsr],yval,main=paste(spName,'- FS',fslevel),col='black',pch=19,
+       ,ylim=c(0,1),xlim=c(0,2.2),xaxt='n',xlab='Diameter at Breast Height',ylab='Proportion (predicted value)',cex.lab=1.2)
+  dbh.ax <- c(0.3,1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100,150)
+  ax.marks <- log10(dbh.ax*1.176 + 1.07)
+  axis(1,at=ax.marks,labels=c('.....Saplings.....',c('1','2',NA,'4',NA,'6',NA,NA,NA,'10','20',NA,'40',NA,'60',NA,'80',NA,'100','150')))
+  if (!spName=='PSEMEN') 
+    if (stacked) 
+    {
+      points(pd$d10.17[fsr],pd$pval[fsr,2]+pd$pval[fsr,3],col='brown',pch=19)
+      points(pd$d10.17[fsr],pd$pval[fsr,3],col='green',pch=19)
+    } else {
+      points(pd$d10.17[fsr],pd$pval[fsr,2],col='brown',pch=19)
+      points(pd$d10.17[fsr],pd$pval[fsr,3],col='green',pch=19)
+    }
+}
+
+plotPredictedValuesFit5 <- function(mod=fit5,pred.brm=F,yvar,logt=F,drawverts=t,ret.pv=F)
+{
+  summary(d$d10.17)
+  summary(d$iNum.13)
+  p50 <- c()
+  dtemp <- seq(0,max(d$d10.17,na.rm=T),length.out=1000)
+  dfsCat <- sort(unique(d$fsCat))
+  pd <- data.frame(d10.17=rep(dtemp,length(dfsCat)),fsCat=rep(dfsCat,each=length(dtemp)))
+  pd$fsCat2 <- factor(pd$fsCat)
+  pd$Plot <- sort(unique(d$Plot))[1]
+  #pd$Plot <- sample(unique(d$Plot),nrow(pd),replace=T)
+  #pd$iNum.13 <- min(d$iNum.13,na.rm=T)
+  pd$iNum.13 <- sample(unique(d$iNum.13),nrow(pd),replace=T)
+  if (pred.brm) pd$pval <- predict(mod,newdata = pd,type='response',allow_new_levels = T) else pd$pval <- predict(mod,newdata = pd,type='response',allow.new.levels = T,re.form=NA)
+  head(pd)
+  names(pd)
+  
+  fsCols <- c('blue','brown','orange','red')
+  if (pred.brm) pd$yval <- pd$pval[,1] else pd$yval <- pd$pval
+  plot(pd$yval~pd$d10.17,type='n',ylim=c(0,1),main=paste(spName,yvar))
+  i=1
+  for (i in 1:4) {
+    pdt <- pd[which(as.numeric(pd$fsCat)==(i-1)),]
+    points(pdt$yval~pdt$d10.17,col=fsCols[i],type='b')
+    p50[i] <- pdt$d10.17[which(pdt$yval>=0.5)[1]]
+  }
+  if (pred.brm) fpre <- 'brm' else fpre <- 'ml'
+  fname <- paste('results/pval-',fpre,'-',yvar,'-',spName,'-',fslevels,'-',logt,'.RDS',sep='')
+  saveRDS(pd,fname)
+  if (drawverts) if (logt) abline(v=log10(c(0,2.25,12.8,25)),lty=2) else abline(v=c(0,2.25,12.8,25),lty=2)
+  if (ret.pv) return(list(p50,pd)) else return(p50)
+}
+
+plotPredictedValuesByFS <- function(fpre='brm',spSel='UMBCAL') #fpre='ml'
+{
+  yvar <- 'gCrown.18'
+  fname <- paste('results/pval-',fpre,'-',yvar,'-',spSel,'-',fslevels,'-',logt,'.RDS',sep='')
+  gcpv <- readRDS(fname)
+  if (!spSel=='PSEMEN')
+  {
+    yvar <- 'DR.18'
+    fname <- paste('results/pval-',fpre,'-',yvar,'-',spSel,'-',fslevels,'-',logt,'.RDS',sep='')
+    drpv <- readRDS(fname)
+    yvar <- 'Live.18'
+    fname <- paste('results/pval-',fpre,'-',yvar,'-',spSel,'-',fslevels,'-',logt,'.RDS',sep='')
+    lvpv <- readRDS(fname)
+    head(gcpv)
+    head(drpv)
+    head(lvpv)
+    # check alignment of sizes
+    all(gcpv$d10.17==drpv$d10.17)
+    all(gcpv$d10.17==lvpv$d10.17)
+    
+    apv <- data.frame(d10.17=gcpv$d10.17,fsCat=gcpv$fsCat,gcval=gcpv$yval,drval=drpv$yval,lvval=lvpv$yval,gdval=gcpv$yval+drpv$yval)
+  } else {
+    apv <- data.frame(d10.17=gcpv$d10.17,fsCat=gcpv$fsCat,gcval=gcpv$yval,drval=NA,lvval=gcpv$yval,gdval=NA)
+  }
+  head(apv)
+  
+  stacked <- FALSE
+  fslevel <- 3
+  fsr <- which(apv$fsCat==fslevel)
+  plot(apv$d10.17[fsr], apv$gcval[fsr],main=paste(spSel,'- FS',fslevel),col='green',pch=19,
+       ,ylim=c(0,1),xlim=c(0,2.2),xaxt='n',xlab='Diameter at Breast Height',ylab='Proportion (predicted value)',cex.lab=1.2)
+  dbh.ax <- c(0.3,1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100,150)
+  ax.marks <- log10(dbh.ax*1.176 + 1.07)
+  axis(1,at=ax.marks,labels=c('.....Saplings.....',c('1','2',NA,'4',NA,'6',NA,NA,NA,'10','20',NA,'40',NA,'60',NA,'80',NA,'100','150')))
+  if (!spSel=='PSEMEN') 
+  {
+    if (stacked) 
+    {
+      points(apv$d10.17[fsr],apv$lvval[fsr],col='brown',pch=19)
+    } else {
+      points(apv$d10.17[fsr],apv$drval[fsr],col='brown',pch=19)
+      points(apv$d10.17[fsr],1-apv$lvval[fsr],col='black',pch=19)
+      #points(apv$d10.17[fsr],apv$lvval[fsr]-apv$gcval[fsr],col='brown',pch=19)
+    }
+  } else {
+    if (stacked)
+    {
+      
+    } else {
+      points(apv$d10.17[fsr],1-apv$lvval[fsr],col='black',pch=19)
+    }
+  }
 }
 
 fitModelsDiscreteFates <- function()
@@ -734,4 +1276,609 @@ new2019recruits <- function()
   r9t <- which(is.na(tAll$fate.18) & tAll$Type.19=='TR')
   length(r9t)
   r9tdbh <- tAll$DBH_cm.19[r9t]
+}
+
+
+# ATTEMPT AT GENERIC MODELS BUT IN THE END FIT THEM FOR EACH SPECIES
+fitSpeciesModelsContSize.gCrown <-  function()
+{
+  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5 <- glmmTMB(gCrown.18~s(d10.17, by=fsCat2, k=20)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  AIC(fit5_for_lrt)
+  
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  AIC(fit5_for_lrt2)
+  
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  AIC(fit5_for_lrt3)
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  summary(d$d10.17)
+  summary(d$iNum.13)
+  dtemp <- seq(min(d$d10.17,na.rm=T),max(d$d10.17,na.rm=T),length.out=100)
+  dfsCat <- 0:3
+  pd <- data.frame(d10.17=rep(dtemp,4),fsCat=rep(dfsCat,each=length(dtemp)))
+  pd$Plot <- 'PPW1301'
+  pd$iNum.13 <- 1032
+  pd$pval <- predict(fit5,newdata = pd,type='response',allow.new.levels = T)
+  head(pd)
+  
+  fsCols <- c('blue','brown','orange','red')
+  plot(pval~d10.17,data=pd,type='n',ylim=c(0,1),main='Green Crown')
+  for (i in 1:4) {
+    pdt <- pd[which(as.numeric(pd$fsCat)==(i-1)),]
+    points(pval~d10.17,data=pdt,col=fsCols[i],type='b')
+  }
+  
+}
+
+fitSpeciesModelsContSize.Live <-  function()
+{
+  d$d10.17sq <- d$d10.17^2
+  fit5 <- glmmTMB(Live.18~d10.17+factor(fsCat)+d10.17:factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5q <- glmmTMB(Live.18~d10.17sq+d10.17+factor(fsCat)+d10.17sq:factor(fsCat)+d10.17:factor(fsCat)+ (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5q))
+  print(anova(fit5, fit5q, "LRT"))
+  
+  
+  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  AIC(fit5_for_lrt)
+  
+  fit5_for_lrt2 <- glmmTMB(Live.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  AIC(fit5_for_lrt2)
+  
+  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  AIC(fit5_for_lrt3)
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  summary(d$d10.17)
+  summary(d$iNum.13)
+  dtemp <- seq(min(d$d10.17,na.rm=T),max(d$d10.17,na.rm=T),length.out=100)
+  dfsCat <- 0:3
+  pd <- data.frame(d10.17=rep(dtemp,4),fsCat=rep(dfsCat,each=length(dtemp)))
+  pd$d10.17sq <- pd$d10.17^2
+  pd$Plot <- 'PPW1301'
+  pd$iNum.13 <- 1032
+  pd$pval <- predict(fit5,newdata = pd,type='response',allow.new.levels = T)
+  head(pd)
+  
+  fsCols <- c('blue','brown','orange','red')
+  plot(pval~d10.17,data=pd,type='n',ylim=c(0,1),main='Live')
+  for (i in 1:4) {
+    pdt <- pd[which(as.numeric(pd$fsCat)==(i-1)),]
+    points(pval~d10.17,data=pdt,col=fsCols[i],type='b')
+  }
+  
+}
+
+fitARCMANmod <- function()
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  # model fitting - ARCMAN
+  head(d)
+  table(d$Species)
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  table(d$fsCat2) 
+  
+  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(gCrown.18 ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    saveRDS(fit5s,'results/brm-ARCMAN-gc.RDS')
+  } else {
+    fit5s <- readRDS('results/brm-ARCMAN-gc.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F)
+  P50r[1,1:6] <- c('ARCMAN','gCrown',p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T)
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitAMOCALmod <- function(yvar='gCrown')
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - AMOCAL
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$fsCat[which(d$fsCat==3)] <- 2
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  table(d$fsCat2) 
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else d$yval <- d$DR.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  dim(d)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-AMOCAL-gc.RDS') else saveRDS(fit5s,'results/brm-AMOCAL-dr.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-AMOCAL-gc.RDS') else fit5s <- readRDS('results/brm-AMOCAL-dr.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  (p50 <- plotPredictedValuesFit5(fit5,F,yvar))
+  P50r[1,1:6] <- c('AMOCAL',yvar,p50)
+  (p50 <- plotPredictedValuesFit5(fit5s,T,yvar))
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitARBMENmod <- function(yvar='gCrown')
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - ARBMEN
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$SizeCat <- d$SSizeCat
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  table(d$SizeCat,d$fsCat)
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else d$yval <- d$DR.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  dim(d)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-ARBMEN-gc.RDS') else saveRDS(fit5s,'results/brm-ARBMEN-dr.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-ARBMEN-gc.RDS') else fit5s <- readRDS('results/brm-ARBMEN-dr.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5_for_lrt3,F,yvar)
+  P50r[1,1:6] <- c('ARBMEN',yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar)
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitPSEMENmod <- function(logt=T)
+{
+  # model fitting - PSEMEN
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  head(d)
+  table(d$Species)
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  
+  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(Live.18~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(gCrown.18 ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    saveRDS(fit5s,'results/brm-PSEMEN-gc.RDS')
+  } else {
+    fit5s <- readRDS('results/brm-PSEMEN-gc.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,'gCrown',logt=logt)
+  p50
+  P50r[1,1:6] <- c('PSEMEN','gCrown',p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,'gCrown',logt=logt)
+  p50
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitQUEAGRmod <- function(yvar='gCrown',logt=F,inclPlot=T)
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - QUEAGR
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$SizeCat <- d$TSizeCat
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  table(d$SizeCat,d$fsCat)
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else if (yvar=='DR') d$yval <- d$DR.18 else d$yval <- d$Live.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  dim(d)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (FALSE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   #(1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-QUEAGR-gc.RDS') else if (yvar=='DR') saveRDS(fit5s,'results/brm-QUEAGR-dr.RDS') else saveRDS(fit5s,'results/brm-QUEAGR-lv.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-QUEAGR-gc.RDS') else if (yvar=='DR') fit5s <- readRDS('results/brm-QUEAGR-dr.RDS') else readRDS('results/brm-QUEAGR-lv.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,yvar)
+  p50
+  P50r[1,1:6] <- c('QUEAGR',yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar)
+  p50
+  P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitUMBCALmod <- function(yvar='gCrown',logt=F)
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - UMBCAL
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$SizeCat <- d$TSizeCat
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  table(d$SizeCat,d$fsCat)
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else if (yvar=='DR') d$yval <- d$DR.18 else d$yval <- d$Live.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  dim(d)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (TRUE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-UMBCAL-gc.RDS') else if (yvar=='DR') saveRDS(fit5s,'results/brm-UMBCAL-dr.RDS') else saveRDS(fit5s,'results/brm-UMBCAL-lv.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-UMBCAL-gc.RDS') else if (yvar=='DR') fit5s <- readRDS('results/brm-UMBCAL-dr.RDS') else readRDS('results/brm-UMBCAL-lv.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,yvar)
+  p50
+  #P50r[1,1:6] <- c('UMBCAL',yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar)
+  p50
+  #P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitQUEGARmod <- function(yvar='gCrown')
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - QUEGAR
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$SizeCat <- d$TSizeCat
+  d$fsCat[which(d$fsCat==3)] <- 2
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  d$fsCat <- d$fsCat2
+  table(d$SizeCat,d$fsCat2)
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else if (yvar=='DR') d$yval <- d$DR.18 else d$yval <- d$Live.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  table(d$SizeCat,d$fsCat)
+  dim(d)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (TRUE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-QUEGAR-gc.RDS') else if (yvar=='DR') saveRDS(fit5s,'results/brm-QUEGAR-dr.RDS') else saveRDS(fit5s,'results/brm-QUEGAR-lv.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-QUEGAR-gc.RDS') else if (yvar=='DR') fit5s <- readRDS('results/brm-QUEGAR-dr.RDS') else readRDS('results/brm-QUEGAR-lv.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,yvar)
+  p50
+  P50r[1,1:6] <- c('QUEGAR',yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar)
+  p50
+  P50r[1,7:10]<- p50
+  P50r
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitHETARBmod <- function(yvar='gCrown')
+{
+  P50r <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # model fitting - HETARB
+  head(d)
+  table(d$Species)
+  table(d$SizeCat,d$fsCat)
+  d$SizeCat <- d$SSizeCat
+  d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
+  d$fsCat <- d$fsCat2
+  table(d$SizeCat,d$fsCat)
+  
+  if (yvar=='gCrown') d$yval <- d$gCrown.18 else if (yvar=='DR') d$yval <- d$DR.18 else d$yval <- d$Live.18
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
+  dim(d)
+  
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  print(summary(fit5))
+  AIC(fit5)
+  
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt)
+  print('fire severity effect')
+  print(anova(fit5, fit5_for_lrt, "LRT"))
+  
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt2)
+  print('size effect')
+  print(anova(fit5, fit5_for_lrt2, "LRT"))
+  
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  summary(fit5_for_lrt3)
+  print('severity*size interaction effect')
+  print(anova(fit5, fit5_for_lrt3, "LRT"))
+  
+  if (TRUE) 
+  {
+    fit5s <- brm(yval ~ 
+                   s(d10.17, by=fsCat2, k=20)+
+                   fsCat2+
+                   (1|Plot)+
+                   (1|iNum.13),
+                 data=d,
+                 family="Bernoulli",
+                 chains = 2, cores = 2, seed=237, 
+                 #backend="cmdstanr",
+                 control=list(adapt_delta=0.99))
+    conditional_effects(fit5s)
+    if (yvar=='gCrown') saveRDS(fit5s,'results/brm-HETARB-gc.RDS') else if (yvar=='DR') saveRDS(fit5s,'results/brm-HETARB-dr.RDS') else saveRDS(fit5s,'results/brm-HETARB-lv.RDS')
+  } else {
+    if (yvar=='gCrown') fit5s <- readRDS('results/brm-HETARB-gc.RDS') else if (yvar=='DR') fit5s <- readRDS('results/brm-HETARB-dr.RDS') else readRDS('results/brm-HETARB-lv.RDS')
+  }
+  
+  # second argument is F for glmmTMB models and T for brm models
+  p50 <- plotPredictedValuesFit5(fit5,F,yvar)
+  p50
+  #P50r[1,1:6] <- c('HETARB',yvar,p50)
+  p50 <- plotPredictedValuesFit5(fit5s,T,yvar)
+  p50
+  #P50r[1,7:10]<- p50
+  
+  return(P50r)
+  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
 }

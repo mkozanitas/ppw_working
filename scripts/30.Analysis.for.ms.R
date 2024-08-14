@@ -9,6 +9,10 @@ require(vegan)
 require(RCurl)
 require(nnet)
 require(brms)
+require(ggeffects)
+#require(sjPlot)
+require(ggplot2)
+require(marginaleffects)
 #require(cmdstanr)
 
 source('scripts/31.functionsForAnalysis.R')
@@ -71,8 +75,15 @@ table(tAll$Type.17)
 (allAb <- sum(table(tAll$Type.17[which(tAll$Live.17==1)])))
 (spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)])))
 
+# PSEMEN as proportion of all non-sprouters
+spAbund[which(names(spAbund)=='PSEMEN')]
+spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='N')])])
+
 #### Summary stats
 (use.species <- spAtt$Species)
+
+Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])])
+(708+780+376+1585)/4697
 
 (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
 (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
@@ -107,151 +118,218 @@ fst12 <- calcFatesTableBySpecies()
 head(fst12)
 tail(fst12)
 
+sort(tapply(fst12$N17,fst12$SpCode,sum))
 # reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
 fst12c <- reduce_fst12()
 fst12c
+for (i in 3:7) fst12c[,i] <- as.numeric(fst12c[,i])
+
+
+(allSum <- apply(as.matrix(fst12c[,-c(1:2)]),2,sum))
+allSum/allSum[1]
+rs <- which(fst12c$Type=='SA')
+(SASum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
+rs <- which(fst12c$Type=='TR')
+(TRSum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
+
+allSum/allSum[1]
+SASum/SASum[1]
+TRSum/TRSum[1]
 
 write.csv(fst12c,'results/summary-table.csv')
 
-#### make bar plots for different subgroups and individual species
+poster.species <- c('PSEMEN','QUEAGR','UMBCAL','QUEGAR','HETARB')
+fst12p <- fst12c[which(fst12c$SpCode %in% poster.species),]
+fst12p
+
+fst12p[,4:7]/fst12p[,3]
+
+(allSum.p <- apply(as.matrix(fst12p[,-c(1:2)]),2,sum))
+allSum.p/allSum.p[1]
+rs <- which(fst12p$Type=='SA')
+(SASum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+rs <- which(fst12p$Type=='TR')
+(TRSum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+
+allSum.p/allSum.p[1]
+SASum.p/SASum.p[1]
+TRSum.p/TRSum.p[1]
+
+allSum.p/allSum
+
+fbp.list <- barplotFates(tAll)
+rspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='Y')]),]
+fbp.rsp.list <- barplotFates(rspd)
+table(rspd$Type.17)
+
+nspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='N')]),]
+fbp.nsp.list <- barplotFates(nspd)
+fbp.nsp.list
+table(nspd$Type.17)
+
+sum(table(nspd$Type.17))/sum(table(rspd$Type.17))
+
+#### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
 # tAllm has all the living plants from 2017, with their 2018 fates
 # doesn't have new plants added in 2019
 tAllm <- prepareForBarPlots()
 dim(tAll)
 dim(tAllm)
 
-# barplot for PSEMEN and ARCMAN, first to see here, and then to pdf
+# results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
+P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+
+# barplot for PSEMEN, first to see here, and then to pdf
 tdat <- barplotNonSprouters()
+length(tdat)
+d <- tdat[[1]]
+spSel <- 'PSEMEN'
+spName <- spSel
+table(d$Species)
+fs='low-medium' #'all','low-medium'
+logt=T
+live.only <- F
+yvar='gCrown.18'
+#  run interactively in script 31
+#P50r <- fitFatesMod(data=d,sp=spSel,fs='low-medium',logt=T)
 
-# model fitting - PSEMEN
-  d <- tdat[[1]]
-  head(d)
+
+# d <- tdat[[2]]
+# table(d$Species)
+# P50r <- fitARCMANmod()
+# P50r
+# (P50res <- rbind(P50res,P50r))
+
+# sprouters
+fst12c
+dim(tAllm)
+
+if (FALSE) {
+  (spSel <- spAtt$Species[which(spAtt$Resprout=='Y' & spAtt$Shrub.Tree=='S')])
+  spSel <- spSel[-which(spSel=='BACPIL')]
+  spName <- 'RespShrubs'
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
   table(d$Species)
-  # Model comparison in here - can skip 
-  {
-    # obsolete models
-   {  
-  fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
-  summary(fit2)
-  AIC(fit2)
-  drop1(fit2)
+  fs=c('drop-high','low-medium') #'all','low-medium','drop-high'
+  logt=T
+  yvar='gCrown.18'
+  # run interactively - fitFatesMod()
   
-  fit1 <- glm(gCrown.18~SizeCat + fsCat ,data=temp,family='binomial')
-  summary(fit1)
-  AIC(fit1)
-  drop1(fit1)
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
+  yvar='DR.18'
+  # run interactively - fitFatesMod()
   
-  fit3 <- glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
-  summary(fit3)
-  AIC(fit3)
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
+  yvar='Live.18'
+  # run interactively - fitFatesMod()
   
-  fit3 <- lme4::glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
-  summary(fit3)
-  AIC(fit3)
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
+  # run multinomial interactively - fitMultiNomMod
   
-  fit3t <- glmmTMB(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot),data=temp,family='binomial')
-  summary(fit3t)
-  AIC(fit3t)
   
-  fit4 <- lme4::glmer(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot) + (1|iNum.13),data=temp,family='binomial')
-  summary(fit4)
+  (spSel <- spAtt$Species[which(spAtt$Resprout=='Y' & spAtt$Shrub.Tree=='T')])
+  spName <- 'RespTrees'
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
+  table(d$Species)
+  fs=c('low-medium') #'all','low-medium','drop-high'
+  logt=T
+  yvar='gCrown.18'
+  # run interactively - fitFatesMod()
   
-  fit4 <- glmmTMB(gCrown.18~d10.17 + fsCat + d10.17*fsCat + (1|Plot) + (1|iNum.13),data=temp,family='binomial')
-  summary(fit4)
-  AIC(fit4)
+  d <- barplotSprouterSpecies(spSel,FALSE,T,ss.name=spName)
+  # run multinomial interactively - fitMultiNomMod
 }
-  fit5d <- glmmTMB(gCrown.18~factor(TSizeCat)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5d)
-  AIC(fit5d)
-  
-  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5)
-  AIC(fit5)
-  
-  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt)
-  anova(fit5, fit5_for_lrt, "LRT")
-  AIC(fit5_for_lrt)
-  
-  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt2)
-  anova(fit5, fit5_for_lrt2, "LRT")
-  AIC(fit5_for_lrt2)
-  
-  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt3)
-  anova(fit5, fit5_for_lrt3, "LRT")
-  AIC(fit5_for_lrt3)
-  
-  # fit6 <- brm(gCrown.18 ~
-  #               d10.17*mo(as.integer(fsCat)) + # mo() treats the fire severity effect as monotonic
-  #               (1|Plot)+
-  #               (1|iNum.13),
-  #             data=temp,
-  #             family="Bernoulli",
-  #             chains=2, # run two Stan sampler chains
-  #             cores=2, # use two cores, so the two chains can run in parallel
-  #             seed=238, # for reprodocibility
-  #             #backend = "cmdstanr"  # this makes the output easier to read on some operating systems
-  #             )
-  # summary(fit6) # positive size effect, negative severity effect, negative interaction.
-  # 
-  # # quick viz of main effects and interaction
-  # conditional_effects(fit6)
-}
-  # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
-  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-summary(fit5)
 
-# model fitting - ARCMAN
-{
-  d <- tdat[[2]]
-  #obsolete models
-  {
-    fit2 <- glm(gCrown.18~SizeCat + fsCat + SizeCat*fsCat,data=temp,family='binomial')
-  AIC(fit2)
-  drop1(fit2)
-  fit1 <- glm(gCrown.18~SizeCat + fsCat,data=temp,family='binomial')
-  AIC(fit1)
-  drop1(fit1)
-  fit0 <- glm(gCrown.18~fsCat ,data=temp,family='binomial')
-  AIC(fit0)
-  }
-  fit5d <- glmmTMB(gCrown.18~factor(SSizeCat)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5d)
-  AIC(fit5d)
-  
-  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5)
-  AIC(fit5)
-  
-  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt)
-  anova(fit5, fit5_for_lrt, "LRT")
-  AIC(fit5_for_lrt)
-  
-  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt2)
-  anova(fit5, fit5_for_lrt2, "LRT")
-  AIC(fit5_for_lrt2)
-  
-  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-  summary(fit5_for_lrt3)
-  anova(fit5, fit5_for_lrt3, "LRT")
-  AIC(fit5_for_lrt3)
-}
-# Best fit model or ARCMAN - no interaction of size and FS - summary can't calculate significance values, but model comparison worked to identify as best fit
-fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
-summary(fit5_for_lrt3)
+# cycle through species here
+spSel <- 'UMBCAL'
+spSel <- 'HETARB'
+spSel <- 'QUEGAR'
+spSel <- 'QUEAGR'
 
-##### TO HERE
-# barplots for common EHRO, WO, and resprouting shrubs
-tdat <- barplotSprouters()
+spName <- spSel
+d <- barplotSprouterSpecies(spSel,FALSE,T)
+table(d$Species)
+fs='low-medium' #'all','low-medium','drop-high'
+logt=T
+# run interactively - fitFates2StepsMod()
 
-# model fitting - resprouters
-# need to go into the functions script and run this interactively, for model selection
-# no results written to file for summarizing
-fitModelsDiscreteFates()
+yvar='Live.18'
+live.only <- F
+# run interactively - fitFatesMod()
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+yvar='gCrown.18'
+live.only <- T
+# run interactively - fitFatesMod()
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+yvar='DR.18'
+# run interactively - fitFatesMod()
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+# run multinomial interactively - fitMultiNomMod
+
+
+
+
+
+
+
+#### UPDATE TO NEW FUNCTION AFTER HERE
+spSel <- 'QUEGAR'
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'gCrown'
+# run model interactively
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'DR'
+# run model interactively
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'Live'
+# run model interactively
+
+
+spSel <- 'HETARB'
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+table(d$fsCat)
+yvar <- 'gCrown'
+# run model interactively
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'DR'
+# run model interactively
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'Live'
+# run model interactively
+
+# Make a good set of bargraphs for selected species: PSEMEN, QUEAGR, UMBCAL, HETARB, QUEGAR
+
+op=par(mfrow=c(5,4))
+spSel <- 'PSEMEN'
+tdat <- barplotOneNonSprouter(spSel,F,F,T)
+spSel <- 'UMBCAL'
+d <- barplotSprouterSpecies(spSel,F,F,T)
+spSel <- 'QUEAGR'
+d <- barplotSprouterSpecies(spSel,F,F,T)
+spSel <- 'QUEGAR'
+d <- barplotSprouterSpecies(spSel,F,F,T)
+spSel <- 'HETARB'
+d <- barplotSprouterSpecies(spSel,F,F,T)
+par(op)
 
 ## what about delayed mortality
 delayedMortality()
@@ -270,6 +348,49 @@ basalResprouts()
 length(which(tAllm$Live.18==1))
 length(which(tAllm$Live.18==1 & tAllm$Type.18=='SA'))
 new2019recruits()
+
+##### TO HERE
+# MOdels for ARCMAN, AMOCAL, ARBMEN - won't be using them
+spSel <- 'AMOCAL'
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar='gCrown'
+# run fitAMOCALmod interactively
+#(P50r <- fitAMOCALmod(yvar='gCrown')) # gCrown or DR for topkill
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+yvar='DR'
+# run fitAMOCALmod interactively
+#(P50r <- fitAMOCALmod(yvar='DR')) # gCrown or DR for topkill
+#(P50res <- rbind(P50res,P50r))
+
+spSel <- 'ARBMEN'
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'gCrown'
+
+d <- barplotSprouterSpecies(spSel,FALSE)
+head(d)
+table(d$Species)
+yvar <- 'DR'
+#(P50r <- fitARBMENmod('gCrown')) # gCrown or DR for topkill
+#(P50res <- rbind(P50res,P50r))
+
+# barplots for common EHRO, WO, and resprouting shrubs
+tdat <- barplotSprouters()
+# functions don't converge for WHTO or RSHR, only for EHRO
+d <- tdat[[2]]
+fitSpeciesModelsContSize.gCrown()
+fitSpeciesModelsContSize.Live()
+
+# model fitting - resprouters
+# need to go into the functions script and run this interactively, for model selection
+# no results written to file for summarizing
+fitModelsDiscreteFates()
+
+
 
 
 # plot resilience??
@@ -344,20 +465,20 @@ new2019recruits()
 # {
 #   sp <- fst12a$SpCd14[i]
 #   ty <- fst12a$Type[i]
-#   temp <- tAll[which(tAll$SpCd14==sp & tAll$Type.17==ty),]
+#   d <- tAll[which(tAll$SpCd14==sp & tAll$Type.17==ty),]
 #   
-#   fst12a$N17[i] <- sum(temp$Live.17,na.rm=T)
+#   fst12a$N17[i] <- sum(d$Live.17,na.rm=T)
 #   
 #   ## The next three lines are all equivalent - just using third one
-#   #fst12a$N18.DN[i] <- length(which(temp$fate.18=='DN'))
-#   #fst12a$N18.DN[i] <- length(which(temp$DN.18=='1'))
-#   fst12a$N18.DN[i] <- sum(temp$DN.18,na.rm = T)
+#   #fst12a$N18.DN[i] <- length(which(d$fate.18=='DN'))
+#   #fst12a$N18.DN[i] <- length(which(d$DN.18=='1'))
+#   fst12a$N18.DN[i] <- sum(d$DN.18,na.rm = T)
 #   
-#   fst12a$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
-#   fst12a$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
-#   fst12a$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
-#   miss <- which(temp$Live.13==1 & is.na(temp$DN.18)==1)
-#   if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot.13','Num')])
+#   fst12a$N18.DR[i] <- sum(d$DR.18,na.rm = T)
+#   fst12a$N18.LN[i] <- sum(d$LN.18,na.rm = T)
+#   fst12a$N18.LR[i] <- sum(d$LR.18,na.rm = T)
+#   miss <- which(d$Live.13==1 & is.na(d$DN.18)==1)
+#   if (length(miss)>0) for (j in 1:length(miss)) print(d[miss[j],c('Plot.13','Num')])
 #   fst12a$nMissing <- fst12a$N17-(fst12a$N18.DN+fst12a$N18.DR+fst12a$N18.LN+fst12a$N18.LR)
 # }
 # 
