@@ -368,7 +368,7 @@ barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,
   if (is.na(ss.name)) ss.name <- ss
   
   d <- tAllm[which(tAllm$Species %in% ss),]
-  if (ss[1]=='QUEGAR') d$fsCat[which(d$fsCat==3)] <- 2
+  if (ss[1] %in% c('QUEGAR','AMOCAL')) d$fsCat[which(d$fsCat==3)] <- 2
   dim(d)
   
   if (ss[1] %in% tree.names) {

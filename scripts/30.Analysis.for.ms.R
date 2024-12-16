@@ -241,6 +241,7 @@ if (FALSE) {
 }
 
 # cycle through species here
+spSel <- 'AMOCAL'
 spSel <- 'UMBCAL'
 spSel <- 'HETARB'
 spSel <- 'QUEGAR'
