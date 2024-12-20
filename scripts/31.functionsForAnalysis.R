@@ -167,8 +167,26 @@ reduce_fst12 <- function()
   return(fst12c)
 }
 
-barplotFates <- function(d=tAll)
+barplotFates <- function(d=tAll,fs='all')
 {
+  if ('all' %in% fs) fslevels <- 'fs.all'
+  if ('drop-high' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==3)] <- 2
+    fslevels <- 'fs.nohi'
+    
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==2)] <- 1
+    fslevels <- 'fs.dm'
+  }
+  
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  table(d$fsCat)
+  
+  
   ffs <- table(d$fate.18,d$fsCat)
   ffs
   ft <- apply(ffs,2,sum)
@@ -183,23 +201,7 @@ barplotFates <- function(d=tAll)
   ffsp
   barplot(ffsp,beside=F)
   
-  d$fsCat3 <- d$fsCat
-  d$fsCat3[which(d$fsCat3==2)] <- 1
-  ffs3 <- table(d$fate.18,d$fsCat3)
-  (ffs3 <- ffs3[,-3])
-  ft <- apply(ffs3,2,sum)
-  ffsp3 <- ffs3
-  for (i in 1:3) ffsp3[,i] <- ffs3[,i]/ft[i]
-  ffsp3
-  if (nrow(ffsp3)==4) 
-  {
-    ffsp3[3,] <- ffsp3[3,]+ffsp3[4,]
-    ffsp3 <- ffsp3[-4,]
-  }
-  ffsp3
-  barplot(ffsp3,beside=F)
-  
-  return(list(ffsp,ffsp3))
+  return(ffsp)
 }
 
 prepareForBarPlots <- function()
@@ -514,24 +516,24 @@ fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   d$yvar <- d[,yvar]
   d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar),]
   nrow(d)
-  length(unique(d$iNum.13))
+  length(unique(d$TreeNum))
   #head(d)
   
-  fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -542,7 +544,7 @@ fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -564,6 +566,70 @@ fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   
   return(P50r)
   # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
+}
+
+fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  
+  # model fitting
+  table(d$Species)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  table(d$fsCat)
+  if ('all' %in% fs) fslevels <- 'fs.all'
+  if ('drop-high' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==3)] <- 2
+    fslevels <- 'fs.nohi'
+    
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fsCat[which(d$fsCat==2)] <- 1
+    fslevels <- 'fs.dm'
+  }
+  
+  d$fsCat2 <- factor(d$fsCat)
+  d$fsCat <- d$fsCat2
+  table(d$fsCat)
+  
+  yvar <- 'Live.18'
+  d$yvar <- d[,yvar]
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  table(d$Plot)
+  dim(d)
+  
+  fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
+  print(summary(fit5brm))
+  saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
+  
+  # trouble shooting convergence failure - is it due to random effects
+  if (FALSE) {
+    fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=d, family= 'bernoulli')
+  }
+  
+  # now analyze live only
+  d <- d[-which(d$fate.18=='DN'),]
+  table(d$gCrown.18)
+  table(d$Plot)
+  dim(d)
+  yvar <- 'gCrown.18'
+  d$yvar <- d[,yvar]
+  table(dd$yvar,useNA='always')
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  
+  fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
+  print(summary(fit5brm))
+  saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_gCxLive.rds',sep=''))
+  
+  # trouble shooting convergence failure - is it due to random effects
+  if (FALSE) {
+    fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=d, family= 'bernoulli')
+  }
+  
 }
 
 fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
@@ -596,11 +662,13 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   
   yvar <- 'Live.18'
   d$yvar <- d[,yvar]
-  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar),]
+  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
   table(d$Plot)
   dim(d)
   
-  fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  #fit5 <- glmmTMB(yvar~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
+  #fit5 <- brm(yvar~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
+  fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5))
   AIC(fit5)
   
@@ -614,6 +682,7 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   #mod2 <- lm(mpg ~ wt  qsec  factor(gear), data = mtcars)
   plot_comparisons(fit5, variables = "d10.17", condition = c("fsCat2"),vcov=T,re.form=NA)
   
+  # don't understand x-axis
   p50Live <- plotPredictedValuesFit5(fit5,F,yvar,logt=logt,drawverts=F,ret.pv=T)
   
   # trouble shooting convergence failure - is it due to random effects
@@ -622,7 +691,7 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
     print(summary(fit5xi))
     plotPredictedValuesFit5(fit5xi,F,yvar,logt=logt,drawverts=F,ret.pv=F)
     
-    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|iNum.13), data=d, family='binomial')
+    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|TreeNum), data=d, family='binomial')
     print(summary(fit5xp))
     plotPredictedValuesFit5(fit5xp,F,yvar,logt=logt,drawverts=F,ret.pv=F)
   }
@@ -634,7 +703,9 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   dim(dd)
   yvar <- 'gCrown.18'
   dd$yvar <- dd[,yvar]
-  fit5 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+  table(dd$yvar,useNA='always')
+  
+  fit5 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
   #fit5 <- glmmTMB(yvar~d10.17 + fsCat2 , data=dd, family='binomial',control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
   if (FALSE) {
     require(car)
@@ -653,7 +724,7 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
     print(summary(fit5xi))
     plotPredictedValuesFit5(fit5xi,F,yvar,logt=logt,drawverts=F,ret.pv=F)
     
-    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|iNum.13), data=dd, family='binomial',,control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
+    fit5xp <- glmmTMB(yvar~d10.17 * fsCat2 + (1|TreeNum), data=dd, family='binomial',,control = glmmTMBControl(optCtrl = list(iter.max = 1000, rel.tol = 1e-6)))
     print(summary(fit5xp))
     plotPredictedValuesFit5(fit5xp,F,yvar,logt=logt,drawverts=F,ret.pv=F)
   }
@@ -680,17 +751,17 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
     points(pGC~d10.17,data=d,col='green')
   }
   par(op)
-  # fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # fit5_for_lrt <- glmmTMB(yvar~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   # summary(fit5_for_lrt)
   # print('fire severity effect')
   # print(anova(fit5, fit5_for_lrt, "LRT"))
   # 
-  # fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # fit5_for_lrt2 <- glmmTMB(yvar~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   # summary(fit5_for_lrt2)
   # print('size effect')
   # print(anova(fit5, fit5_for_lrt2, "LRT"))
   # 
-  # fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  # fit5_for_lrt3 <- glmmTMB(yvar~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   # summary(fit5_for_lrt3)
   # print('severity*size interaction effect')
   # print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -701,7 +772,7 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   #                  s(d10.17, by=fsCat2, k=20)+
   #                  fsCat2+
   #                  (1|Plot)+
-  #                  (1|iNum.13),
+  #                  (1|TreeNum),
   #                data=d,
   #                family="Bernoulli",
   #                chains = 2, cores = 2, seed=237, 
@@ -760,7 +831,7 @@ fitMultiNomMod <- function()
   table(d$fate3)
   table(d$fate3,d$fsCat)
   
-  multifit1 <- brm(fate3 ~ s(d10.17, k=20, by=fsCat2) + fsCat2 + (1|Plot) + (1|iNum.13), data=d,
+  multifit1 <- brm(fate3 ~ s(d10.17, k=20, by=fsCat2) + fsCat2 + (1|Plot) + (1|TreeNum), data=d,
                    family="categorical", chains = 2, cores = 2, 
                    seed=726, 
                    #backend="cmdstanr",
@@ -769,13 +840,13 @@ fitMultiNomMod <- function()
   summary(multifit1)
   
   summary(d$d10.17)
-  summary(d$iNum.13)
+  summary(d$TreeNum)
   dtemp <- seq(0,max(d$d10.17,na.rm=T),length.out=1000)
   (dfsCat <- sort(unique(d$fsCat)))
   pd <- data.frame(d10.17=rep(dtemp,length(dfsCat)),fsCat=rep(dfsCat,each=length(dtemp)))
   pd$fsCat2 <- factor(pd$fsCat)
   pd$Plot <- sort(unique(d$Plot))[1]
-  pd$iNum.13 <- min(d$iNum.13,na.rm=T)
+  pd$TreeNum <- min(d$TreeNum,na.rm=T)
   
   pd$pval <- predict(multifit1,newdata = pd,type='response',allow_new_levels = T)
   head(pd)
@@ -804,7 +875,7 @@ fitMultiNomMod <- function()
 plotPredictedValuesFit5 <- function(mod=fit5,pred.brm=F,yvar,logt=F,drawverts=t,ret.pv=F)
 {
   summary(d$d10.17)
-  summary(d$iNum.13)
+  summary(d$TreeNum)
   p50 <- c()
   dtemp <- seq(0,max(d$d10.17,na.rm=T),length.out=1000)
   dfsCat <- sort(unique(d$fsCat))
@@ -812,8 +883,8 @@ plotPredictedValuesFit5 <- function(mod=fit5,pred.brm=F,yvar,logt=F,drawverts=t,
   pd$fsCat2 <- factor(pd$fsCat)
   pd$Plot <- sort(unique(d$Plot))[1]
   #pd$Plot <- sample(unique(d$Plot),nrow(pd),replace=T)
-  #pd$iNum.13 <- min(d$iNum.13,na.rm=T)
-  pd$iNum.13 <- sample(unique(d$iNum.13),nrow(pd),replace=T)
+  #pd$TreeNum <- min(d$TreeNum,na.rm=T)
+  pd$TreeNum <- sample(unique(d$TreeNum),nrow(pd),replace=T)
   if (pred.brm) pd$pval <- predict(mod,newdata = pd,type='response',allow_new_levels = T) else pd$pval <- predict(mod,newdata = pd,type='response',allow.new.levels = T,re.form=NA)
   head(pd)
   names(pd)
@@ -1282,36 +1353,36 @@ new2019recruits <- function()
 # ATTEMPT AT GENERIC MODELS BUT IN THE END FIT THEM FOR EACH SPECIES
 fitSpeciesModelsContSize.gCrown <-  function()
 {
-  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(gCrown.18~d10.17*factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5 <- glmmTMB(gCrown.18~s(d10.17, by=fsCat2, k=20)*factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(gCrown.18~s(d10.17, by=fsCat2, k=20)*factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print(anova(fit5, fit5_for_lrt, "LRT"))
   AIC(fit5_for_lrt)
   
-  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   AIC(fit5_for_lrt2)
   
-  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   AIC(fit5_for_lrt3)
   print(anova(fit5, fit5_for_lrt3, "LRT"))
   
   summary(d$d10.17)
-  summary(d$iNum.13)
+  summary(d$TreeNum)
   dtemp <- seq(min(d$d10.17,na.rm=T),max(d$d10.17,na.rm=T),length.out=100)
   dfsCat <- 0:3
   pd <- data.frame(d10.17=rep(dtemp,4),fsCat=rep(dfsCat,each=length(dtemp)))
   pd$Plot <- 'PPW1301'
-  pd$iNum.13 <- 1032
+  pd$TreeNum <- 1032
   pd$pval <- predict(fit5,newdata = pd,type='response',allow.new.levels = T)
   head(pd)
   
@@ -1327,38 +1398,38 @@ fitSpeciesModelsContSize.gCrown <-  function()
 fitSpeciesModelsContSize.Live <-  function()
 {
   d$d10.17sq <- d$d10.17^2
-  fit5 <- glmmTMB(Live.18~d10.17+factor(fsCat)+d10.17:factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(Live.18~d10.17+factor(fsCat)+d10.17:factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5q <- glmmTMB(Live.18~d10.17sq+d10.17+factor(fsCat)+d10.17sq:factor(fsCat)+d10.17:factor(fsCat)+ (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5q <- glmmTMB(Live.18~d10.17sq+d10.17+factor(fsCat)+d10.17sq:factor(fsCat)+d10.17:factor(fsCat)+ (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5q))
   print(anova(fit5, fit5q, "LRT"))
   
   
-  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print(anova(fit5, fit5_for_lrt, "LRT"))
   AIC(fit5_for_lrt)
   
-  fit5_for_lrt2 <- glmmTMB(Live.18~factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(Live.18~factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   AIC(fit5_for_lrt2)
   
-  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + factor(fsCat) + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + factor(fsCat) + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   AIC(fit5_for_lrt3)
   print(anova(fit5, fit5_for_lrt3, "LRT"))
   
   summary(d$d10.17)
-  summary(d$iNum.13)
+  summary(d$TreeNum)
   dtemp <- seq(min(d$d10.17,na.rm=T),max(d$d10.17,na.rm=T),length.out=100)
   dfsCat <- 0:3
   pd <- data.frame(d10.17=rep(dtemp,4),fsCat=rep(dfsCat,each=length(dtemp)))
   pd$d10.17sq <- pd$d10.17^2
   pd$Plot <- 'PPW1301'
-  pd$iNum.13 <- 1032
+  pd$TreeNum <- 1032
   pd$pval <- predict(fit5,newdata = pd,type='response',allow.new.levels = T)
   head(pd)
   
@@ -1380,21 +1451,21 @@ fitARCMANmod <- function()
   d$fsCat2 <- factor(as.numeric(d$fsCat)-1)
   table(d$fsCat2) 
   
-  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(gCrown.18~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(gCrown.18~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(gCrown.18~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(gCrown.18~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1405,7 +1476,7 @@ fitARCMANmod <- function()
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1443,21 +1514,21 @@ fitAMOCALmod <- function(yvar='gCrown')
   d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
   dim(d)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1468,7 +1539,7 @@ fitAMOCALmod <- function(yvar='gCrown')
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1506,21 +1577,21 @@ fitARBMENmod <- function(yvar='gCrown')
   d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
   dim(d)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1531,7 +1602,7 @@ fitARBMENmod <- function(yvar='gCrown')
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1565,21 +1636,21 @@ fitPSEMENmod <- function(logt=T)
   
   if (logt) d$d10.17 <- log10(d$d10.17)
   
-  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(gCrown.18~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(Live.18~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(Live.18~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(Live.18~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(Live.18~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1590,7 +1661,7 @@ fitPSEMENmod <- function(logt=T)
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1632,21 +1703,21 @@ fitQUEAGRmod <- function(yvar='gCrown',logt=F,inclPlot=T)
   
   if (logt) d$d10.17 <- log10(d$d10.17)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1657,7 +1728,7 @@ fitQUEAGRmod <- function(yvar='gCrown',logt=F,inclPlot=T)
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    #(1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1699,21 +1770,21 @@ fitUMBCALmod <- function(yvar='gCrown',logt=F)
   
   if (logt) d$d10.17 <- log10(d$d10.17)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1724,7 +1795,7 @@ fitUMBCALmod <- function(yvar='gCrown',logt=F)
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1767,21 +1838,21 @@ fitQUEGARmod <- function(yvar='gCrown')
   table(d$SizeCat,d$fsCat)
   dim(d)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1792,7 +1863,7 @@ fitQUEGARmod <- function(yvar='gCrown')
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 
@@ -1834,21 +1905,21 @@ fitHETARBmod <- function(yvar='gCrown')
   d <- d[complete.cases(d$fsCat2,d$d10.17,d$yval),]
   dim(d)
   
-  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5 <- glmmTMB(yval~d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   print(summary(fit5))
   AIC(fit5)
   
-  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt <- glmmTMB(yval~d10.17 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt)
   print('fire severity effect')
   print(anova(fit5, fit5_for_lrt, "LRT"))
   
-  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt2 <- glmmTMB(yval~fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt2)
   print('size effect')
   print(anova(fit5, fit5_for_lrt2, "LRT"))
   
-  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|iNum.13), data=d, family='binomial')
+  fit5_for_lrt3 <- glmmTMB(yval~d10.17 + fsCat2 + (1|Plot) + (1|TreeNum), data=d, family='binomial')
   summary(fit5_for_lrt3)
   print('severity*size interaction effect')
   print(anova(fit5, fit5_for_lrt3, "LRT"))
@@ -1859,7 +1930,7 @@ fitHETARBmod <- function(yvar='gCrown')
                    s(d10.17, by=fsCat2, k=20)+
                    fsCat2+
                    (1|Plot)+
-                   (1|iNum.13),
+                   (1|TreeNum),
                  data=d,
                  family="Bernoulli",
                  chains = 2, cores = 2, seed=237, 

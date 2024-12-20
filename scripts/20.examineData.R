@@ -449,6 +449,10 @@ dim(tAll)
 head(tAll)
 tail(tAll)
 
+rm('t01')
+rm('t12')
+rm('t123')
+
 # create master Plot variable
 tAll$Plot <- tAll$Plot.13
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.18[which(is.na(tAll$Plot))]
@@ -462,13 +466,6 @@ tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.18[which(is.na(tAll$Spe
 tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.19[which(is.na(tAll$Species))]
 tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.20[which(is.na(tAll$Species))]
 table(tAll$Species,useNA='always')
-
-rm('t01')
-rm('t12')
-rm('t123')
-
-
-# All 'five' years are now merged!!!!! ###
 
 # create 'proxy 2017 data'
 # rownums for new 2018 individuals from new plots
@@ -601,6 +598,7 @@ tAll$SA.BD_cm.17[rsel] <- tAll$SA.BD_cm.13[rsel]
 
 # round tree nums for points
 tAll$TreeNum <- floor(tAll$Num)
+head(table(tAll$TreeNum))
 tAll$fPlot <- as.factor(tAll$Plot.18)
 
 # Load plot characteristics

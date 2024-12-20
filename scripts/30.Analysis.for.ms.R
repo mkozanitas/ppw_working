@@ -29,6 +29,7 @@ table(fs$fsCat)
 spAtt <- read.csv('data/all-spp-attributes.csv',row.names = 1)
 head(spAtt)
 tail(spAtt)
+table(spAtt$FuncGroup)
 
 # input merged dataframe
 tAll <- read.csv('data/tAll.csv',as.is=T,row.names=1)
@@ -38,6 +39,10 @@ dim(tAll)
 # convert QSpecies# convert QUEBEGA to QUEBER, QUEDOGA to QUEDOU, QUEdec to QUEDOU, and remove unknowns
 tAll <- convertHybrids()
 table(tAll$Species)
+
+# add functional groups to tAll
+tAll$FuncGroup <- spAtt$FuncGroup[match(tAll$Species,spAtt$OrigSpecies)]
+table(tAll$FuncGroup)
 
 # remove Type.13 = 'TS'; a few show up in 2018 - need to check
 tAll <- tAll[-which(tAll$Type.17=='TS'),]
@@ -52,7 +57,7 @@ tAll.archive <- tAll
 
 # use this to restore and recreate tAll
 tAll <- tAll.archive
-tAll <- tAll[,c('Num','iNum.13','Point.13','Plot','fsCat','Species','Year.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
+tAll <- tAll[,c('Num','TreeNum','Species','FuncGroup','Point.13','Plot','fsCat','Year.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
 
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
 sum(tAll$Live.17,na.rm=T)
@@ -73,7 +78,7 @@ write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 # Second result - overall numbers
 table(tAll$Type.17)
 (allAb <- sum(table(tAll$Type.17[which(tAll$Live.17==1)])))
-(spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)])))
+(spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)]),decreasing = T))
 
 # PSEMEN as proportion of all non-sprouters
 spAbund[which(names(spAbund)=='PSEMEN')]
@@ -97,11 +102,11 @@ if (FALSE) {
   length(newSap)
   table(tAll$Year.13,tAll$Year.17,useNA='always')
   
-  tAllm$Num[newSap]
-  table(tAllm$Plot[newSap])
-  table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
+  #tAllm$Num[newSap]
+  #table(tAllm$Plot[newSap])
+  #table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
   
-  # MELINA: Remind me about these - they were either tagged but data failed to record in 2013, or newly recruited from 2013 to 2017 and inferred in 2017 data. They are detected here by NA in Year.17 which I think means 
+  # MELINA: Remind me about these - they were either tagged but data failed to record in 2013, or newly recruited from 2013 to 2017 and inferred in '2017' data. They are detected here by NA in Year.17 which I think means 
 }
 
 # summary of species types
@@ -110,6 +115,8 @@ table(spAtt$Shrub.Tree)
 # summary of fates
 (ftab <- table(tAll$fate.18[which(tAll$Type.18!='TS')]))
 (allAb18 <- sum(table(tAll$fate.18[which(tAll$Type.18!='TS')])))
+
+# High level of 2018 fates
 ftab/allAb18
 sum((ftab/allAb18)[3:4])
 
@@ -119,6 +126,7 @@ head(fst12)
 tail(fst12)
 
 sort(tapply(fst12$N17,fst12$SpCode,sum))
+
 # reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
 fst12c <- reduce_fst12()
 fst12c
@@ -157,13 +165,14 @@ TRSum.p/TRSum.p[1]
 
 allSum.p/allSum
 
-fbp.list <- barplotFates(tAll)
+# Barplots for sprouters and non-sprouters, all species
+fbp.list <- barplotFates(tAll,fs='low-medium')
 rspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='Y')]),]
-fbp.rsp.list <- barplotFates(rspd)
+fbp.rsp.list <- barplotFates(rspd,fs='low-medium')
 table(rspd$Type.17)
 
 nspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='N')]),]
-fbp.nsp.list <- barplotFates(nspd)
+fbp.nsp.list <- barplotFates(nspd,fs='low-medium')
 fbp.nsp.list
 table(nspd$Type.17)
 
@@ -179,15 +188,44 @@ dim(tAllm)
 # results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
 P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
 
+## Low and Medium Fire not collapsed at this point - collapse for final paper?
 # barplot for PSEMEN, first to see here, and then to pdf
 tdat <- barplotNonSprouters()
 length(tdat)
 d <- tdat[[1]]
+table(d$Species)
+
+####diamonds#### Now, run 6 models for each species
+
+## Set species, fire severity option, and log-size option
+# Species names, in descending sort order
+#UMBCAL PSEMEN QUEAGR HETARB AMOCAL QUEGAR ARBMEN FRACAL QUEDOU QUEKEL BACPIL 
+#1585   1203    780    708    426    376    283    148     84     75     67    
+#ARCMAN QUEBER AESCAL CERBET NOTDEN 
+#61     56     25     22     20 
+#ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
+#10      8      5      5      4      4      3      2      2      1      1 
+
+# Functional Groups and sample sizes
+#EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
+#2850     1208      287     1845      477 
+
 spSel <- 'PSEMEN'
 spName <- spSel
 table(d$Species)
 fs='low-medium' #'all','low-medium'
 logt=T
+names(tAll)
+spAtt
+
+d <- tAll[which(d$Species == spSel),]
+
+## First 2: polynomial hierarchical yvar: first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
+# run script31:fitFates2StepsMod.brm interactively
+
+
+# Pick a species, and run models in script 31
+
 live.only <- F
 yvar='gCrown.18'
 #  run interactively in script 31
@@ -252,6 +290,8 @@ d <- barplotSprouterSpecies(spSel,FALSE,T)
 table(d$Species)
 fs='low-medium' #'all','low-medium','drop-high'
 logt=T
+live.only=F
+spName <- spSel
 # run interactively - fitFates2StepsMod()
 
 yvar='Live.18'

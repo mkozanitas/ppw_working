@@ -1,7 +1,7 @@
 options(scipen=999)
 library(brms)
 
-d <- read.csv("UMBCAL.csv")
+d <- read.csv("data/UMBCAL.csv")
 
 spSel='UMBCAL'
 spName <- spSel
