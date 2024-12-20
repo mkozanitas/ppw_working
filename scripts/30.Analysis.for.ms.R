@@ -396,7 +396,7 @@ fitModelsDiscreteFates()
 
 # plot resilience??
 
-#### END HERE 3/28/26
+#### END HERE 3/28/24
 
 # # binomial  regression of 'live' and 'green crown' - won't try topkill as quadratic didn't work - in progress
 # 
