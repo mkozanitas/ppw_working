@@ -604,7 +604,9 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   
   fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5brm))
-  saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
+  
+  # File is too large for github, will require local storage. We can add this later
+  #saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
@@ -623,7 +625,9 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   
   fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5brm))
-  saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_gCxLive.rds',sep=''))
+
+  # File is too large for github, will require local storage. We can add this later
+  #saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
