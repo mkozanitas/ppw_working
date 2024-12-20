@@ -217,7 +217,8 @@ fs='low-medium' #'all','low-medium'
 logt=T
 names(tAll)
 
-d <- tAll[which(d$Species == spSel),]
+d <- tAll[which(tAll$Species == spSel),]
+dim(d)
 
 ## First 2: polynomial hierarchical yvar: first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
 # run script31:fitFates2StepsMod.brm interactively
