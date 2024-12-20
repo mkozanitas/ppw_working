@@ -210,13 +210,12 @@ table(d$Species)
 #EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
 #2850     1208      287     1845      477 
 
-spSel <- 'PSEMEN'
+spSel <- 'UMBCAL'
 spName <- spSel
 table(d$Species)
 fs='low-medium' #'all','low-medium'
 logt=T
 names(tAll)
-spAtt
 
 d <- tAll[which(d$Species == spSel),]
 
