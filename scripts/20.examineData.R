@@ -1,8 +1,8 @@
 # RUN prepareData again if csv's have been changed, or get.indv.data() has been updated in PW_functions_local.R
 # data files are not synced by git, so prepareData does need to be run locally
 rm(list=ls())
-source('scripts/PW_functions_local-test.R')
-source('scripts/PWfunctions_GitHub_local.R')
+source('scripts/11.PW_functions_local-test.R')
+source('scripts/12.PW_functions_GitHub_local.R')
 
 # read in list of 4 items, each item with the full data file for all trees in a given year
 years <- c(2013,2018,2019,2020)
