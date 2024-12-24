@@ -616,7 +616,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                    control=list(adapt_delta=0.95))
   summary(multifit1)
   
-  # File is too large for github, will require local storage. We can add this later
+  # File is too large for github, will require local storage. 
   saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.Multinom.rds',sep=''))
   
   #Now fit hierarchical polynomial, Live first
@@ -629,7 +629,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli')
   print(summary(fit5brm))
   
-  # File is too large for github, will require local storage. We can add this later
+  # File is too large for github, will require local storage. 
   saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
@@ -651,7 +651,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5brm))
 
-  # File is too large for github, will require local storage. We can add this later
+  # File is too large for github, will require local storage. 
   saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_gCxLive.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
