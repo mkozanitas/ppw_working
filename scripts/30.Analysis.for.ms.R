@@ -199,8 +199,12 @@ table(d$Species)
 
 ## Set species, fire severity option, and log-size option
 # Species names, in descending sort order
-#UMBCAL PSEMEN QUEAGR HETARB AMOCAL QUEGAR ARBMEN FRACAL QUEDOU QUEKEL BACPIL 
-#1585   1203    780    708    426    376    283    148     84     75     67    
+#UMBCAL PSEMEN QUEAGR HETARB AMOCAL 
+#1585   1203    780    708    426    
+
+#QUEGAR ARBMEN FRACAL QUEDOU QUEKEL BACPIL 
+#376    283    148     84     75     67    
+
 #ARCMAN QUEBER AESCAL CERBET NOTDEN 
 #61     56     25     22     20 
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
@@ -220,8 +224,11 @@ names(tAll)
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
 
-## First 2: polynomial hierarchical yvar: first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
+## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
 # run script31:fitFates2StepsMod.brm interactively
+
+#### END HERE FOR NOW
+
 
 
 # Pick a species, and run models in script 31

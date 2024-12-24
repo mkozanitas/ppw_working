@@ -573,6 +573,8 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # fs=low-medium - combine low and medium to one level
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
   # logt - use log diameter
+  # local.dir <- local file directory for storing models - too large for github
+  local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting'
   
   # model fitting
   table(d$Species)
@@ -596,46 +598,68 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   d$fsCat <- d$fsCat2
   table(d$fsCat)
   
+  # fit multinomial first
+  table(d$fate.18)
+  d$fate3 <- d$fate.18
+  d$fate3[which(d$fate3 %in% c('LN','LR'))] <- 'GC'
+  dd <- d[complete.cases(d$fsCat2,d$d10.17,d$fate3),]
+  dim(dd)
+  table(dd$fate3)
+  table(dd$fate3,dd$fsCat)
+  
+  multifit1 <- brm(fate3 ~ s(d10.17, k=20, by=fsCat2) + fsCat2 + (1|Plot) + (1|TreeNum), data=dd,
+                   family="categorical", chains = 2,
+                   cores = 2, 
+                   seed=726, 
+                   #backend="cmdstanr",
+                   refresh=100,
+                   control=list(adapt_delta=0.95))
+  summary(multifit1)
+  
+  # File is too large for github, will require local storage. We can add this later
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.Multinom.rds',sep=''))
+  
+  #Now fit hierarchical polynomial, Live first
   yvar <- 'Live.18'
   d$yvar <- d[,yvar]
-  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
-  table(d$Plot)
-  dim(d)
+  dd <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  table(dd$Plot)
+  dim(dd)
   
-  fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
+  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli')
   print(summary(fit5brm))
   
   # File is too large for github, will require local storage. We can add this later
-  #saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
   
   # MODEL VISUALIZATION??
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
-    fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=d, family= 'bernoulli')
+    fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=dd, family= 'bernoulli')
   }
   
   # now analyze live only
-  d <- d[-which(d$fate.18=='DN'),]
-  table(d$gCrown.18)
-  table(d$Plot)
-  dim(d)
+  dd <- dd[-which(dd$fate.18=='DN'),]
+  table(dd$gCrown.18)
+  table(dd$Plot)
+
   yvar <- 'gCrown.18'
-  d$yvar <- d[,yvar]
+  dd$yvar <- dd[,yvar]
   table(dd$yvar,useNA='always')
-  d <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  dd <- dd[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  dim(dd)
   
-  fit5brm <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
+  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5brm))
 
   # File is too large for github, will require local storage. We can add this later
-  #saveRDS(fit5brm,paste('models/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_gCxLive.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
     fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=d, family= 'bernoulli')
   }
-  
 }
 
 fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
