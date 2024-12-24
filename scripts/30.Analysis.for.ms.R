@@ -214,7 +214,7 @@ table(d$Species)
 #EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
 #2850     1208      287     1845      477 
 
-spSel <- 'UMBCAL'
+spSel <- 'QUEAGR'
 spName <- spSel
 table(d$Species)
 fs='low-medium' #'all','low-medium'

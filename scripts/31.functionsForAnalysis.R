@@ -632,14 +632,12 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # File is too large for github, will require local storage. We can add this later
   saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
   
-  # MODEL VISUALIZATION??
-  
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
-    fit5brm1 <- brm( yvar ~ d10.17 * fsCat2 + (1|Plot), data=dd, family= 'bernoulli')
+    fit5brm1 <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot), data=dd, family= 'bernoulli')
   }
   
-  # now analyze live only
+  # Now analyze live only
   dd <- dd[-which(dd$fate.18=='DN'),]
   table(dd$gCrown.18)
   table(dd$Plot)
