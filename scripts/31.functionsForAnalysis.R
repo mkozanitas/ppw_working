@@ -645,7 +645,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   yvar <- 'gCrown.18'
   dd$yvar <- dd[,yvar]
   table(dd$yvar,useNA='always')
-  dd <- dd[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  dd <- dd[complete.cases(dd$fsCat2,dd$d10.17,dd$yvar,dd$Plot,dd$TreeNum),]
   dim(dd)
   
   fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
