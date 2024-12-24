@@ -210,16 +210,11 @@ table(d$Species)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-# Functional Groups and sample sizes
-#EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
-#2850     1208      287     1845      477 
-
-spSel <- 'QUEAGR'
+spSel <- 'ARBMEN'
 spName <- spSel
-table(d$Species)
-fs='low-medium' #'all','low-medium'
-logt=T
-names(tAll)
+fs=c('low-medium') #'all','low-medium'
+#fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
+#logt=T
 
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
@@ -227,6 +222,24 @@ dim(d)
 ## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
 # run script31:fitFates2StepsMod.brm interactively
 
+# now functional groups
+# Functional Groups and sample sizes
+#EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
+#2850     1208      287     1845      477 
+
+table(spAtt$FuncGroup,useNA='always')
+FSel <- 'WHTO'
+spName <- spSel
+spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)]
+fs=c('low-medium') #'all','low-medium'
+fs=c('drop-high','low-medium') #WHTO
+#logt=T
+
+d <- tAll[which(tAll$Species %in% spSel),]
+dim(d)
+
+## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
+# run script31:fitFates2StepsMod.brm interactively
 #### END HERE FOR NOW
 
 

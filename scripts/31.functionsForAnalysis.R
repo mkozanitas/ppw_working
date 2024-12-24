@@ -586,7 +586,6 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   {
     d$fsCat[which(d$fsCat==3)] <- 2
     fslevels <- 'fs.nohi'
-    
   }
   if ('low-medium' %in% fs)
   {
@@ -617,7 +616,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   summary(multifit1)
   
   # File is too large for github, will require local storage. 
-  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.Multinom.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.Multinom.rds',sep=''))
   
   #Now fit hierarchical polynomial, Live first
   yvar <- 'Live.18'
@@ -647,6 +646,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   table(dd$yvar,useNA='always')
   dd <- dd[complete.cases(dd$fsCat2,dd$d10.17,dd$yvar,dd$Plot,dd$TreeNum),]
   dim(dd)
+  table(dd$fsCat)
   
   fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
   print(summary(fit5brm))
