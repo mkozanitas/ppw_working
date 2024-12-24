@@ -13,6 +13,7 @@ require(ggeffects)
 #require(sjPlot)
 require(ggplot2)
 require(marginaleffects)
+require(beepr)
 #require(cmdstanr)
 
 source('scripts/31.functionsForAnalysis.R')
@@ -214,7 +215,7 @@ spSel <- 'ARBMEN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
-#logt=T
+logt=T
 
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
@@ -229,11 +230,11 @@ dim(d)
 
 table(spAtt$FuncGroup,useNA='always')
 FSel <- 'WHTO'
-spName <- spSel
-spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)]
+spName <- FSel
+(spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
 fs=c('low-medium') #'all','low-medium'
 fs=c('drop-high','low-medium') #WHTO
-#logt=T
+logt=T
 
 d <- tAll[which(tAll$Species %in% spSel),]
 dim(d)

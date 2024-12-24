@@ -612,11 +612,11 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                    seed=726, 
                    #backend="cmdstanr",
                    refresh=100,
-                   control=list(adapt_delta=0.95))
+                   control=list(adapt_delta=0.95));beep()
   summary(multifit1)
   
   # File is too large for github, will require local storage. 
-  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.Multinom.rds',sep=''))
+  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.','Poly.Multinom.rds',sep=''))
   
   #Now fit hierarchical polynomial, Live first
   yvar <- 'Live.18'
@@ -625,11 +625,11 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   table(dd$Plot)
   dim(dd)
   
-  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli')
+  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
   print(summary(fit5brm))
   
   # File is too large for github, will require local storage. 
-  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_Live.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.H_Live.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
@@ -648,11 +648,11 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   dim(dd)
   table(dd$fsCat)
   
-  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli')
+  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=d, family= 'bernoulli');beep()
   print(summary(fit5brm))
 
   # File is too large for github, will require local storage. 
-  saveRDS(fit5brm,paste(local.dir,'/brm.',spSel,'.','Poly.H_gCxLive.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.H_gCxLive.rds',sep=''))
   
   # trouble shooting convergence failure - is it due to random effects
   if (FALSE) {
