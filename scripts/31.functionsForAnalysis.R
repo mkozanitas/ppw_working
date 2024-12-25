@@ -601,6 +601,10 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   table(d$fate.18)
   d$fate3 <- d$fate.18
   d$fate3[which(d$fate3 %in% c('LN','LR'))] <- 'GC'
+  table(d$fate3,d$DN.18,useNA='always')
+  table(d$fate3,d$DR.18,useNA='always')
+  table(d$fate3,d$gCrown.18,useNA='always')
+  
   dd <- d[complete.cases(d$fsCat2,d$d10.17,d$fate3),]
   dim(dd)
   table(dd$fate3)
@@ -624,6 +628,8 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   dd <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
   table(dd$Plot)
   dim(dd)
+  plot(dd$Live.18~dd$d10.17)
+  plot(dd$gCrown.18~dd$d10.17)
   
   fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
   print(summary(fit5brm))
@@ -631,16 +637,29 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # File is too large for github, will require local storage. 
   saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.H_Live.rds',sep=''))
   
-  # trouble shooting convergence failure - is it due to random effects
-  if (FALSE) {
-    fit5brm1 <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot), data=dd, family= 'bernoulli')
-  }
+  #Now fit hierarchical polynomial, GC direct
+  yvar <- 'gCrown.18'
+  d$yvar <- d[,yvar]
+  dd <- d[complete.cases(d$fsCat2,d$d10.17,d$yvar,d$Plot,d$TreeNum),]
+  table(dd$Plot)
+  dim(dd)
+  plot(dd$Live.18~dd$d10.17)
+  plot(dd$gCrown.18~dd$d10.17)
+  
+  fit5brm <- brm(yvar ~ d10.17 * fsCat2 + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
+  print(summary(fit5brm))
+  
+  # File is too large for github, will require local storage. 
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.','Poly.H_Live.rds',sep=''))
+  
+  
   
   # Now analyze live only
   dd <- dd[-which(dd$fate.18=='DN'),]
   table(dd$gCrown.18)
   table(dd$Plot)
-
+  plot(dd$gCrown.18~dd$d10.17)
+  
   yvar <- 'gCrown.18'
   dd$yvar <- dd[,yvar]
   table(dd$yvar,useNA='always')

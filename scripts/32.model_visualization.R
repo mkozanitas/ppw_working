@@ -2,7 +2,7 @@
 rm(list=ls())
 local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting/'
 mod <- 'brm'
-spName <- 'UMBCAL'
+spName <- 'QUEAGR'
 fit.type <- 'Poly'
 dep.var <- 'Multinom' #'H_live','H_gCxLive'
 
@@ -54,10 +54,11 @@ pdh$pDR <- 1-pdh$pDN-pdh$pGC
 
 op=par(mfrow=c(1,3))
 for (i in fsLevels) {
-  rsel <- which(pd$fsCat2==i)
+  rsel <- which(pdh$fsCat2==i)
   plot(pdh$d10.17[rsel],pdh$pDN[rsel],ylim=c(0,1))
-  points(pdh$d10.17[rsel],pdh$pLive[rsel],col='red')
-  points(pdh$d10.17[rsel],pdh$pgCxLive[rsel],col='green')
-  points(pdh$d10.17[rsel],pdh$pGC[rsel],col='blue')
+  points(pdh$d10.17[rsel],pdh$pgCxLive[rsel],col='blue')
+  points(pdh$d10.17[rsel],pdh$pLive[rsel],col='lightblue')  
+  points(pdh$d10.17[rsel],pdh$pDR[rsel],col='red')
+  points(pdh$d10.17[rsel],pdh$pGC[rsel],col='green')
 }
 par(op)

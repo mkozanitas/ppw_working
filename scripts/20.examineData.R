@@ -49,15 +49,26 @@ head(bNA)
 write.csv(bNA,'data/bSprout-NAs.csv')
 
 ## Seems there are problems with gCrown - checking here
-summary(all.id[[1]]$gCrown) # GOOD
-summary(all.id[[2]]$gCrown) # GOOD
-summary(all.id[[3]]$gCrown) # GOOD
+table(all.id[[1]]$gCrown,useNA='always') # GOOD
+table(all.id[[2]]$gCrown,useNA='always') # GOOD
+table(all.id[[3]]$gCrown,useNA='always') # GOOD
 
 summary(all.id[[4]]$gCrown) # Character! Let's make it numeric
 all.id[[4]]$gCrown <- as.numeric(all.id[[4]]$gCrown)
-summary(all.id[[4]]$gCrown) # Good!
+table(all.id[[4]]$gCrown,useNA='always') # GOOD
 
 # In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
+i=2
+names(all.id[[i]])
+table(all.id[[i]]$Dead,all.id[[i]]$Live,useNA='always')
+table(all.id[[i]]$gCrown,all.id[[i]]$Live,useNA='always')
+
+# WHO ARE THESE INDIVIDUALS WITH NA FOR gCrown and live or dead
+head(all.id[[i]][which(is.na(all.id[[i]]$gCrown) & all.id[[i]]$Live==0),])
+
+
+table(all.id[[i]]$Topkill,all.id[[i]]$Live,useNA='always')
+table(all.id[[i]]$bSprout,all.id[[i]]$Live,useNA='always')
 
 # catenate values to see patterns
 catVals <- function(x) {

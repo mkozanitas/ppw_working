@@ -53,6 +53,10 @@ dim(tAll)
 tAll$fsCat <- fs$fsCat[match(tAll$Plot,fs$Plot)]
 table(tAll$fsCat,useNA='always')
 
+# check all fates are correctly coded for 2018
+table(tAll$gCrown.18,tAll$LN.18,useNA='always')
+
+
 # archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
 tAll.archive <- tAll
 
@@ -211,7 +215,7 @@ table(d$Species)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-spSel <- 'ARBMEN'
+spSel <- 'QUEAGR'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
@@ -229,11 +233,11 @@ dim(d)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'WHTO'
+FSel <- 'EHRO'
 spName <- FSel
 (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
 fs=c('low-medium') #'all','low-medium'
-fs=c('drop-high','low-medium') #WHTO
+#fs=c('drop-high','low-medium') #WHTO
 logt=T
 
 d <- tAll[which(tAll$Species %in% spSel),]
