@@ -4,13 +4,9 @@ rm(list=ls())
 source('scripts/11.PW_functions_local-test.R')
 source('scripts/12.PW_functions_GitHub_local.R')
 
-# read in list of 4 items, each item with the full data file for all trees in a given year
+# read in list of 4 items, each item with the full data file for all trees in a given year. We are using individual points for analysis in this paper (hence 'allidb.Rdata')
 years <- c(2013,2018,2019,2020)
 all.id <- readRDS('data/allidb.Rdata')
-
-# these are data files with 'points' (branches) output individually. Not currently being used, and the lines to create these files may be commented out in prepareData
-#all.idb <- readRDS('data/allidb.Rdata')
-
 
 # Print dups for each year. And for now, remove dups before checking for other problems, e.g. moving between plots, species, etc.
 dups <- list()
@@ -26,7 +22,7 @@ for (i in 1:4)
   dups[[i]] <- dups[[i]][order(dups[[i]]$Num),]
   
   #the next line removes duplicated tags
-  if (length(dN)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dN),]
+  #if (length(dN)>0) all.id[[i]] <- all.id[[i]][-which(all.id[[i]]$Num %in% dN),]
 }
 
 dups[[1]]
@@ -38,144 +34,192 @@ tail(dups)
 dups
 write.csv(dups,'data/duplicates.csv')
 
+## Check on 12/24/24 showed two dups in 2013. For the first, the first line matches the 2018 data (Species) and for the second, they seem identical except the first line has size data and the 2nd doesn't. So drop the second in each case
+all.id[[1]] <- all.id[[1]][-c(2973,2974),]
+
 # check that the maximum numbers from each year of survey don't have typos or bad values
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
 # Pull out all individuals with NA for bSprout - this should always be filled out. As of 5/15/22, no problems identified at this step!!
+# 9/24/24 - Melina: There are 944 NA for bSprout in 2013. Is that okay?
 bNA <- all.id[[1]][which(is.na(all.id[[1]]$bSprout)),]
 for (i in 2:4) bNA <- rbind(bNA,all.id[[i]][which(is.na(all.id[[i]]$bSprout)),])
 dim(bNA)
 head(bNA)
+table(bNA$Year)
 write.csv(bNA,'data/bSprout-NAs.csv')
 
 ## Seems there are problems with gCrown - checking here
 table(all.id[[1]]$gCrown,useNA='always') # GOOD
-table(all.id[[2]]$gCrown,useNA='always') # GOOD
-table(all.id[[3]]$gCrown,useNA='always') # GOOD
+table(all.id[[2]]$gCrown,useNA='always') # a bunch of NAs
+table(all.id[[3]]$gCrown,useNA='always') # a bunch of NAs
 
 summary(all.id[[4]]$gCrown) # Character! Let's make it numeric
 all.id[[4]]$gCrown <- as.numeric(all.id[[4]]$gCrown)
-table(all.id[[4]]$gCrown,useNA='always') # GOOD
+table(all.id[[4]]$gCrown,useNA='always') # a bunch of NAs
 
-# In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
+## Assign Dead (Live=0), and fix gCrown NAs
+all.id[[1]]$Dead <- 1 - all.id[[1]]$Live
+
 i=2
-names(all.id[[i]])
-table(all.id[[i]]$Dead,all.id[[i]]$Live,useNA='always')
-table(all.id[[i]]$gCrown,all.id[[i]]$Live,useNA='always')
+for (i in 2:4)
+{
+  all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
+  all.id[[i]]$Epi.Api <- 0
+  all.id[[i]]$Epi.Api[which(all.id[[i]]$Epicormic==1 | all.id[[i]]$Apical==1)] <- 1
+  
+  # fix gCrown NAs (need Melina to confirm)
+  all.id[[i]]$gCrown[which(all.id[[i]]$Live==1)] <- 
+    1 - all.id[[i]]$Topkill[which(all.id[[i]]$Live==1)]
+  all.id[[i]]$gCrown[which(all.id[[i]]$Live==0)] <- 0
+} 
 
-# WHO ARE THESE INDIVIDUALS WITH NA FOR gCrown and live or dead
-head(all.id[[i]][which(is.na(all.id[[i]]$gCrown) & all.id[[i]]$Live==0),])
 
-
-table(all.id[[i]]$Topkill,all.id[[i]]$Live,useNA='always')
-table(all.id[[i]]$bSprout,all.id[[i]]$Live,useNA='always')
-
-# catenate values to see patterns
-catVals <- function(x) {
-  res <- c()
-  for (i in 1:length(x)) res <- paste(res,x[i],sep='')
-  return(res)
+## TROUBLESHOOTING COMBINATIONS, TO COME UP WITH GCROWN FIX THAT'S IN LOOP ABOVE
+if (FALSE) {
+  i=2 
+  table(all.id[[i]]$Epicormic,all.id[[i]]$Apical,all.id[[i]]$Epi.Api,useNA='always')
+  table(all.id[[i]]$Survival,all.id[[i]]$Epi.Api,useNA='always')
+  table(all.id[[i]]$gCrown,all.id[[i]]$Epi.Api,useNA='always')
+  
+  print(table(all.id[[i]]$Live,all.id[[i]]$Survival,useNA='always'))
+  print(table(all.id[[i]]$Survival,all.id[[i]]$gCrown,useNA='always'))
+  print(table(all.id[[i]]$gCrown,all.id[[i]]$Topkill,all.id[[i]]$Live,useNA='always'))
+  print(table(all.id[[i]]$gCrown,all.id[[i]]$Survival,all.id[[i]]$bSprout,useNA='always'))
+  
+  
+  # In post-fire years, check individuals scored as any combination of DEAD & TOPKILL, DEAD & GREEN, TOPKILL & GREEN
+  i=2
+  names(all.id[[i]])
+  table(all.id[[i]]$Dead,all.id[[i]]$Live,useNA='always')
+  table(all.id[[i]]$gCrown,all.id[[i]]$Live,useNA='always')
+  
+  # WHO ARE THESE INDIVIDUALS WITH NA FOR gCrown and live or dead
+  head(all.id[[i]][which(is.na(all.id[[i]]$gCrown) & all.id[[i]]$Live==0),])
+  
+  table(all.id[[i]]$Topkill,all.id[[i]]$Live,useNA='always')
+  table(all.id[[i]]$bSprout,all.id[[i]]$Live,useNA='always')
+  
+  # catenate values to see patterns
+  catVals <- function(x) {
+    res <- c()
+    for (i in 1:length(x)) res <- paste(res,x[i],sep='')
+    return(res)
+  }
+  
+  ## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
+  # These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error requiring further investigation. As of 5/15/22 there are no problem saplings, and just 7 and 24 problem trees in 2018 and 2019. But there are >1000 in 2020, so there's some deeper problem we need to figure out.
+  # SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
+  # TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
+  # 
+  # i=2
+  # for (i in 2:4) {
+  #   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
+  #   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
+  #   badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
+  #   length(badSAs)
+  #   print(all.id[[i]][badSAs,c('Plot','Num','pattern')])
+  #   
+  #   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
+  #   badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
+  #   length(badTRs)
+  #   print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
+  # }
+  
+  # examine trees with particular problem patterns
+  i=4
+  all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
+  
+  # more troubleshooting code - commented out for now
+  # SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
+  # table(TR18$Live,TR18$Topkill)
+  # table(TR18$Live,TR18$gCrown)
+  # table(TR18$Topkill,TR18$gCrown)
+  # 
+  # table(SA18$Live,SA18$Topkill)
+  # table(SA18$Live,SA18$gCrown)
+  # table(SA18$Topkill,SA18$gCrown)
+  
+  ## COMMENTED OUT - WAS A TROUBLESHOOTING STEP
+  # Now create some combined states, again to look for 'illegal' data combinations. Need to revisit this - some of the '2s' may suggest problems, but not sure.
+  # i=4
+  # for (i in 2:4) {
+  #   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
+  #   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
+  #   all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
+  #   all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
+  #   all.id[[i]]$TB <- 0
+  #   all.id[[i]]$TB[which(all.id[[i]]$bSprout==1 & all.id[[i]]$Topkill==1)] <- 1
+  #   print(c(years[i],'Dead'))
+  #   print(table(all.id[[i]]$Dead))
+  #   print(c(''))
+  #   print(c(years[i],'Topkill'))
+  #   print(table(all.id[[i]]$Topkill))
+  #   print(c(''))
+  #   print(c(years[i],'gCrown'))
+  #   print(table(all.id[[i]]$gCrown))
+  #   print(c(years[i],'DT'))
+  #   print(table(all.id[[i]]$DT))
+  #   print(c(years[i],'TG'))
+  #   print(table(all.id[[i]]$TG))
+  #   print(c(years[i],'DG'))
+  #   print(table(all.id[[i]]$DG))
+  # }
 }
-
-## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
-# These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error requiring further investigation. As of 5/15/22 there are no problem saplings, and just 7 and 24 problem trees in 2018 and 2019. But there are >1000 in 2020, so there's some deeper problem we need to figure out.
-# SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
-# TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
-# 
-# i=2
-# for (i in 2:4) {
-#   all.id[[i]]$pattern <- apply(all.id[[i]][,c("Survival","bSprout","Epicormic","Apical","Dead","Live","Topkill","gCrown")],1,catVals)
-#   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='SA']))
-#   badSAs <- which(all.id[[i]]$Type=='SA' & !all.id[[i]]$pattern %in% SA.patts)
-#   length(badSAs)
-#   print(all.id[[i]][badSAs,c('Plot','Num','pattern')])
-#   
-#   print(table(all.id[[i]]$pattern[all.id[[i]]$Type=='TR']))
-#   badTRs <- which(all.id[[i]]$Type=='TR' & !all.id[[i]]$pattern %in% TR.patts)
-#   length(badTRs)
-#   print(all.id[[i]][badTRs,c('Plot','Num','pattern')])
-# }
-
-# examine trees with particular problem patterns
-i=4
-all.id[[i]][which(all.id[[i]]$pattern=='11NANA010NA'),]
-
-# more troubleshooting code - commented out for now
-# SA18 <- all.id[[2]][which(all.id[[2]]$Type=='SA'),]
-# table(TR18$Live,TR18$Topkill)
-# table(TR18$Live,TR18$gCrown)
-# table(TR18$Topkill,TR18$gCrown)
-# 
-# table(SA18$Live,SA18$Topkill)
-# table(SA18$Live,SA18$gCrown)
-# table(SA18$Topkill,SA18$gCrown)
-
-## COMMENTED OUT - WAS A TROUBLESHOOTING STEP
-# Now create some combined states, again to look for 'illegal' data combinations. Need to revisit this - some of the '2s' may suggest problems, but not sure.
-# i=4
-# for (i in 2:4) {
-#   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
-#   all.id[[i]]$DT <- all.id[[i]]$Dead + all.id[[i]]$Topkill
-#   all.id[[i]]$TG <- all.id[[i]]$Topkill + all.id[[i]]$gCrown
-#   all.id[[i]]$DG <- all.id[[i]]$Dead + all.id[[i]]$gCrown
-#   all.id[[i]]$TB <- 0
-#   all.id[[i]]$TB[which(all.id[[i]]$bSprout==1 & all.id[[i]]$Topkill==1)] <- 1
-#   print(c(years[i],'Dead'))
-#   print(table(all.id[[i]]$Dead))
-#   print(c(''))
-#   print(c(years[i],'Topkill'))
-#   print(table(all.id[[i]]$Topkill))
-#   print(c(''))
-#   print(c(years[i],'gCrown'))
-#   print(table(all.id[[i]]$gCrown))
-#   print(c(years[i],'DT'))
-#   print(table(all.id[[i]]$DT))
-#   print(c(years[i],'TG'))
-#   print(table(all.id[[i]]$TG))
-#   print(c(years[i],'DG'))
-#   print(table(all.id[[i]]$DG))
-# }
 
 ## CREATE FOUR FATES
 i=4
 for (i in 2:4) {
   all.id[[i]]$DN <- 0
-  all.id[[i]]$DR <- 0
-  all.id[[i]]$LN <- 0
-  all.id[[i]]$LR <- 0
-  
-  # all.id[[i]]$DN[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==1)] <- 0
-  # all.id[[i]]$DR[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==0)] <- 0
-  # all.id[[i]]$LN[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==1)] <- 0
-  # all.id[[i]]$LR[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==0)] <- 0
-  
   all.id[[i]]$DN[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==0)] <- 1
+  
+  all.id[[i]]$DR <- 0
   all.id[[i]]$DR[which(all.id[[i]]$Topkill==1 & all.id[[i]]$bSprout==1)] <- 1
+  
+  all.id[[i]]$LN <- 0
   all.id[[i]]$LN[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==0)] <- 1
+  
+  all.id[[i]]$LR <- 0
   all.id[[i]]$LR[which(all.id[[i]]$Topkill==0 & all.id[[i]]$bSprout==1)] <- 1
+  
+  all.id[[i]]$fate4 <- NA
+  all.id[[i]]$fate4[which(all.id[[i]]$DN==1)] <- 'DN'
+  all.id[[i]]$fate4[which(all.id[[i]]$DR==1)] <- 'DR'
+  all.id[[i]]$fate4[which(all.id[[i]]$LN==1)] <- 'LN'
+  all.id[[i]]$fate4[which(all.id[[i]]$LR==1)] <- 'LR'
+  
+  all.id[[i]]$fate3 <- all.id[[i]]$fate4
+  all.id[[i]]$fate3[which(all.id[[i]]$fate4 %in% c('LN','LR'))] <- 'GC'
+  
+  all.id[[i]]$Resprout <- NA
+  all.id[[i]]$Resprout[which(all.id[[i]]$fate4 %in% c('DR','LR'))] <- 1
+  all.id[[i]]$Resprout[which(all.id[[i]]$fate4 %in% c('DN','LN'))] <- 0
 }
-i=2
-nrow(all.id[[i]])
-table(all.id[[i]]$DN,useNA = 'always')
-table(all.id[[i]]$DR,useNA = 'always')
-table(all.id[[i]]$LN,useNA = 'always')
-table(all.id[[i]]$LR,useNA = 'always')
-
-i=3
-for (i in 2:4) {
-  print(table(all.id[[i]][,c('Topkill','gCrown')]))
-}
-
 
 ## SKIP AS ALL DATA CLEAN AS OF 5/23/23
 if (FALSE) {
-  for (i in 2:4) {
+  i=2
+  for (i in 2:4) 
+  {
+    nrow(all.id[[i]])
+    table(all.id[[i]]$DN,useNA = 'always')
+    table(all.id[[i]]$DR,useNA = 'always')
+    table(all.id[[i]]$LN,useNA = 'always')
+    table(all.id[[i]]$LR,useNA = 'always')
+    table(all.id[[i]]$fate4,useNA = 'always')
+    table(all.id[[i]]$fate3,useNA = 'always')
+    
     print(table(all.id[[i]][,c('DN','DR')]))
     print(table(all.id[[i]][,c('DN','LN')]))
     print(table(all.id[[i]][,c('DN','LR')]))
     print(table(all.id[[i]][,c('DR','LN')]))
     print(table(all.id[[i]][,c('DR','LR')]))
     print(table(all.id[[i]][,c('LN','LR')]))
+    
+    print(table(all.id[[i]]$Live,all.id[[i]]$fate4,useNA='always'))
+    print(table(all.id[[i]]$gCrown,all.id[[i]]$fate4,useNA='always'))
+    print(table(all.id[[i]]$Topkill,all.id[[i]]$fate4,useNA='always'))
+    print(table(all.id[[i]]$Resprout,all.id[[i]]$fate4,useNA='always'))
   }
   
   # Every tree should be one of these fates
@@ -189,39 +233,6 @@ if (FALSE) {
   length(tfail)
   head(all.id[[i]][tfail,])
 }
-
-## Create fates variable with DN, DR, LN, LR as states
-for (i in 2:4) {
-  all.id[[i]]$fate <- NA
-  all.id[[i]]$fate[which(all.id[[i]]$DN==1)] <- 'DN'
-  all.id[[i]]$fate[which(all.id[[i]]$DR==1)] <- 'DR'
-  all.id[[i]]$fate[which(all.id[[i]]$LN==1)] <- 'LN'
-  all.id[[i]]$fate[which(all.id[[i]]$LR==1)] <- 'LR'
-  print(table(all.id[[i]]$fate,useNA='always'))
-}
-
-# check that our previous combined fates align with these new ones
-for (i in 2:4) print(table(all.id[[i]]$Live,all.id[[i]]$fate,useNA='always'))
-
-for (i in 2:4) print(table(all.id[[i]]$gCrown,all.id[[i]]$fate,useNA='always'))
-
-for (i in 2:4) print(table(all.id[[i]]$Topkill,all.id[[i]]$fate,useNA='always'))
-
-for (i in 2:4) {
-  all.id[[i]]$Resprout <- NA
-  all.id[[i]]$Resprout[which(all.id[[i]]$fate %in% c('DR','LR'))] <- 1
-  all.id[[i]]$Resprout[which(all.id[[i]]$fate %in% c('DN','LN'))] <- 0
-  print(table(all.id[[i]]$Resprout,all.id[[i]]$fate,useNA='always'))
-}
-
-# a few more problem plants!
-i=2
-all.id[[i]]$Num[which(all.id[[i]]$fate %in% c('LN','LR') & all.id[[i]]$gCrown==0)]
-
-i=3
-all.id[[i]]$Num[which(all.id[[i]]$gCrown==-Inf)]
-all.id[[i]]$Num[which(all.id[[i]]$fate %in% c('LN') & all.id[[i]]$gCrown==0)]
-
 
 # all.id is a list made above, where each item is one years individual data. How many years does it have:
 length(all.id)
@@ -287,27 +298,28 @@ table(allIndv$nSp)
 probs <- which(allIndv$nSp %in% c(0,2))
 length(probs)
 
-# a bunch of them are indets seen only once in PPW1330, after the fire
+# 12/24/24 - just one problem lefgt
+allIndv[3726,]
 
-# OK, 162 individuals with more than one Sp ID! We'll need to fix or exclude these. Here they are:
-head(allIndv[probs,1:9])
-
-## which individuals are missing from 2018 and present in 2013 and 2019
-midNA <- function(x)
+if (FALSE) ### All of these have been fixed
 {
-  if (!is.na(x[1]) & is.na(x[2]) & !is.na(x[3])) ret <- 1 else ret <- 0
-  return(ret)
+  ## which individuals are missing from 2018 and present in 2013 and 2019
+  midNA <- function(x)
+  {
+    if (!is.na(x[1]) & is.na(x[2]) & !is.na(x[3])) ret <- 1 else ret <- 0
+    return(ret)
+  }
+  allIndv$NA18 <- apply(allIndv[,Pn[1:3]],1,midNA)
+  m18 <- which(allIndv$NA18==1)
+  allIndv$NA19 <- apply(allIndv[,Pn[2:4]],1,midNA)
+  m19 <- which(allIndv$NA19==1)
+  
+  #make combined list
+  allprobs <- union(multPlots,union(multSp,union(m18,m19)))
+  allMults <- allIndv[allprobs,]
+  head(allMults)
+  write.csv(allMults[order(allMults$nSp,allMults$nP,decreasing = T),],'data/mult-plots-species.csv')
 }
-allIndv$NA18 <- apply(allIndv[,Pn[1:3]],1,midNA)
-m18 <- which(allIndv$NA18==1)
-allIndv$NA19 <- apply(allIndv[,Pn[2:4]],1,midNA)
-m19 <- which(allIndv$NA19==1)
-
-#make combined list
-allprobs <- union(multPlots,union(multSp,union(m18,m19)))
-allMults <- allIndv[allprobs,]
-head(allMults)
-write.csv(allMults[order(allMults$nSp,allMults$nP,decreasing = T),],'data/mult-plots-species.csv')
 
 # write entire indvData for use in next steps
 head(allIndv)
@@ -318,19 +330,13 @@ i=1
 for (i in 1:length(all.id))
 {
   mt <- match(all.id[[i]]$Num,allIndv$Num)
-  all.id[[i]] <- data.frame(all.id[[i]],nP=allIndv$nP[mt],nSp=allIndv$nSp[mt],NA18=allIndv$NA18[mt],NA19=allIndv$NA19[mt])
+  all.id[[i]] <- data.frame(all.id[[i]],nP=allIndv$nP[mt],nSp=allIndv$nSp[mt])
 }
-saveRDS(all.id,'data/allid-nodups.Rdata')
-
-# load up all individual data (id) - list of 4 data.frames, one per year (133, 18, 19, 20)
-str(all.id)
-length(all.id)
-head(all.id[[1]])
-head(all.id[[1]][all.id[[1]]$Type=='SA',])
+saveRDS(all.id,'data/allid-nodups.rds')
 
 # how many trees have BD but not DBH
-nodbh <- which(!is.na(all.id[[2]]$SA.BD_cm) & is.na(all.id[[2]]$DBH_cm))
-table(all.id[[2]]$Type[nodbh])
+nodbh <- which(!is.na(all.id[[1]]$SA.BD_cm) & is.na(all.id[[1]]$DBH_cm))
+table(all.id[[1]]$Type[nodbh])
 length(nodbh)
 
 ## CREATE A CALCULATED BASAL DIAMETER AT 10 CM FOR TREES (b10)
@@ -338,7 +344,7 @@ if (TRUE) {
   i=1
   for (i in 1:length(all.id)) {
     TRrows <- which(all.id[[i]]$Type=='TR')
-
+    
     all.id[[i]]$d10 <- all.id[[i]]$SA.BD_cm
     # summary(all.id[[i]]$d10,useNA='always')
     
@@ -346,74 +352,41 @@ if (TRUE) {
     # D10 = DBH.cm * 1.176 + 1.070
     all.id[[i]]$d10[TRrows] <- all.id[[i]]$DBH_cm[TRrows] * 1.176 + 1.07
     summary(all.id[[i]]$d10,useNA='always')
-}
+  }
   
   # Examine basal diameter of SAs
-  head(all.id[[1]])
-  sap13 <- all.id[[1]]
-  sap13 <- sap13[which(sap13$Type=='SA'),]
-  dim(sap13)
-  hist(sap13$dbh)
-  summary(sap13$dbh)
-  length(which(sap13$dbh<0.01))
-  nrow(sap13)
-  hist(sap13$SA.Height_cm)
-  plot(sap13$dbh,sap13$SA.Height_cm,xlim=c(-1,2))
-  
-  sort(sap13$dbh[which(sap13$dbh>1)])
-  plot(sap13$SA.BD_cm,sap13$dbh,log='')
-  sap13[which(sap13$dbh>3),]
-  abline(0,1)
-  
-  tr13 <- all.id[[1]]
-  tr13 <- tr13[which(tr13$Type=='TR'),]
-  names(tr13)
-  plot(tr13$DBH_cm,tr13$dbh,log='')
-  # end examine basal diameter
+  if (FALSE) {
+    head(all.id[[1]])
+    sap13 <- all.id[[1]]
+    sap13 <- sap13[which(sap13$Type=='SA'),]
+    dim(sap13)
+    hist(sap13$dbh)
+    summary(sap13$dbh)
+    length(which(sap13$dbh<0.01))
+    nrow(sap13)
+    hist(sap13$SA.Height_cm)
+    plot(sap13$dbh,sap13$SA.Height_cm,xlim=c(-1,2))
+    
+    sort(sap13$dbh[which(sap13$dbh>1)])
+    plot(sap13$SA.BD_cm,sap13$dbh,log='')
+    sap13[which(sap13$dbh>3),]
+    abline(0,1)
+    
+    tr13 <- all.id[[1]]
+    tr13 <- tr13[which(tr13$Type=='TR'),]
+    names(tr13)
+    plot(tr13$DBH_cm,tr13$dbh,log='')
+    # end examine basal diameter
+  }
 }
 
 spNames <- read.csv('data/all-spp-names.csv')
 head(spNames)
+tail(spNames)
 names(spNames)[which(names(spNames)=='x')] <- 'spName'
 #allIndv <- readRDS('data/allIndv.Rdata')
 allIndv <- read.csv('data/allIndv.csv')
 head(allIndv)
-
-#### First round of analysis of post-fire states, 2013-2018
-## get percent survival by species and type
-
-# THIS SNIPPET WOULD IDENTIFY TREES THAT CHANGE PLOT OR ID AND SHOULD BE ELIMINATED - FOR NOW ANALYZING EVERYTHING
-# take any individuals where plot and species match for the first two years
-nrow(allIndv)
-#plot.ok <- NA
-#spec.ok <- NA
-#ps.ok <- intersect(plot.ok,spec.ok)
-#length(ps.ok)
-#head(ps.ok)
-#tail(ps.ok)
-
-# include trees from new plots
-# ps.ok <- c(ps.ok,allIndv$Num[which(allIndv$P18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))])
-# length(ps.ok)
-# head(ps.ok)
-# tail(ps.ok)
-
-# use this if we want to subset to valid trees - inactivated for now
-# t1 <- all.id[[1]][which(all.id[[1]]$Num %in% ps.ok),]
-# nrow(t1)
-# t2 <- all.id[[2]][which(all.id[[2]]$Num %in% ps.ok),]
-# nrow(t2)
-# t3 <- all.id[[3]][which(all.id[[3]]$Num %in% ps.ok),]
-# nrow(t3)
-## END TREE SELECTION SNIPPET
-
-# DUPLICATE 2013 DATA to create a baseline for 2017 proxy data
-
-### NOTE: Proxy data for shrubs needs to be reevaluated before doing community analyses:
-# SAMNIG should be coded as topkill-resprout
-# CEACUN and CEAPAR should not be added to 2017, these are new recruits
-# Most BACPIL esp in high severity also new, not topkill-resprout
-# These species are not being considered in demography paper
 
 # MERGE YEARS!!
 t0 <- all.id[[1]]
@@ -471,12 +444,19 @@ tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.19[which(is.na(tAll$Plot))]
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.20[which(is.na(tAll$Plot))]
 table(tAll$Plot,useNA='always')
 
-# create master Species variable
+# create master Species variable - note there was one individual with a species problem, and this assigns it to first value
 tAll$Species <- tAll$Species.13
 tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.18[which(is.na(tAll$Species))]
 tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.19[which(is.na(tAll$Species))]
 tAll$Species[which(is.na(tAll$Species))] <- tAll$Species.20[which(is.na(tAll$Species))]
 table(tAll$Species,useNA='always')
+
+# Create TreeNum variable identify individuals, removing point numbers
+tAll$TreeNum <- floor(tAll$Num)
+head(table(tAll$TreeNum))
+
+# create factor for plots, to use in models
+tAll$fPlot <- as.factor(tAll$Plot)
 
 # create 'proxy 2017 data'
 # rownums for new 2018 individuals from new plots
@@ -500,20 +480,28 @@ tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0)] <- '99s.old'
 
 # not present in 2013, found alive in 18; or tagged but not recorded in 2013, found alive in 18
 tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==1)] <- 'new17'
-  
+
+# new plots
 tAll$Cat17[which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))] <- 'NewPlot'
 
 # summarize 2017 category data
 table(tAll$Cat17,useNA='always')
 
-tAll$Num[which(tAll$Num>10000)]
+# what plot were 99s found in
 table(tAll$Plot.18[which(tAll$Num>10000)])
+table(tAll$Plot.18[which(tAll$Cat17 == '99s.old')])
+table(tAll$Plot.18[which(tAll$Cat17 == 'NewPlot')])
 
 # three subsets of new individuals
 # we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
 # newIndvs: new recruits, and recruited and dead, and newplots
 newIndvs <- which(is.na(tAll$Plot.13) & !is.na(tAll$Plot.18))
+
+# newIndvs matches the three categories above
+table(tAll$Cat17[newIndvs])
+table(tAll$Cat17,useNA='always')
 all(sort(newIndvs),sort(which(tAll$Cat17 %in% c('NewPlot','new17','99s.old'))))
+
 length(newIndvs) # matches Cat17 which weren't tagged in 2013
 
 table(tAll$Type.18[newIndvs])
@@ -543,15 +531,16 @@ length(intersect(newIndvs,n99))
 length(intersect(newIndvs,newPlot))
 length(intersect(n99,newPlot))
 
-summary(tAll$dbh.18[newPlot])
-summary(tAll$dbh.18[n99])
-
 # how many new plants added each year
 table(tAll$Type.13,tAll$Type.18,useNA = 'always')
 table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 table(tAll$Type.19,tAll$Type.20,useNA = 'always')
 
+# one mistake, remove line after Melina fixes
+tAll$Type.13[which(tAll$Type.13=='A2')] <- 'SA'
+
 # output suspicious transitions- can switch Type and year here to look at other combos
+# MELINA_CHECK
 s1 <- which(tAll$Type.13=='TS' & tAll$Type.18=='TR')
 tAll[s1,c('Plot.13','Num','Species.13')]
 
@@ -577,7 +566,7 @@ tAll$Type.17[tc] <- tAll$Type.18[tc]
 
 tAll$Species.17[newIndvs] <- tAll$Species.18[newIndvs]
 
-
+# all assumed to be alive right before fire. Introduces small error due to mortality between 2013 and 2017
 tAll$Dead.17[newIndvs] <- 0
 tAll$Live.17[newIndvs] <- 1
 tAll$gCrown.17[newIndvs] <- 1
@@ -607,11 +596,6 @@ shr <- which(tAll$SA.BD_cm.18 < tAll$SA.BD_cm.13)
 rsel <- union(rsel,shr)
 tAll$SA.BD_cm.17[rsel] <- tAll$SA.BD_cm.13[rsel]
 
-# round tree nums for points
-tAll$TreeNum <- floor(tAll$Num)
-head(table(tAll$TreeNum))
-tAll$fPlot <- as.factor(tAll$Plot.18)
-
 # Load plot characteristics
 northness <- function(asp,slp,units='deg') {
   if (units=='deg') {
@@ -640,5 +624,6 @@ p2t <- match(tAll$Plot.18,plotInfo$Plot)
 tAll$northness <- plotInfo$northness[p2t]
 tAll$eastness <- plotInfo$eastness[p2t]
 
+## Write results to master data file!!
 write.csv(tAll,'data/tAll.csv')
 

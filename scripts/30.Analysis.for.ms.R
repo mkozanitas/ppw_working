@@ -37,7 +37,7 @@ tAll <- read.csv('data/tAll.csv',as.is=T,row.names=1)
 head(tAll)
 dim(tAll)
 
-# convert QSpecies# convert QUEBEGA to QUEBER, QUEDOGA to QUEDOU, QUEdec to QUEDOU, and remove unknowns
+# convert Species# convert QUEBEGA to QUEBER, QUEDOGA to QUEDOU, QUEdec to QUEDOU, and remove unknowns
 tAll <- convertHybrids()
 table(tAll$Species)
 
@@ -53,16 +53,12 @@ dim(tAll)
 tAll$fsCat <- fs$fsCat[match(tAll$Plot,fs$Plot)]
 table(tAll$fsCat,useNA='always')
 
-# check all fates are correctly coded for 2018
-table(tAll$gCrown.18,tAll$LN.18,useNA='always')
-
-
 # archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
 tAll.archive <- tAll
 
 # use this to restore and recreate tAll
 tAll <- tAll.archive
-tAll <- tAll[,c('Num','TreeNum','Species','FuncGroup','Point.13','Plot','fsCat','Year.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
+tAll <- tAll[,c('Num','TreeNum','Species','FuncGroup','fPlot','Plot','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
 
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
 sum(tAll$Live.17,na.rm=T)
