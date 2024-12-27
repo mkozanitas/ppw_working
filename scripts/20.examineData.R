@@ -61,7 +61,7 @@ table(all.id[[4]]$gCrown,useNA='always') # a bunch of NAs
 ## Assign Dead (Live=0), and fix gCrown NAs
 all.id[[1]]$Dead <- 1 - all.id[[1]]$Live
 
-i=2
+i=4
 for (i in 2:4)
 {
   all.id[[i]]$Dead <- 1 - all.id[[i]]$Live
@@ -69,9 +69,11 @@ for (i in 2:4)
   all.id[[i]]$Epi.Api[which(all.id[[i]]$Epicormic==1 | all.id[[i]]$Apical==1)] <- 1
   
   # fix gCrown NAs (need Melina to confirm)
+  table(all.id[[i]]$gCrown,useNA='always')
   all.id[[i]]$gCrown[which(all.id[[i]]$Live==1)] <- 
     1 - all.id[[i]]$Topkill[which(all.id[[i]]$Live==1)]
   all.id[[i]]$gCrown[which(all.id[[i]]$Live==0)] <- 0
+  table(all.id[[i]]$gCrown,useNA='always')
 } 
 
 

@@ -20,9 +20,13 @@ source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
 fsCols <- c('blue','brown','orange','red')
 
-fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
+fsall <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
+head(fsall)
+tail(fsall)
+dim(fsall)
+
+fs <- loadFireSeverity(fsall,'Tubbs.MTBS.RDNBR.30',verbose=T)
 head(fs)
-fs <- loadFireSeverity('Tubbs.MTBS.RDNBR.30',verbose=T)
 head(fs[,c('Plot','fsvar','fsCat')])
 table(fs$fsCat)
 
@@ -89,9 +93,6 @@ spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% s
 (use.species <- spAtt$Species)
 
 Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])])
-
-# WHAT IS THIS??
-(708+780+376+1585)/4697
 
 (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
 (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
@@ -228,6 +229,7 @@ logt=T
 
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
+names(d)
 
 ## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
 # run script31:fitFates2StepsMod.brm interactively

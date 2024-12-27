@@ -53,6 +53,7 @@ plot.list.2020 <- get.plot(2020)
 # now remove plots not sampled
 plot.list.2020 <- plot.list.2020[-c(5,6,20,25,28,30,40:42,46,49,51:54)]
 plot.list.2020
+
 id20 <- get.indv.data(year = 2020,branches=F,plot.list=plot.list.2020)
 dim(id20)
 head(id20)
@@ -64,8 +65,8 @@ head(id20b)
 ## write out all the data to an RData file, so it can be read and analyzed without going back to github
 all.id <- list(id13,id18,id19,id20)
 all.idb <- list(id13b,id18b,id19b,id20b)
-saveRDS(all.id,'data/allid.Rdata')
-saveRDS(all.idb,'data/allidb.Rdata')
+saveRDS(all.id,'data/allid.rds')
+saveRDS(all.idb,'data/allidb.rds')
 
 # there are lines of code that generate warnings, but they aren't errors. 
 # This one is fine: In if (is.na(plot.list)) plot.list <- get.plot(year = year) :the condition has length > 1 and only the first element will be used
