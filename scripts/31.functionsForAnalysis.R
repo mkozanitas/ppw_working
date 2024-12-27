@@ -1,6 +1,7 @@
 # File with functions sourced by '30.Analysis.for.ms'
 
 d2ba <- function(x) pi*(x/2)^2
+options(buildtools.check = function(action) TRUE )
 
 loadFireSeverity <- function(fs=fsall,fsmet='Tubbs.MTBS.RDNBR.30',verbose=F)
 {
@@ -561,7 +562,7 @@ fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
 }
 
-fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
 {
   # fs=low-medium - combine low and medium to one level
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
@@ -595,11 +596,8 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   table(d$fac.fsCat)
   
   # fit multinomial first
-  table(d$fate3.18)
-
   dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
   dim(dd)
-  table(dd$fate3.18)
   table(dd$fate3.18,dd$fac.fsCat)
   
   multifit1 <- brm(fate3.18 ~ s(d10.17, k=20, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
@@ -612,6 +610,83 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.WARNINGS.rds',sep=''))
   summary(multifit1)
   saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.rds',sep=''))
+  
+  mf <- multifit1
+  visualizeMultifit(mf) # just below, in this script
+  
+  #Kyle - you can write visualization code in this script
+  visualizeMultifitBayes(mf) # just below, in this script
+}
+
+visualizeMultifit <- function(mf=multifit)
+{
+  (fsLevels <- sort(unique(mf$data$fac.fsCat)))
+  
+  (rnd <- range(mf$data$d10.17))
+  dtemp <- seq(rnd[1],rnd[2],length.out=100)
+  
+  pd <- data.frame(d10.17=rep(dtemp,length(fsLevels)),fsCat=rep(fsLevels,each=length(dtemp)))
+  pd$fac.fsCat <- factor(pd$fsCat)
+  pd$Plot <- sort(unique(mf$data$Plot))[1]
+  pd$TreeNum <- min(mf$data$TreeNum,na.rm=T)
+  
+  pd$pval <- predict(mf,newdata = pd,type='response',allow_new_levels = T)
+  head(pd)
+  
+  if (TRUE) # ensures code run through op to reset par
+  {
+    op=par(mfrow=c(1,3),mar=c(5,4,3,1))
+    i=1
+    print(c('black=dead; red=topkill/resprout; green=green crown'))
+    for (i in 1:length(fsLevels)) {
+      fsc <- fsLevels[i]
+      rsel <- which(pd$fsCat==fsc)
+      plot(pd$d10.17[rsel],pd$pval[rsel,1],ylim=range(pd$pval),main=paste(spName,fsc),ylab='Probability',xlab='log d10')
+      points(pd$d10.17[rsel],pd$pval[rsel,2],col='red')
+      points(pd$d10.17[rsel],pd$pval[rsel,3],col='green')
+    }
+    par(op)
+  }
+}
+
+visualizeMultifitBayes <- function(mf=multifit)
+{
+
+}
+
+fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  # local.dir <- local file directory for storing models - too large for github
+  local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting'
+  
+  # model fitting
+  table(d$Species)
+  
+  if (logt) d$d10.17 <- log10(d$d10.17)
+  
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  if ('all' %in% fs) {
+    fslevels <- 'fs.all'
+  }
+  if ('drop-high' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+    fslevels <- 'fs.nohi'
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+    fslevels <- 'fs.dm'
+  }
+  table(d$fac.fsCat)
+
   
   #Now fit polynomial for each fate, or just Live.18
   yvarlist <- c('Live.18','DN.18','DR.18','gCrown.18')

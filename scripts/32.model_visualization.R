@@ -4,6 +4,15 @@ local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fir
 mod <- 'brm'
 spName <- 'UMBCAL'
 
+fit.type <- 'MN.Poly' #'MN.Poly', 'Poly'
+dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
+(fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
+mf <- readRDS(fname)
+visualizeMultifit(mf) # just below, in this script
+
+
+### END HERE FOR NOW
+
 fit.type <- 'Poly' #'MN.Poly', 'Poly'
 dep.var <- 'Live.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 (fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
@@ -22,11 +31,9 @@ dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 (fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
 fit.fate3 <- readRDS(fname)
 
-mnd <- min(c(fit.Live$data$d10.17,fit.gCrown$data$d10.17,fit.gCxLv$data$d10.17),na.rm=T)
-mxd <- max(c(fit.Live$data$d10.17,fit.gCrown$data$d10.17,fit.gCxLv$data$d10.17),na.rm=T)
+
 
 fsLevels <- sort(unique(fit.Live$data$fac.fsCat))
-
 dtemp <- seq(mnd,mxd,length.out=100)
 pd <- data.frame(d10.17=rep(dtemp,length(fsLevels)),fsCat=rep(fsLevels,each=length(dtemp)))
 pd$fac.fsCat <- factor(pd$fsCat)
@@ -58,14 +65,7 @@ points(pd$d10.17,pd$p.gCxLv.x.p.Live,col='red')
 
 ### BELOW NOT WORKING NOW
 
-op=par(mfrow=c(1,3))
-for (i in fsLevels) {
-  rsel <- which(pd$fsCat2==i)
-  plot(pd$d10.17[rsel],pd$pval[rsel,1],ylim=range(pd$pval))
-  points(pd$d10.17[rsel],pd$pval[rsel,2],col='red')
-  points(pd$d10.17[rsel],pd$pval[rsel,3],col='green')
-}
-par(op)
+
 
 ## now try plotting hierarchical model
 dv1 <- 'H_live'

@@ -207,8 +207,6 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
-tdat <- barplotSprouterSpecies('UMBCAL',skip.op=T)
-
 ## Set species, fire severity option, and log-size option
 # Species names, in descending sort order
 #UMBCAL PSEMEN QUEAGR HETARB AMOCAL 
@@ -222,18 +220,23 @@ tdat <- barplotSprouterSpecies('UMBCAL',skip.op=T)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-spSel <- 'UMBCAL'
+spSel <- 'HETARB'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
 logt=T
 
+tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+dim(tdat)
+
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
 names(d)
 
+fitFatesMultinomial.brm(d,spName,fs,logt)
+
 ## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
-# run script31:fitFates2StepsMod.brm interactively
+# run script31:fitFatesMultinomial.brm interactively
 
 # now functional groups
 # Functional Groups and sample sizes
@@ -250,9 +253,8 @@ logt=T
 
 d <- tAll[which(tAll$Species %in% spSel),]
 dim(d)
+fitFatesMultinomial.brm(d,spName,fs,logt)
 
-## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
-# run script31:fitFates2StepsMod.brm interactively
 #### END HERE FOR NOW
 
 
