@@ -187,7 +187,7 @@ barplotFates <- function(d=tAll,fs='all')
   table(d$fsCat)
   
   
-  ffs <- table(d$fate.18,d$fsCat)
+  ffs <- table(d$fate3.18,d$fsCat)
   ffs
   ft <- apply(ffs,2,sum)
   ffsp <- ffs
@@ -212,7 +212,7 @@ prepareForBarPlots <- function()
   length(newSap)
   tAllm$Num[newSap]
   table(tAllm$Plot[newSap])
-  table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
+  table(tAllm$fate3.18[newSap],tAllm$fsCat[newSap])
   
   # OPTION: comment this in or out to exercise option
   # tAllm <- tAllm[-newSap,]
@@ -221,18 +221,10 @@ prepareForBarPlots <- function()
   # tAllm <- tAllm[which(tAllm$ld10>=c(0)),]
   
   # SECTION 'THREE_FATES' - binomial and multinomial compared, for visual purposes
-  tAllm$Dead.18 <- 1 - tAllm$Live.18
-  tAllm$fate3.18 <- (-1)
-  tAllm$fate3.18[which(tAllm$fate.18=='DN')] <- 0
-  tAllm$fate3.18[which(tAllm$fate.18=='DR')] <- 1
-  tAllm$fate3.18[which(tAllm$fate.18 %in% c('LN','LR'))] <- 2
-  table(tAllm$fate3.18) 
-  tAllm <- tAllm[which(tAllm$fate3.18 %in% 0:2),]
-  table(tAllm$fate3.18) 
   
   (f3Levels <- 0:2)
   (f3PlotVals <- c(0.95,1,1.05))
-  f3Labs <- c('DN','DR','LR+LN')
+  f3Labs <- c('DN','DR','GC')
   (f3PlotCols <- c('black','red','green'))
   fsPlotSize <- c(0.5,0.75,1,1.25)
   

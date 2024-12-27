@@ -89,6 +89,8 @@ spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% s
 (use.species <- spAtt$Species)
 
 Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])])
+
+# WHAT IS THIS??
 (708+780+376+1585)/4697
 
 (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
@@ -114,12 +116,11 @@ if (FALSE) {
 table(spAtt$Shrub.Tree)
 
 # summary of fates
-(ftab <- table(tAll$fate.18[which(tAll$Type.18!='TS')]))
-(allAb18 <- sum(table(tAll$fate.18[which(tAll$Type.18!='TS')])))
+(ftab <- table(tAll$fate3.18[which(tAll$Type.18!='TS')]))
+(allAb18 <- sum(table(tAll$fate3.18[which(tAll$Type.18!='TS')])))
 
 # High level of 2018 fates
 ftab/allAb18
-sum((ftab/allAb18)[3:4])
 
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018)
 fst12 <- calcFatesTableBySpecies()
@@ -133,41 +134,47 @@ fst12c <- reduce_fst12()
 fst12c
 for (i in 3:7) fst12c[,i] <- as.numeric(fst12c[,i])
 
-
+# column sums of fst12c, and as percentage of total
 (allSum <- apply(as.matrix(fst12c[,-c(1:2)]),2,sum))
 allSum/allSum[1]
+
 rs <- which(fst12c$Type=='SA')
 (SASum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
 rs <- which(fst12c$Type=='TR')
 (TRSum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
 
+## summary of fates for all, saplings alone, trees alone
 allSum/allSum[1]
 SASum/SASum[1]
 TRSum/TRSum[1]
 
 write.csv(fst12c,'results/summary-table.csv')
 
-poster.species <- c('PSEMEN','QUEAGR','UMBCAL','QUEGAR','HETARB')
-fst12p <- fst12c[which(fst12c$SpCode %in% poster.species),]
-fst12p
-
-fst12p[,4:7]/fst12p[,3]
-
-(allSum.p <- apply(as.matrix(fst12p[,-c(1:2)]),2,sum))
-allSum.p/allSum.p[1]
-rs <- which(fst12p$Type=='SA')
-(SASum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
-rs <- which(fst12p$Type=='TR')
-(TRSum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
-
-allSum.p/allSum.p[1]
-SASum.p/SASum.p[1]
-TRSum.p/TRSum.p[1]
-
-allSum.p/allSum
+# preliminary poster results, not used in the end
+if (FALSE) {
+  poster.species <- c('PSEMEN','QUEAGR','UMBCAL','QUEGAR','HETARB')
+  fst12p <- fst12c[which(fst12c$SpCode %in% poster.species),]
+  fst12p
+  
+  fst12p[,4:7]/fst12p[,3]
+  
+  (allSum.p <- apply(as.matrix(fst12p[,-c(1:2)]),2,sum))
+  allSum.p/allSum.p[1]
+  rs <- which(fst12p$Type=='SA')
+  (SASum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+  rs <- which(fst12p$Type=='TR')
+  (TRSum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+  
+  allSum.p/allSum.p[1]
+  SASum.p/SASum.p[1]
+  TRSum.p/TRSum.p[1]
+  
+  allSum.p/allSum
+}
 
 # Barplots for sprouters and non-sprouters, all species
 fbp.list <- barplotFates(tAll,fs='low-medium')
+
 rspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='Y')]),]
 fbp.rsp.list <- barplotFates(rspd,fs='low-medium')
 table(rspd$Type.17)
@@ -177,7 +184,9 @@ fbp.nsp.list <- barplotFates(nspd,fs='low-medium')
 fbp.nsp.list
 table(nspd$Type.17)
 
-sum(table(nspd$Type.17))/sum(table(rspd$Type.17))
+# non sprouters as proportion of all individuals
+table(nspd$Type.17)/table(tAll$Type.17)
+sum(table(nspd$Type.17))/sum(table(tAll$Type.17))
 
 #### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
 # tAllm has all the living plants from 2017, with their 2018 fates
@@ -187,7 +196,7 @@ dim(tAll)
 dim(tAllm)
 
 # results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
-P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+#P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
 
 ## Low and Medium Fire not collapsed at this point - collapse for final paper?
 # barplot for PSEMEN, first to see here, and then to pdf
@@ -196,7 +205,7 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
-####diamonds#### Now, run 6 models for each species
+tdat <- barplotSprouterSpecies('UMBCAL',skip.op=T)
 
 ## Set species, fire severity option, and log-size option
 # Species names, in descending sort order
