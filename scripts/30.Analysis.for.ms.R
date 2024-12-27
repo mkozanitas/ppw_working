@@ -31,7 +31,8 @@ head(fs[,c('Plot','fsvar','fsCat')])
 table(fs$fsCat)
 
 # Read in species codes - in this script, called 'Species'
-spAtt <- read.csv('data/all-spp-attributes.csv',row.names = 1)
+spAtt <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/SpeciesData/all-spp-attributes.csv")
+
 head(spAtt)
 tail(spAtt)
 table(spAtt$FuncGroup)
@@ -221,7 +222,7 @@ tdat <- barplotSprouterSpecies('UMBCAL',skip.op=T)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-spSel <- 'QUEAGR'
+spSel <- 'UMBCAL'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR

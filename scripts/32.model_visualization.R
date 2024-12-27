@@ -2,29 +2,61 @@
 rm(list=ls())
 local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting/'
 mod <- 'brm'
-spName <- 'QUEAGR'
-fit.type <- 'Poly'
-dep.var <- 'Multinom' #'H_live','H_gCxLive'
+spName <- 'UMBCAL'
 
+fit.type <- 'Poly' #'MN.Poly', 'Poly'
+dep.var <- 'Live.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 (fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
-fit <- readRDS(fname)
+fit.Live <- readRDS(fname)
 
-attributes(fit)
-head(fit$data)
-fsLevels <- sort(unique(fit$data$fsCat2))
-d10.17r <- range(fit$data$d10.17)
+dep.var <- 'gCrown.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
+(fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
+fit.gCrown <- readRDS(fname)
 
-dtemp <- seq(d10.17r[1],d10.17r[2],length.out=100)
+dep.var <- 'gCxLv' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
+(fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
+fit.gCxLv <- readRDS(fname)
+
+fit.type <- 'MN.Poly'
+dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
+(fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
+fit.fate3 <- readRDS(fname)
+
+mnd <- min(c(fit.Live$data$d10.17,fit.gCrown$data$d10.17,fit.gCxLv$data$d10.17),na.rm=T)
+mxd <- max(c(fit.Live$data$d10.17,fit.gCrown$data$d10.17,fit.gCxLv$data$d10.17),na.rm=T)
+
+fsLevels <- sort(unique(fit.Live$data$fac.fsCat))
+
+dtemp <- seq(mnd,mxd,length.out=100)
 pd <- data.frame(d10.17=rep(dtemp,length(fsLevels)),fsCat=rep(fsLevels,each=length(dtemp)))
-pd$fsCat2 <- factor(pd$fsCat)
-pd$Plot <- sort(unique(fit$data$Plot))[1]
-pd$TreeNum <- min(fit$data$TreeNum,na.rm=T)
+pd$fac.fsCat <- factor(pd$fsCat)
+pd$Plot <- sort(unique(fit.Live$data$Plot))[1]
+pd$TreeNum <- min(fit.Live$data$TreeNum,na.rm=T)
 
-pd$pval <- predict(fit,newdata = pd,type='response',allow_new_levels = T)
+pd$p.Live <- predict(fit.Live,newdata = pd,type='response',allow_new_levels = T)[,1]
+pd$p.gCrown <- predict(fit.gCrown,newdata = pd,type='response',allow_new_levels = T)[,1]
+pd$p.gCxLv <- predict(fit.gCxLv,newdata = pd,type='response',allow_new_levels = T)[,1]
+pd$p.gCxLv.x.p.Live <- pd$p.gCxLv * pd$p.Live
+
+plot(pd$p.gCrown,pd$p.gCxLv.x.p.Live)
+abline(0,1)
+
+pd$diff <- pd$p.gCxLv.x.p.Live - pd$p.gCrown
 head(pd)
-names(pd)
 
-fsLevels
+which.min(pd$diff)
+pd[which.min(pd$diff),]
+pd[which.max(pd$diff),]
+
+plot(pd$p.Live,pd$diff);abline(h=0,lty=2)
+plot(pd$fac.fsCat,pd$diff);abline(h=0,lty=2)
+plot(pd$d10.17,pd$diff);abline(h=0,lty=2)
+
+plot(pd$d10.17,pd$p.gCrown,ylim=c(0,1))
+points(pd$d10.17,pd$p.Live,col='green')
+points(pd$d10.17,pd$p.gCxLv.x.p.Live,col='red')
+
+### BELOW NOT WORKING NOW
 
 op=par(mfrow=c(1,3))
 for (i in fsLevels) {

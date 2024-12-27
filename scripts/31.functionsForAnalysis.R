@@ -573,20 +573,25 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   table(d$Species)
   
   if (logt) d$d10.17 <- log10(d$d10.17)
-  table(d$fsCat)
-  if ('all' %in% fs) fslevels <- 'fs.all'
+  
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  if ('all' %in% fs) {
+    fslevels <- 'fs.all'
+  }
   if ('drop-high' %in% fs)
   {
-    d$fsCat[which(d$fsCat==3)] <- 2
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
     fslevels <- 'fs.nohi'
   }
   if ('low-medium' %in% fs)
   {
-    d$fsCat[which(d$fsCat==2)] <- 1
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
     fslevels <- 'fs.dm'
   }
-  
-  d$fac.fsCat <- factor(d$fsCat)
   table(d$fac.fsCat)
   
   # fit multinomial first
@@ -606,12 +611,12 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                    control=list(adapt_delta=0.95));beep()
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.WARNINGS.rds',sep=''))
   summary(multifit1)
-  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'MN.Poly.','fate3.18.rds',sep=''))
+  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.rds',sep=''))
   
   #Now fit polynomial for each fate, or just Live.18
   yvarlist <- c('Live.18','DN.18','DR.18','gCrown.18')
   i=4
-  for (i in 1:length(yvarlist))
+  for (i in c(1,4))
   {
     yvar <- yvarlist[i]
     d$yvar <- d[,yvar]
