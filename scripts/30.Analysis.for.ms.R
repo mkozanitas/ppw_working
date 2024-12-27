@@ -220,7 +220,7 @@ table(d$Species)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-spSel <- 'HETARB'
+spSel <- 'QUEAGR'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
@@ -244,11 +244,11 @@ fitFatesMultinomial.brm(d,spName,fs,logt)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'EHRO'
+FSel <- 'WHTO'
 spName <- FSel
 (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
 fs=c('low-medium') #'all','low-medium'
-#fs=c('drop-high','low-medium') #WHTO
+fs=c('drop-high','low-medium') #WHTO
 logt=T
 
 d <- tAll[which(tAll$Species %in% spSel),]

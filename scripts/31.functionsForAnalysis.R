@@ -600,7 +600,7 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   dim(dd)
   table(dd$fate3.18,dd$fac.fsCat)
   
-  multifit1 <- brm(fate3.18 ~ s(d10.17, k=20, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+  multifit1 <- brm(fate3.18 ~ s(d10.17, k=6, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                    family="categorical", chains = 2,
                    cores = 2, 
                    seed=726, 
