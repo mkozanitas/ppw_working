@@ -68,10 +68,14 @@ for (i in 2:4)
   all.id[[i]]$Epi.Api <- 0
   all.id[[i]]$Epi.Api[which(all.id[[i]]$Epicormic==1 | all.id[[i]]$Apical==1)] <- 1
   
-  # fix gCrown NAs (need Melina to confirm)
-  table(all.id[[i]]$gCrown,useNA='always')
+  # fix gCrown NAs
+  if (FALSE) {
+    head(all.id[[i]][which(all.id[[i]]$Live==1 & is.na(all.id[[i]]$gCrown)),c('Plot','Num','Survival','bSprout','Topkill','Live','gCrown')])
+    table(all.id[[i]]$Survival,all.id[[i]]$Topkill,useNA='always')
+  }
+  
   all.id[[i]]$gCrown[which(all.id[[i]]$Live==1)] <- 
-    1 - all.id[[i]]$Topkill[which(all.id[[i]]$Live==1)]
+    all.id[[i]]$Survival[which(all.id[[i]]$Live==1)]
   all.id[[i]]$gCrown[which(all.id[[i]]$Live==0)] <- 0
   table(all.id[[i]]$gCrown,useNA='always')
 } 
