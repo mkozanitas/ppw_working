@@ -562,7 +562,7 @@ fitFatesMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # fit5 is best model - both terms supported in best model, including interaction, even if not individually significant in summary statement
 }
 
-fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,m.choice=c('spline','quadratic'),splk=20)
 {
   # fs=low-medium - combine low and medium to one level
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
@@ -573,52 +573,260 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # model fitting
   table(d$Species)
   
-  if (logt) d$d10.17 <- log10(d$d10.17)
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  fslevels <- c()
+  if ('all' %in% fs) {
+    fslevels <- c(fslevels,'fs.all')
+  }
+  if ('drop-high' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+    fslevels <- c(fslevels,'comb-low-med')
+  }
+  print(fslevels)
+  table(d$fac.fsCat)
+  
+  # fit multinomial first
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
+  if (logt) dd$d10.17 <- log10(dd$d10.17)
+  dim(dd)
+  table(dd$fate3.18,dd$fac.fsCat)
+  
+  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+  
+  reset.warnings()
+  if (m.choice=='spline') 
+  {
+    if (splk==3) multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                     family="categorical", 
+                     chains = 2,
+                     cores = 2, 
+                     seed=726, 
+                     #backend="cmdstanr",
+                     refresh=100,
+                     control=list(adapt_delta=0.95));beep()
+    if (splk==6) multifit1 <- brm(fate3.18 ~ s(d10.17, k=6, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                                  family="categorical", 
+                                  chains = 2,
+                                  cores = 2, 
+                                  seed=726, 
+                                  #backend="cmdstanr",
+                                  refresh=100,
+                                  control=list(adapt_delta=0.95));beep()
+    if (splk==20) multifit1 <- brm(fate3.18 ~ s(d10.17, k=20, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                                  family="categorical", 
+                                  chains = 2,
+                                  cores = 2, 
+                                  seed=726, 
+                                  #backend="cmdstanr",
+                                  refresh=100,
+                                  control=list(adapt_delta=0.95));beep()
+    saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Splk',splk,'.fate3.18.WARNINGS.rds',sep=''))
+    saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Splk',splk,'.fate3.18.rds',sep=''))
+    #visualizeMultifitBayes(multifit1,sp=paste('k=',splk,sep='')) 
+  } else {
+    # Quadratic
+    dd$d10.17q <- dd$d10.17^2
+    multifit1 <- brm(fate3.18 ~ d10.17 + d10.17q + fac.fsCat+ d10.17:fac.fsCat + d10.17q:fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                     family="categorical", 
+                     chains = 2,
+                     cores = 2, 
+                     seed=726, 
+                     #backend="cmdstanr",
+                     refresh=100,
+                     control=list(adapt_delta=0.95));beep()
+    saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.WARNINGS.rds',sep=''))
+    saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.rds',sep=''))
+    #visualizeMultifitBayes(multifit1,sp='Quad') 
+  }
+  print(summary(multifit1))
+}
+
+visualizeMultifitBayes <- function(mf=multifit,sp=splk)
+{
+  # set up grid for conditional mean predictions
+  d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
+  fac.fsCat_grid <- sort(unique(dd$fac.fsCat))
+  predgrid <- expand.grid(d10.17_grid, fac.fsCat_grid)
+  names(predgrid) <- c("d10.17", "fac.fsCat")
+  predgrid$d10.17q <- predgrid$d10.17^2
+  
+  # get posterior samples of conditional mean, ignoring random effects
+  pep <- posterior_epred(object=mf, newdata=predgrid, re_formula=NA)
+  
+  # summarize posterior samples
+  pepmeans <- as.data.frame(apply(pep, c(2,3), mean))
+  names(pepmeans) <- paste(names(pepmeans), "_mean", sep="")
+  
+  pep2.5 <- as.data.frame(apply(pep, c(2,3), quantile, 0.025))
+  names(pep2.5) <- paste(names(pep2.5), "_q2.5", sep="")
+  
+  pep97.5 <- as.data.frame(apply(pep, c(2,3), quantile, 0.975))
+  names(pep97.5) <- paste(names(pep97.5), "_q97.5", sep="")
+  
+  predgrid <- cbind(predgrid, pepmeans, pep2.5, pep97.5)
+  predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
+  
+  mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=DN_mean, group=fac.fsCat, color=fac.fsCat))+
+    ggtitle(paste(spName,'; ',sp,sep=''))+
+    geom_line()+
+    geom_ribbon(aes(ymin=DN_q2.5, ymax=DN_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
+    scale_color_viridis_d(name="Fire\nSeverity",
+                          labels=c("Unburned", "Low/Medium", "High"))+
+    scale_fill_viridis_d(name="Fire\nSeverity",
+                         labels=c("Unburned", "Low/Medium", "High"))+
+    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    ylab("P(Mortality)")+
+    theme_bw()+
+    theme(legend.position="none",
+          aspect.ratio=1)
+  
+  resprplot <- ggplot(data=predgrid, aes(x=d10.17, y=DR_mean, group=fac.fsCat, color=fac.fsCat))+
+    geom_line()+
+    geom_ribbon(aes(ymin=DR_q2.5, ymax=DR_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
+    scale_color_viridis_d(name="Fire\nSeverity",
+                          labels=c("Unburned", "Low/Medium", "High"))+
+    scale_fill_viridis_d(name="Fire\nSeverity",
+                         labels=c("Unburned", "Low/Medium", "High"))+
+    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    ylab("P(Resprout)")+
+    theme_bw()+
+    theme(legend.position="none",
+          aspect.ratio=1)
+  
+  gcplot <- ggplot(data=predgrid, aes(x=d10.17, y=GC_mean, group=fac.fsCat, color=fac.fsCat))+
+    geom_line()+
+    geom_ribbon(aes(ymin=GC_q2.5, ymax=GC_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
+    scale_color_viridis_d(name="Fire\nSeverity",
+                          labels=c("Unburned", "Low/Medium", "High"))+
+    scale_fill_viridis_d(name="Fire\nSeverity",
+                         labels=c("Unburned", "Low/Medium", "High"))+
+    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    ylab("P(Green Crown)")+
+    theme_bw()+
+    theme()
+  
+  mortplot+resprplot+gcplot
+}
+
+fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  # local.dir <- local file directory for storing models - too large for github
+  local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting'
+  
+  # model fitting
+  table(d$Species)
   
   table(as.numeric(d$fsCat))
   fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
   d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
   table(d$fac.fsCat)
   
+  fslevels <- c()
   if ('all' %in% fs) {
-    fslevels <- 'fs.all'
+    fslevels <- c(fslevels,'fs.all')
   }
   if ('drop-high' %in% fs)
   {
     d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
-    fslevels <- 'fs.nohi'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
   }
   if ('low-medium' %in% fs)
   {
     d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
-    fslevels <- 'fs.dm'
+    fslevels <- c(fslevels,'comb-low-med')
   }
+  print(fslevels)
   table(d$fac.fsCat)
   
-  # fit multinomial first
-  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
+  if (logt) dd$d10.17 <- log10(dd$d10.17)
   dim(dd)
-  table(dd$fate3.18,dd$fac.fsCat)
+  reset.warnings()
   
-  multifit1 <- brm(fate3.18 ~ s(d10.17, k=6, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                   family="categorical", chains = 2,
+  #fit5brm <- brm(Live.18 ~ d10.17 * fac.fsCat + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
+  
+  fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                   family="bernoulli", 
+                   chains = 2,
                    cores = 2, 
                    seed=726, 
                    #backend="cmdstanr",
                    refresh=100,
                    control=list(adapt_delta=0.95));beep()
-  saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.WARNINGS.rds',sep=''))
-  summary(multifit1)
-  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Poly.','fate3.18.rds',sep=''))
   
-  mf <- multifit1
-  visualizeMultifit(mf) # just below, in this script
+  saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.BERN.Live18.WARNINGS.rds',sep=''))
+  print(summary(fit5brm))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.BERN.Live18.rds',sep=''))
   
-  #Kyle - you can write visualization code in this script
-  visualizeMultifitBayes(mf) # just below, in this script
 }
 
-visualizeMultifit <- function(mf=multifit)
+visualizeBernfitBayes <- function(mf=multifit,sp=splk)
+{
+  # set up grid for conditional mean predictions
+  d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
+  fac.fsCat_grid <- sort(unique(dd$fac.fsCat))
+  predgrid <- expand.grid(d10.17_grid, fac.fsCat_grid)
+  names(predgrid) <- c("d10.17", "fac.fsCat")
+  predgrid$d10.17q <- predgrid$d10.17^2
+  
+  # get posterior samples of conditional mean, ignoring random effects
+  pep <- posterior_epred(object=mf, newdata=predgrid, re_formula=NA)
+  
+  # summarize posterior samples
+  pepmeans <- as.data.frame(apply(pep, c(2), mean))
+  names(pepmeans) <- 'Live.mean'
+  
+  pep2.5 <- as.data.frame(apply(pep, c(2), quantile, 0.025))
+  names(pep2.5) <- 'Live.q2.5'
+  
+  pep97.5 <- as.data.frame(apply(pep, c(2), quantile, 0.975))
+  names(pep97.5) <- 'Live.q97.5'
+  
+  predgrid <- cbind(predgrid, 1-pepmeans, 1-pep2.5,1- pep97.5)
+  predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
+  
+  mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=Live.mean, group=fac.fsCat, color=fac.fsCat))+
+    ggtitle(paste(spName,'; ',sp,sep=''))+
+    geom_line()+
+    geom_ribbon(aes(ymin=Live.q2.5, ymax=Live.q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
+    scale_color_viridis_d(name="Fire\nSeverity",
+                          labels=c("Unburned", "Low/Medium", "High"))+
+    scale_fill_viridis_d(name="Fire\nSeverity",
+                         labels=c("Unburned", "Low/Medium", "High"))+
+    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    ylab("P(Mortality)")+
+    theme_bw()+
+    theme()
+  
+  mortplot
+}
+
+##
+
+visualizeMultifitxFS <- function(mf=multifit)
 {
   (fsLevels <- sort(unique(mf$data$fac.fsCat)))
   
@@ -649,10 +857,41 @@ visualizeMultifit <- function(mf=multifit)
   }
 }
 
-visualizeMultifitBayes <- function(mf=multifit)
+visualizeMultifitxFate3 <- function(mf=multifit)
 {
-
+  d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
+  fac.fsCat_grid <- sort(unique(dd$fac.fsCat))
+  pd <- expand.grid(d10.17_grid, fac.fsCat_grid)
+  names(pd) <- c("d10.17", "fac.fsCat")
+  
+  pd$Plot <- sort(unique(mf$data$Plot))[1]
+  pd$TreeNum <- min(mf$data$TreeNum,na.rm=T)
+  
+  pd$pval <- predict(mf,newdata = pd,type='response',allow_new_levels = T)
+  head(pd)
+  
+  fCols <- c('purple','blue','yellow')
+  if (TRUE) # ensures code run through op to reset par
+  {
+    op=par(mfrow=c(1,3),mar=c(5,4,3,1))
+    i=1
+    print(c('purple=Unburned; blue=Low/Medium; yellow=High'))
+    mainlabs <- c('Mortality','Resprout','gCrown')
+    for (i in 1:3) {
+        fsc <- fac.fsCat_grid[1]
+        rsel <- which(pd$fac.fsCat==fsc)
+        plot(pd$d10.17[rsel],pd$pval[rsel,i],ylim=range(pd$pval),main=paste(spName,mainlabs[i]),ylab='Probability',xlab='log d10',col=fCols[1])
+        fsc <- fac.fsCat_grid[2]
+        rsel <- which(pd$fac.fsCat==fsc)
+        points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[2])
+        fsc <- fac.fsCat_grid[3]
+        rsel <- which(pd$fac.fsCat==fsc)
+        points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[3])
+    }
+    par(op)
+  }
 }
+
 
 fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
 {
@@ -672,25 +911,31 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
   table(d$fac.fsCat)
   
+  fslevels <- c()
   if ('all' %in% fs) {
-    fslevels <- 'fs.all'
+    fslevels <- c(fslevels,'fs.all')
   }
   if ('drop-high' %in% fs)
   {
     d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
-    fslevels <- 'fs.nohi'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
   }
   if ('low-medium' %in% fs)
   {
     d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
-    fslevels <- 'fs.dm'
+    fslevels <- c(fslevels,'comb-low-med')
   }
+  print(fslevels)
   table(d$fac.fsCat)
 
-  
   #Now fit polynomial for each fate, or just Live.18
   yvarlist <- c('Live.18','DN.18','DR.18','gCrown.18')
-  i=4
+  i=1
   for (i in c(1,4))
   {
     yvar <- yvarlist[i]

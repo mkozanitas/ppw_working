@@ -14,7 +14,9 @@ require(ggeffects)
 require(ggplot2)
 require(marginaleffects)
 require(beepr)
+require(patchwork)
 #require(cmdstanr)
+require(expandFunctions)
 
 source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
@@ -207,6 +209,22 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
+spSel <- 'PSEMEN'
+spName <- spSel
+fs=c('low-medium') #'all','low-medium'
+#fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
+#fs=c('low-medium','drop-high','drop-unburned') #FRACAL
+logt=T
+
+tdat <- barplotOneNonSprouter(spSel,skip.op=T)
+dim(tdat)
+
+d <- tAll[which(tAll$Species == spSel),]
+dim(d)
+
+# Fit once for PSEMEN, don't need to rerun for now
+# fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T)
+  
 ## Set species, fire severity option, and log-size option
 # Species names, in descending sort order
 #UMBCAL PSEMEN QUEAGR HETARB AMOCAL 
@@ -220,23 +238,34 @@ table(d$Species)
 #ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
 #10      8      5      5      4      4      3      2      2      1      1 
 
-spSel <- 'QUEAGR'
+# refresh script 31 if needed
+source('scripts/31.functionsForAnalysis.R')
+
+spSel <- 'UMBCAL'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
+#fs=c('low-medium','drop-high','drop-unburned') #FRACAL
 logt=T
 
+# JUMP DOWN FOR FUNCTIONAL GROUPS
 tdat <- barplotSprouterSpecies(spSel,skip.op=T)
 dim(tdat)
 
 d <- tAll[which(tAll$Species == spSel),]
 dim(d)
-names(d)
 
-fitFatesMultinomial.brm(d,spName,fs,logt)
+# next two lines run 3 different spline models and quadratic
+k=3 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
 
-## Run this script interactively - includes multinomial model, and hierarchical logistic models, first Live.18, then gCrown.18xLive (i.e. gCrown as percentage of Live)
-# run script31:fitFatesMultinomial.brm interactively
+k=6 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+
+k=20 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
 
 # now functional groups
 # Functional Groups and sample sizes
@@ -244,16 +273,29 @@ fitFatesMultinomial.brm(d,spName,fs,logt)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'WHTO'
+FSel <- 'EHRO'
 spName <- FSel
 (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
 fs=c('low-medium') #'all','low-medium'
-fs=c('drop-high','low-medium') #WHTO
+#fs=c('drop-high','low-medium') #WHTO, R.Shrub
 logt=T
+
+tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+dim(tdat)
 
 d <- tAll[which(tAll$Species %in% spSel),]
 dim(d)
-fitFatesMultinomial.brm(d,spName,fs,logt)
+
+k=3 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+
+k=6 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+
+k=20 #3, 6, or 20 only
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+
+fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
 
 #### END HERE FOR NOW
 

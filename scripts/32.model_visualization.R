@@ -1,16 +1,54 @@
 ## Visualizing model results
 rm(list=ls())
+source('scripts/31.functionsForAnalysis.R')
+
 local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting/'
 mod <- 'brm'
+spList <- c('QUEAGR','UMBCAL','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
+
 spName <- 'UMBCAL'
+dd <- readRDS(paste(local.dir,paste(mod,spName,'dd.rds',sep='.'),sep=''))
 
-fit.type <- 'MN.Poly' #'MN.Poly', 'Poly'
+fit.type <- c('MN.Quad','MN.Splk3','MN.Splk6','MN.Splk20')
 dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
-(fname <- paste(local.dir,paste(mod,spName,fit.type,dep.var,'rds',sep='.'),sep=''))
-mf <- readRDS(fname)
-visualizeMultifit(mf) # just below, in this script
 
+f <- 2
+reset.warnings()
+(mfname <- paste(local.dir,paste(mod,spName,fit.type[f],dep.var,'rds',sep='.'),sep=''))
+(wfname <- paste(local.dir,paste(mod,spName,fit.type[f],dep.var,'WARNINGS.rds',sep='.'),sep=''))
+mf <- readRDS(mfname)
+wf <- readRDS(wfname)
+print(wf)
 
+visualizeMultifitBayes(mf,sp=fit.type[f]) 
+
+# NOW FOR PSEMEN
+reset.warnings()
+spName <- 'PSEMEN'
+(mfname <- paste(local.dir,'brm.PSEMEN.BERN.Splk3.Live18.rds',sep=''))
+(wfname <- paste(local.dir,'brm.PSEMEN.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+mf <- readRDS(mfname)
+wf <- readRDS(wfname)
+print(wf)
+
+visualizeBernfitBayes(mf,sp='SPLK3') 
+
+## code below just to review warnings
+i=6
+for (i in 1:length(spList))
+{
+  reset.warnings()
+  f <- 2
+  spName <- spList[i]
+  (wfname <- paste(local.dir,paste(mod,spName,fit.type[f],dep.var,'WARNINGS.rds',sep='.'),sep=''))
+  wf <- readRDS(wfname)
+  print(spName)
+  print(wf)
+}
+(wfname <- paste(local.dir,'brm.PSEMEN.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+wf <- readRDS(wfname)
+print('PSEMEN')
+print(wf)
 ### END HERE FOR NOW
 
 fit.type <- 'Poly' #'MN.Poly', 'Poly'
