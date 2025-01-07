@@ -2,21 +2,6 @@
 
 rm(list=ls())
 #require(MuMln)
-require(lme4)
-require(glmmTMB)
-require(Ternary)
-require(vegan)
-require(RCurl)
-require(nnet)
-require(brms)
-require(ggeffects)
-#require(sjPlot)
-require(ggplot2)
-require(marginaleffects)
-require(beepr)
-require(patchwork)
-#require(cmdstanr)
-require(expandFunctions)
 
 source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
@@ -224,7 +209,7 @@ dim(d)
 
 # Fit once for PSEMEN, don't need to rerun for now
 # fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T)
-  
+
 ## Set species, fire severity option, and log-size option
 # Species names, in descending sort order
 #UMBCAL PSEMEN QUEAGR HETARB AMOCAL 
@@ -241,61 +226,69 @@ dim(d)
 # refresh script 31 if needed
 source('scripts/31.functionsForAnalysis.R')
 
-spSel <- 'UMBCAL'
-spName <- spSel
-fs=c('low-medium') #'all','low-medium'
-#fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
-#fs=c('low-medium','drop-high','drop-unburned') #FRACAL
-logt=T
+for (spSel in c('ARBMEN'))
+{
+  if (TRUE) # TRUE to set up species, false for functional groups
+  {
+    spSel <- 'ARBMEN'
+    spName <- spSel
+    fs=c('low-medium') #'all','low-medium'
+    #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
+    #fs=c('low-medium','drop-high','drop-unburned') #FRACAL
+    logt=T
+    iter=50000
+    
+    tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+    dim(tdat)
+    
+    d <- tAll[which(tAll$Species == spSel),]
+    dim(d)
+  } else {
+    # now functional groups
+    # Functional Groups and sample sizes
+    #EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
+    #2850     1208      287     1845      477 
+    
+    table(spAtt$FuncGroup,useNA='always')
+    FSel <- 'EHRO'
+    spName <- FSel
+    (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
+    fs=c('low-medium') #'all','low-medium'
+    #fs=c('drop-high','low-medium') #WHTO, R.Shrub
+    logt=T
+    
+    tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+    dim(tdat)
+    
+    d <- tAll[which(tAll$Species %in% spSel),]
+    dim(d)
+  }
+  
+  # this function runs k=3 spline, with more iterations
+  z <- file(paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.WARNINGS.txt',sep=''), open = "wt")
+  sink(z,type='message')
+  # print(warnings())
+  # print('summary')
+  # print(summary(warnings()))
+  fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+  sink(type='message')
+}
 
-# JUMP DOWN FOR FUNCTIONAL GROUPS
-tdat <- barplotSprouterSpecies(spSel,skip.op=T)
-dim(tdat)
+if (FALSE) {
+  # next four line pairs run 3 different spline models and then quadratic - I tested all of these, and settled on spline k=3, which is implemented above with more iterations to help with convergence.
+  k=3 #3, 6, or 20 only
+  fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+  
+  k=6 #3, 6, or 20 only
+  fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+  
+  k=20 #3, 6, or 20 only
+  fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
+  
+  fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
+}
 
-d <- tAll[which(tAll$Species == spSel),]
-dim(d)
 
-# next two lines run 3 different spline models and quadratic
-k=3 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-k=6 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-k=20 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
-
-# now functional groups
-# Functional Groups and sample sizes
-#EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
-#2850     1208      287     1845      477 
-
-table(spAtt$FuncGroup,useNA='always')
-FSel <- 'EHRO'
-spName <- FSel
-(spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
-fs=c('low-medium') #'all','low-medium'
-#fs=c('drop-high','low-medium') #WHTO, R.Shrub
-logt=T
-
-tdat <- barplotSprouterSpecies(spSel,skip.op=T)
-dim(tdat)
-
-d <- tAll[which(tAll$Species %in% spSel),]
-dim(d)
-
-k=3 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-k=6 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-k=20 #3, 6, or 20 only
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
-
-fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
 
 #### END HERE FOR NOW
 

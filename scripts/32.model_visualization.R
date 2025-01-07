@@ -2,20 +2,19 @@
 rm(list=ls())
 source('scripts/31.functionsForAnalysis.R')
 
-local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting/'
 mod <- 'brm'
-spList <- c('QUEAGR','UMBCAL','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
-
-spName <- 'UMBCAL'
-dd <- readRDS(paste(local.dir,paste(mod,spName,'dd.rds',sep='.'),sep=''))
-
 fit.type <- c('MN.Quad','MN.Splk3','MN.Splk6','MN.Splk20')
-dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
-
 f <- 2
+dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
+iter <- 'i50000'
+
+spList <- c('QUEAGR','UMBCAL','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
+spName <- spList[6]
+dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
+
 reset.warnings()
-(mfname <- paste(local.dir,paste(mod,spName,fit.type[f],dep.var,'rds',sep='.'),sep=''))
-(wfname <- paste(local.dir,paste(mod,spName,fit.type[f],dep.var,'WARNINGS.rds',sep='.'),sep=''))
+(mfname <- paste(local.dir,'/',paste(mod,spName,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
+(wfname <- paste(local.dir,'/',paste(mod,spName,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
 print(wf)

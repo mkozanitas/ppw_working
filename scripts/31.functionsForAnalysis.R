@@ -1,5 +1,23 @@
 # File with functions sourced by '30.Analysis.for.ms'
 
+require(lme4)
+require(glmmTMB)
+require(Ternary)
+require(vegan)
+require(RCurl)
+require(nnet)
+require(brms)
+require(ggeffects)
+#require(sjPlot)
+require(ggplot2)
+require(marginaleffects)
+require(beepr)
+require(patchwork)
+#require(cmdstanr)
+require(expandFunctions)
+
+local.dir <- '/Users/david/Documents/My_Docs/Projects/Pepperwood/model_fitting'
+
 d2ba <- function(x) pi*(x/2)^2
 options(buildtools.check = function(action) TRUE )
 
@@ -568,7 +586,7 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,m.choice=c('spli
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
   # logt - use log diameter
   # local.dir <- local file directory for storing models - too large for github
-  local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting'
+  local.dir <- '/Users/david/Documents/My_Docs/Projects/Pepperwood/model_fitting'
   
   # model fitting
   table(d$Species)
@@ -612,13 +630,13 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,m.choice=c('spli
   if (m.choice=='spline') 
   {
     if (splk==3) multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                     family="categorical", 
-                     chains = 2,
-                     cores = 2, 
-                     seed=726, 
-                     #backend="cmdstanr",
-                     refresh=100,
-                     control=list(adapt_delta=0.95));beep()
+                                  family="categorical", 
+                                  chains = 2,
+                                  cores = 2, 
+                                  seed=726, 
+                                  #backend="cmdstanr",
+                                  refresh=100,
+                                  control=list(adapt_delta=0.95));beep()
     if (splk==6) multifit1 <- brm(fate3.18 ~ s(d10.17, k=6, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                                   family="categorical", 
                                   chains = 2,
@@ -628,13 +646,13 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,m.choice=c('spli
                                   refresh=100,
                                   control=list(adapt_delta=0.95));beep()
     if (splk==20) multifit1 <- brm(fate3.18 ~ s(d10.17, k=20, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                                  family="categorical", 
-                                  chains = 2,
-                                  cores = 2, 
-                                  seed=726, 
-                                  #backend="cmdstanr",
-                                  refresh=100,
-                                  control=list(adapt_delta=0.95));beep()
+                                   family="categorical", 
+                                   chains = 2,
+                                   cores = 2, 
+                                   seed=726, 
+                                   #backend="cmdstanr",
+                                   refresh=100,
+                                   control=list(adapt_delta=0.95));beep()
     saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Splk',splk,'.fate3.18.WARNINGS.rds',sep=''))
     saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Splk',splk,'.fate3.18.rds',sep=''))
     #visualizeMultifitBayes(multifit1,sp=paste('k=',splk,sep='')) 
@@ -649,12 +667,74 @@ fitFatesMultinomial.brm <- function(d,spName=NA,fs='all',logt=T,m.choice=c('spli
                      #backend="cmdstanr",
                      refresh=100,
                      control=list(adapt_delta=0.95));beep()
-    saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.WARNINGS.rds',sep=''))
+    saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.MN.Splk',splk,'.fate3.18.WARNINGS.rds',sep=''))
     saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.rds',sep=''))
-    #visualizeMultifitBayes(multifit1,sp='Quad') 
   }
   print(summary(multifit1))
 }
+
+fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
+{
+  # fs=low-medium - combine low and medium to one level
+  # fs=drop high - 0,1,2 only, and combine any 3s into 2
+  # logt - use log diameter
+  # local.dir <- local file directory for storing models - too large for github
+  
+  # model fitting
+  table(d$Species)
+  
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  fslevels <- c()
+  if ('all' %in% fs) {
+    fslevels <- c(fslevels,'fs.all')
+  }
+  if ('drop-high' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+    fslevels <- c(fslevels,'comb-low-med')
+  }
+  print(fslevels)
+  table(d$fac.fsCat)
+  
+  # fit multinomial first
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
+  if (logt) dd$d10.17 <- log10(dd$d10.17)
+  dim(dd)
+  table(dd$fate3.18,dd$fac.fsCat)
+  
+  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+  
+  reset.warnings()
+  multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                   family="categorical", 
+                   chains = 2,
+                   cores = 2, 
+                   seed=726,
+                   iter=iter,
+                   #backend="cmdstanr",
+                   refresh=100,
+                   control=list(adapt_delta=0.95))
+  #beep()
+
+  saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
+  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
+  print(summary(multifit1))
+}
+
 
 visualizeMultifitBayes <- function(mf=multifit,sp=splk)
 {
@@ -769,13 +849,13 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   #fit5brm <- brm(Live.18 ~ d10.17 * fac.fsCat + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
   
   fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                   family="bernoulli", 
-                   chains = 2,
-                   cores = 2, 
-                   seed=726, 
-                   #backend="cmdstanr",
-                   refresh=100,
-                   control=list(adapt_delta=0.95));beep()
+                 family="bernoulli", 
+                 chains = 2,
+                 cores = 2, 
+                 seed=726, 
+                 #backend="cmdstanr",
+                 refresh=100,
+                 control=list(adapt_delta=0.95));beep()
   
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.BERN.Live18.WARNINGS.rds',sep=''))
   print(summary(fit5brm))
@@ -878,15 +958,15 @@ visualizeMultifitxFate3 <- function(mf=multifit)
     print(c('purple=Unburned; blue=Low/Medium; yellow=High'))
     mainlabs <- c('Mortality','Resprout','gCrown')
     for (i in 1:3) {
-        fsc <- fac.fsCat_grid[1]
-        rsel <- which(pd$fac.fsCat==fsc)
-        plot(pd$d10.17[rsel],pd$pval[rsel,i],ylim=range(pd$pval),main=paste(spName,mainlabs[i]),ylab='Probability',xlab='log d10',col=fCols[1])
-        fsc <- fac.fsCat_grid[2]
-        rsel <- which(pd$fac.fsCat==fsc)
-        points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[2])
-        fsc <- fac.fsCat_grid[3]
-        rsel <- which(pd$fac.fsCat==fsc)
-        points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[3])
+      fsc <- fac.fsCat_grid[1]
+      rsel <- which(pd$fac.fsCat==fsc)
+      plot(pd$d10.17[rsel],pd$pval[rsel,i],ylim=range(pd$pval),main=paste(spName,mainlabs[i]),ylab='Probability',xlab='log d10',col=fCols[1])
+      fsc <- fac.fsCat_grid[2]
+      rsel <- which(pd$fac.fsCat==fsc)
+      points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[2])
+      fsc <- fac.fsCat_grid[3]
+      rsel <- which(pd$fac.fsCat==fsc)
+      points(pd$d10.17[rsel],pd$pval[rsel,i],col=fCols[3])
     }
     par(op)
   }
@@ -932,7 +1012,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   }
   print(fslevels)
   table(d$fac.fsCat)
-
+  
   #Now fit polynomial for each fate, or just Live.18
   yvarlist <- c('Live.18','DN.18','DR.18','gCrown.18')
   i=1
@@ -953,7 +1033,7 @@ fitFates2StepsMod.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   dim(dd)
   yvar <- 'gCrown.18'
   dd$yvar <- dd[,yvar]
-
+  
   dd <- dd[complete.cases(dd$fac.fsCat,dd$d10.17,dd$yvar,dd$Plot,dd$TreeNum),]
   dim(dd)
   
@@ -1004,7 +1084,7 @@ fitFates2StepsMod <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   
   pr <- predict_response(fit5,terms=c('d10.17','fac.fsCat'),margin = 'empirical')
   plot(pr,limits=c(0,1))
-
+  
   fit5_pred <- ggpredict(fit5, c("d10.17", "fac.fsCat"))
   fit5_plot <- plot(fit5_pred)
   fit5_plot
