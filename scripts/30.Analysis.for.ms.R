@@ -226,15 +226,15 @@ dim(d)
 # refresh script 31 if needed
 source('scripts/31.functionsForAnalysis.R')
 
-for (spSel in c('ARBMEN'))
+for (spSel in c('UMBCAL'))
 {
   if (TRUE) # TRUE to set up species, false for functional groups
   {
-    spSel <- 'ARBMEN'
+    spSel <- 'FRACAL'
     spName <- spSel
     fs=c('low-medium') #'all','low-medium'
-    #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
-    #fs=c('low-medium','drop-high','drop-unburned') #FRACAL
+    fs=c('drop-high','low-medium') #AMOCAL, QUEGAR, FRACAL
+    fs=c('low-medium','drop-high','drop-unburned') #FRACAL
     logt=T
     iter=50000
     
@@ -250,11 +250,11 @@ for (spSel in c('ARBMEN'))
     #2850     1208      287     1845      477 
     
     table(spAtt$FuncGroup,useNA='always')
-    FSel <- 'EHRO'
+    FSel <- 'WHTO'
     spName <- FSel
     (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
     fs=c('low-medium') #'all','low-medium'
-    #fs=c('drop-high','low-medium') #WHTO, R.Shrub
+    fs=c('drop-high','low-medium') #WHTO, R.Shrub
     logt=T
     
     tdat <- barplotSprouterSpecies(spSel,skip.op=T)

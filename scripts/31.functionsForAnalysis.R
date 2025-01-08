@@ -719,7 +719,18 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
   reset.warnings()
-  multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+  if (spSel=='FRACAL') {
+    multifit1 <- brm(fate3.18 ~ s(d10.17, k=3)  + (1|Plot) + (1|TreeNum), data=dd,
+                     family="categorical", 
+                     chains = 2,
+                     cores = 2, 
+                     seed=726,
+                     iter=iter,
+                     #backend="cmdstanr",
+                     refresh=100,
+                     control=list(adapt_delta=0.95))
+  } else {
+    multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                    family="categorical", 
                    chains = 2,
                    cores = 2, 
@@ -728,6 +739,7 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
                    #backend="cmdstanr",
                    refresh=100,
                    control=list(adapt_delta=0.95))
+  }
   #beep()
 
   saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
@@ -809,7 +821,6 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
   # logt - use log diameter
   # local.dir <- local file directory for storing models - too large for github
-  local.dir <- '/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_fitting'
   
   # model fitting
   table(d$Species)
@@ -853,6 +864,7 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                  chains = 2,
                  cores = 2, 
                  seed=726, 
+                 iter=50000,
                  #backend="cmdstanr",
                  refresh=100,
                  control=list(adapt_delta=0.95));beep()
