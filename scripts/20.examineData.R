@@ -490,6 +490,10 @@ tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==1)] <- 'new17'
 # new plots
 tAll$Cat17[which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))] <- 'NewPlot'
 
+#tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0 & tAll$Live.19==1)] <- 'new19'
+
+#tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0 & tAll$Live.19==0 & tAll$Live.20==1)] <- 'new20'
+
 # summarize 2017 category data
 table(tAll$Cat17,useNA='always')
 
@@ -631,5 +635,79 @@ tAll$northness <- plotInfo$northness[p2t]
 tAll$eastness <- plotInfo$eastness[p2t]
 
 ## Write results to master data file!!
+tAll$Survey <- 'Plot'
 write.csv(tAll,'data/tAll.csv')
 
+# now add hectares for expanded data set
+names(tAll)
+htAll <- readRDS('data/hectares.rds')
+htAll$Survey <- 'Hect'
+names(htAll)
+
+inBoth <- intersect(tAll$Num,htAll$Num)
+inBoth
+# remove from htAll
+htAll <- htAll[-which(htAll$Num %in% inBoth),]
+dim(htAll)
+
+table(htAll$Survival.18,htAll$Basal.18,useNA='always')
+
+htAll$DN.18 <- NA
+htAll$DN.18[which(htAll$Survival.18==0 & htAll$Basal.18==0)] <- 1
+htAll$DN.18[which(htAll$Survival.18==1 | htAll$Basal.18==1)] <- 0
+table(htAll$Survival.18,htAll$Basal.18,htAll$DN.18,useNA='always')
+
+htAll$DR.18 <- NA
+htAll$DR.18[which(htAll$Survival.18==0 & htAll$Basal.18==1)] <- 1
+htAll$DR.18[which(htAll$Survival.18==1 | htAll$DN.18==1)] <- 0
+table(htAll$Survival.18,htAll$Basal.18,htAll$DR.18,useNA='always')
+
+htAll$LR.18 <- NA
+htAll$LR.18[which(htAll$Survival.18==1 & htAll$Basal.18==1)] <- 1
+htAll$LR.18[which(htAll$Survival.18==0 | htAll$Basal.18==0)] <- 0
+table(htAll$Survival.18,htAll$Basal.18,htAll$LR.18,useNA='always')
+
+htAll$LN.18 <- NA
+htAll$LN.18[which(htAll$Survival.18==1 & htAll$Basal.18==0)] <- 1
+htAll$LN.18[which(htAll$Survival.18==0 | htAll$LR.18==1)] <- 0
+table(htAll$Survival.18,htAll$Basal.18,htAll$LN.18,useNA='always')
+
+# check only one of the four is assigned a 1 - looks good
+table(apply(htAll[,c('DN.18','DR.18','LN.18','LR.18')],1,sum),useNA='always')
+
+htAll$fate4.18 <- NA
+htAll$fate4.18[which(htAll$DN.18==1)] <- 'DN'
+htAll$fate4.18[which(htAll$DR.18==1)] <- 'DR'
+htAll$fate4.18[which(htAll$LN.18==1)] <- 'LN'
+htAll$fate4.18[which(htAll$LR.18==1)] <- 'LR'
+table(htAll$fate4.18,useNA='a')
+
+htAll$fate3.18 <- htAll$fate4.18
+htAll$fate3.18[which(htAll$fate4.18 %in% c('LN','LR'))] <- 'GC'
+
+table(tAll$fate3.18)
+table(htAll$fate3.18)
+
+# assign basal diameter
+#D10 = DBH.cm * 1.176 + 1.070
+htAll$d10.17 <- htAll$DBH_cm.17*1.176 + 1.07
+plot(htAll$DBH_cm.17,htAll$d10.17)
+
+htAll$Live.17 <- 1
+htAll$Type.17 <- 'TR'
+htAll$TreeNum <- floor(htAll$Num)
+
+names(tAll)
+names(htAll)
+cbind(names(htAll),names(htAll) %in% names(tAll)
+)
+
+dim(tAll)
+dim(htAll)
+tAllh <- merge(tAll,htAll,by=names(htAll)[which(names(htAll) %in% names(tAll))],all=T)
+dim(tAllh)
+
+names(tAllh)
+tail(tAllh)
+
+write.csv(tAllh,'data/tAllh.csv')

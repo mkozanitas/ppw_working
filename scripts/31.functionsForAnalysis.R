@@ -92,15 +92,15 @@ convertHybrids <- function()
   return(tAll)
 }
 
-drawTernaryPlots <- function()
+drawTernaryPlots <- function(d=tAll)
 {
-  s2sg <- match(tAll$Species,spAtt$OrigSpecies)
+  s2sg <- match(d$Species,spAtt$OrigSpecies)
   isna <- which(is.na(s2sg))
-  tAll$Species[isna]
-  tAll$SGroup <- spAtt$SGroup[s2sg]
-  tAll$BA.17 <- d2ba(tAll$d10.17)
+  d$Species[isna]
+  d$SGroup <- spAtt$SGroup[s2sg]
+  d$BA.17 <- d2ba(d$d10.17)
   
-  SGBA <- tapply(tAll$BA.17,list(tAll$Plot,tAll$SGroup),sum,na.rm=T)
+  SGBA <- tapply(d$BA.17,list(d$Plot,d$SGroup),sum,na.rm=T)
   SGBA[is.na(SGBA)] <- 0
   sumBA <- apply(SGBA,1,sum)
   pSGBA <- SGBA/sumBA
@@ -224,9 +224,9 @@ barplotFates <- function(d=tAll,fs='all')
   return(ffsp)
 }
 
-prepareForBarPlots <- function()
+prepareForBarPlots <- function(d=tAll)
 {
-  tAllm <- tAll
+  tAllm <- d
   # Optional - remove saplings added in 2018, where we might be introducing detection bias towards small survivors
   newSap <- which(is.na(tAllm$Year.17) & tAllm$Year.18==2018 & tAllm$Type.18=='SA')
   length(newSap)
@@ -283,7 +283,7 @@ prepareForBarPlots <- function()
   return(tAllm)
 }
 
-barplotNonSprouters <- function(print.to.pdf=c(F,T))
+barplotNonSprouters <- function(d=tAll,print.to.pdf=c(F,T))
 {
   tree.cols <- c('grey90','grey60','grey30','black')
   shrub.cols <- c('grey90','black')
@@ -294,7 +294,7 @@ barplotNonSprouters <- function(print.to.pdf=c(F,T))
     
     op=par(mfrow=c(2,2))
     spsel <- 'PSEMEN';spname <- spsel
-    temp <- tAllm[which(tAllm$Species %in% spsel),]
+    temp <- d[which(d$Species %in% spsel),]
     
     temp <- temp[which(temp$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
     temp$SizeCat <- temp$TSizeCat
@@ -307,7 +307,7 @@ barplotNonSprouters <- function(print.to.pdf=c(F,T))
     
     
     spsel <- 'ARCMAN';spname <- spsel
-    temp <- tAllm[which(tAllm$Species %in% spsel),]
+    temp <- d[which(d$Species %in% spsel),]
     
     temp <- temp[which(temp$SSizeCat %in% c('SA','TR')),]
     temp$SizeCat <- temp$SSizeCat
@@ -327,7 +327,7 @@ barplotNonSprouters <- function(print.to.pdf=c(F,T))
   return(tdat)
 }
 
-barplotOneNonSprouter <- function(ss,print.to.pdf=c(F,T),skip.op=T,plot.live=T)
+barplotOneNonSprouter <- function(d=tAll,ss,print.to.pdf=c(F,T),skip.op=T,plot.live=T)
 {
   tree.cols <- c('grey90','grey60','grey30','black')
   shrub.cols <- c('grey90','black')
@@ -699,7 +699,8 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   }
   if ('drop-unburned' %in% fs)
   {
-    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    d <- d[-which(d$fac.fsCat=='0.U'),]
+    #d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
     fslevels <- c(fslevels,'drop-unburned')
   }
   if ('low-medium' %in% fs)
@@ -719,7 +720,7 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
   reset.warnings()
-  if (spSel=='FRACAL') {
+  if (FALSE) { # use this to run a model without fire levels
     multifit1 <- brm(fate3.18 ~ s(d10.17, k=3)  + (1|Plot) + (1|TreeNum), data=dd,
                      family="categorical", 
                      chains = 2,
@@ -742,8 +743,8 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   }
   #beep()
 
-  saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
-  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
+  saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.',uh,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
+  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.',uh,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
   print(summary(multifit1))
 }
 
@@ -781,7 +782,7 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
                           labels=c("Unburned", "Low/Medium", "High"))+
     scale_fill_viridis_d(name="Fire\nSeverity",
                          labels=c("Unburned", "Low/Medium", "High"))+
-    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Mortality)")+
     theme_bw()+
     theme(legend.position="none",
@@ -794,7 +795,7 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
                           labels=c("Unburned", "Low/Medium", "High"))+
     scale_fill_viridis_d(name="Fire\nSeverity",
                          labels=c("Unburned", "Low/Medium", "High"))+
-    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Resprout)")+
     theme_bw()+
     theme(legend.position="none",
@@ -807,7 +808,7 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
                           labels=c("Unburned", "Low/Medium", "High"))+
     scale_fill_viridis_d(name="Fire\nSeverity",
                          labels=c("Unburned", "Low/Medium", "High"))+
-    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Green Crown)")+
     theme_bw()+
     theme()
@@ -815,7 +816,7 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
   mortplot+resprplot+gcplot
 }
 
-fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
+fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=uh)
 {
   # fs=low-medium - combine low and medium to one level
   # fs=drop high - 0,1,2 only, and combine any 3s into 2
@@ -852,9 +853,12 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
   print(fslevels)
   table(d$fac.fsCat)
   
-  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$DN.18,d$Plot,d$TreeNum),]
   if (logt) dd$d10.17 <- log10(dd$d10.17)
   dim(dd)
+  
+  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+  
   reset.warnings()
   
   #fit5brm <- brm(Live.18 ~ d10.17 * fac.fsCat + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
@@ -864,14 +868,14 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F)
                  chains = 2,
                  cores = 2, 
                  seed=726, 
-                 iter=50000,
+                 iter=iter,
                  #backend="cmdstanr",
                  refresh=100,
                  control=list(adapt_delta=0.95));beep()
   
-  saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.BERN.Live18.WARNINGS.rds',sep=''))
+  saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
   print(summary(fit5brm))
-  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.BERN.Live18.rds',sep=''))
+  saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
   
 }
 
@@ -899,6 +903,7 @@ visualizeBernfitBayes <- function(mf=multifit,sp=splk)
   
   predgrid <- cbind(predgrid, 1-pepmeans, 1-pep2.5,1- pep97.5)
   predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
+  head(predgrid)
   
   mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=Live.mean, group=fac.fsCat, color=fac.fsCat))+
     ggtitle(paste(spName,'; ',sp,sep=''))+
@@ -908,7 +913,7 @@ visualizeBernfitBayes <- function(mf=multifit,sp=splk)
                           labels=c("Unburned", "Low/Medium", "High"))+
     scale_fill_viridis_d(name="Fire\nSeverity",
                          labels=c("Unburned", "Low/Medium", "High"))+
-    xlab("Log(Diameter at Breast Height [cm])")+ ##### units correct?
+    xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Mortality)")+
     theme_bw()+
     theme()

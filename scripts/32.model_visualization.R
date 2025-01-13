@@ -7,14 +7,15 @@ fit.type <- c('MN.Quad','MN.Splk3','MN.Splk6','MN.Splk20')
 f <- 2
 dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 iter <- 'i50000'
+uh <- TRUE # use hectares
 
-spList <- c('QUEAGR','UMBCAL','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
-spName <- spList[6]
+spList <- c('UMBCAL','QUEAGR','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
+spName <- spList[1]
 dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
 
 reset.warnings()
-(mfname <- paste(local.dir,'/',paste(mod,spName,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
-(wfname <- paste(local.dir,'/',paste(mod,spName,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
+(mfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
+(wfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
 print(wf)
@@ -24,10 +25,13 @@ visualizeMultifitBayes(mf,sp=fit.type[f])
 # NOW FOR PSEMEN
 reset.warnings()
 spName <- 'PSEMEN'
-(mfname <- paste(local.dir,'brm.PSEMEN.BERN.Splk3.Live18.rds',sep=''))
-(wfname <- paste(local.dir,'brm.PSEMEN.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
+
+(mfname <- paste(local.dir,'/brm.PSEMEN.TRUE.2000.BERN.Splk3.Live18.rds',sep=''))
+(wfname <- paste(local.dir,'/brm.PSEMEN.TRUE.2000.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
+print(mf)
 print(wf)
 
 visualizeBernfitBayes(mf,sp='SPLK3') 

@@ -1,7 +1,7 @@
 # run these if debugging functions line by line
 rm(list=ls())
 update.packages(c('Rcurl','data.table','ape','picante','vegan','permute'))
-source('scripts/PWFunctions_load.R')
+source('scripts/12.PWFunctions_load.R')
 
 ### only for debugging
 year <- 2018

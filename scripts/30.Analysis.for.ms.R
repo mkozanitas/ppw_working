@@ -17,6 +17,13 @@ head(fs)
 head(fs[,c('Plot','fsvar','fsCat')])
 table(fs$fsCat)
 
+if (FALSE) {
+  cols <- c('purple','lightblue','darkblue','red')
+  plot(fs$Tubbs.MTBS.RDNBR.30,fs$Kincade.MTBS.RDNBR.30,pch=19,cex=2,xlab='Tubbs Fire',ylab='Kincade Fire',main='MTBS-dNBR',col=cols[fs$fsLevel+1])
+  abline(v=c(135,430),lty=2)
+  abline(h=c(135,430),lty=2)
+}
+
 # Read in species codes - in this script, called 'Species'
 spAtt <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/SpeciesData/all-spp-attributes.csv")
 
@@ -24,8 +31,8 @@ head(spAtt)
 tail(spAtt)
 table(spAtt$FuncGroup)
 
-# input merged dataframe
-tAll <- read.csv('data/tAll.csv',as.is=T,row.names=1)
+# input merged dataframe - read in with hectare data
+tAll <- read.csv('data/tAllh.csv',as.is=T,row.names=1)
 head(tAll)
 dim(tAll)
 
@@ -47,20 +54,25 @@ table(tAll$fsCat,useNA='always')
 
 # archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
 tAll.archive <- tAll
+table(tAll.archive$Species)
 
-# use this to restore and recreate tAll
+# use this to restore and recreate tAll - create dataframes with and without hectares
 tAll <- tAll.archive
-tAll <- tAll[,c('Num','TreeNum','Species','FuncGroup','fPlot','Plot','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19')]
+
+tAllh <- tAll[,c('Num','TreeNum','Species','FuncGroup','fPlot','Plot','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19','Survey')]
+dim(tAllh)
+tAll <- tAllh[which(tAllh$Survey=='Plot'),]
+dim(tAll)
 
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
 sum(tAll$Live.17,na.rm=T)
 
-# Number of live species prefire
-length(table(tAll$Species[which(tAll$Live.17==1)]))
-spAtt
+# Number of live species prefire in plots
+length(table(tAll$Species[which(tAll$Live.17==1 & tAll$Survey=='Plot')]))
+table(tAll$Plot)
 
 # First result - ternary plot ordination of plots to describe veg types, intersected with fire severity
-pt <- drawTernaryPlots()
+pt <- drawTernaryPlots(d=tAll)
 if (all(pt$plot==fs$Plot)) pt$fsCat <- fs$fsCat else print('error')
 head(pt)
 table(pt$vt)
@@ -70,6 +82,7 @@ write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 
 # Second result - overall numbers
 table(tAll$Type.17)
+table(tAllh$Type.17)
 (allAb <- sum(table(tAll$Type.17[which(tAll$Live.17==1)])))
 (spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)]),decreasing = T))
 
@@ -180,16 +193,20 @@ sum(table(nspd$Type.17))/sum(table(tAll$Type.17))
 #### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
 # tAllm has all the living plants from 2017, with their 2018 fates
 # doesn't have new plants added in 2019
-tAllm <- prepareForBarPlots()
+uh <- TRUE #whether to use hectares for model fitting
+if (uh) dat <- tAllh else dat = tAll
+tAllm <- prepareForBarPlots(d=dat)
 dim(tAll)
+dim(tAllh)
 dim(tAllm)
+table(tAllm$TSizeCat)
+sum(table(tAllm$TSizeCat))
 
 # results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
 #P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
 
-## Low and Medium Fire not collapsed at this point - collapse for final paper?
 # barplot for PSEMEN, first to see here, and then to pdf
-tdat <- barplotNonSprouters()
+tdat <- barplotNonSprouters(d=tAllm)
 length(tdat)
 d <- tdat[[1]]
 table(d$Species)
@@ -199,80 +216,68 @@ spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
 #fs=c('low-medium','drop-high','drop-unburned') #FRACAL
+iter=2000
 logt=T
 
-tdat <- barplotOneNonSprouter(spSel,skip.op=T)
-dim(tdat)
+tdat <- barplotOneNonSprouter(d=tAllm,spSel,skip.op=T,print.to.pdf = F)
+dim(d)
 
-d <- tAll[which(tAll$Species == spSel),]
+if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
 dim(d)
 
 # Fit once for PSEMEN, don't need to rerun for now
-# fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T)
+# fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T,uh=uh)
 
+sort(table(tAllm$Species),decreasing=T)
 ## Set species, fire severity option, and log-size option
-# Species names, in descending sort order
-#UMBCAL PSEMEN QUEAGR HETARB AMOCAL 
-#1585   1203    780    708    426    
-
-#QUEGAR ARBMEN FRACAL QUEDOU QUEKEL BACPIL 
-#376    283    148     84     75     67    
-
-#ARCMAN QUEBER AESCAL CERBET NOTDEN 
-#61     56     25     22     20 
-#ADEFAS RHACRO PRUCER TORCAL CEAPAR QUEWIS CEACUN CORCOR SAMNIG HOLDIS QUELOB 
-#10      8      5      5      4      4      3      2      2      1      1 
 
 # refresh script 31 if needed
 source('scripts/31.functionsForAnalysis.R')
 
-for (spSel in c('UMBCAL'))
-{
-  if (TRUE) # TRUE to set up species, false for functional groups
-  {
-    spSel <- 'FRACAL'
-    spName <- spSel
-    fs=c('low-medium') #'all','low-medium'
-    fs=c('drop-high','low-medium') #AMOCAL, QUEGAR, FRACAL
-    fs=c('low-medium','drop-high','drop-unburned') #FRACAL
-    logt=T
-    iter=50000
-    
-    tdat <- barplotSprouterSpecies(spSel,skip.op=T)
-    dim(tdat)
-    
-    d <- tAll[which(tAll$Species == spSel),]
-    dim(d)
-  } else {
-    # now functional groups
-    # Functional Groups and sample sizes
-    #EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
-    #2850     1208      287     1845      477 
-    
-    table(spAtt$FuncGroup,useNA='always')
-    FSel <- 'WHTO'
-    spName <- FSel
-    (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
-    fs=c('low-medium') #'all','low-medium'
-    fs=c('drop-high','low-medium') #WHTO, R.Shrub
-    logt=T
-    
-    tdat <- barplotSprouterSpecies(spSel,skip.op=T)
-    dim(tdat)
-    
-    d <- tAll[which(tAll$Species %in% spSel),]
-    dim(d)
-  }
-  
-  # this function runs k=3 spline, with more iterations
-  z <- file(paste(local.dir,'/brm.',spName,'.MN.Quad.fate3.18.WARNINGS.txt',sep=''), open = "wt")
-  sink(z,type='message')
-  # print(warnings())
-  # print('summary')
-  # print(summary(warnings()))
-  fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
-  sink(type='message')
-}
+## CODE FOR INDIVIDUAL SPECIES - RUN INTERACTIVELY
+spSel <- 'QUEGAR'
+spName <- spSel
+fs=c('low-medium') #'all','low-medium'
+if (spSel %in% c('AMOCAL','QUEGAR')) fs=c('drop-high','low-medium')
+if (spSel %in% c('FRACAL')) fs=c('low-medium','drop-high','drop-unburned')
+logt=T
+iter=50000
+
+tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+dim(tdat)
+
+if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
+dim(d)
+
+# Run interactively
+# # this function runs k=3 spline, with more iterations
+# fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+
+
+## CODE FOR FUNCTIONAL GROUPS - RUN INTERACTIVELY
+# now functional groups
+# Functional Groups and sample sizes
+#EHRO   NS.Con NS.Shrub  R.Shrub     WHTO 
+#2850     1208      287     1845      477 
+
+table(spAtt$FuncGroup,useNA='always')
+FSel <- 'NS.Con'
+spName <- FSel
+(spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
+fs=c('low-medium') #'all','low-medium'
+if (spName %in% c('WHTO','R.Shrub')) fs=c('drop-high','low-medium')
+logt=T
+
+tdat <- barplotSprouterSpecies(spSel,ss.name=spName,skip.op=T)
+dim(tdat)
+
+d <- tAll[which(tAll$Species %in% spSel),]
+dim(d)
+
+# Run interactively
+# # this function runs k=3 spline, with more iterations
+# fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+
 
 if (FALSE) {
   # next four line pairs run 3 different spline models and then quadratic - I tested all of these, and settled on spline k=3, which is implemented above with more iterations to help with convergence.
