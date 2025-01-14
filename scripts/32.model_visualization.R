@@ -7,18 +7,22 @@ fit.type <- c('MN.Quad','MN.Splk3','MN.Splk6','MN.Splk20')
 f <- 2
 dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 iter <- 'i50000'
-uh <- TRUE # use hectares
+uhn <- 'Hect' # or 'Plot', if no FS: 'Hect.noFS' or 'Plot.noFS'
 
 spList <- c('UMBCAL','QUEAGR','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
-spName <- spList[1]
+spName <- spList[7]
 dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
+dim(dd)
+table(dd$fate3.18,dd$fac.fsCat)
 
 reset.warnings()
 (mfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
 (wfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
+mf <- multifit1
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
 print(wf)
+print(mf)
 
 visualizeMultifitBayes(mf,sp=fit.type[f]) 
 

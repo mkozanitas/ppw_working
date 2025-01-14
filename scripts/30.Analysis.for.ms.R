@@ -238,8 +238,9 @@ source('scripts/31.functionsForAnalysis.R')
 spSel <- 'QUEGAR'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
-if (spSel %in% c('AMOCAL','QUEGAR')) fs=c('drop-high','low-medium')
+if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL')) fs=c('drop-high','low-medium')
 if (spSel %in% c('FRACAL')) fs=c('low-medium','drop-high','drop-unburned')
+#if (spSel %in% c('QUEGAR','QUEDOU','QUEKEL')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
 logt=T
 iter=50000
 
@@ -261,17 +262,18 @@ dim(d)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'NS.Con'
+FSel <- 'EHRO'
 spName <- FSel
 (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
 fs=c('low-medium') #'all','low-medium'
 if (spName %in% c('WHTO','R.Shrub')) fs=c('drop-high','low-medium')
+#if (spName %in% c('WHTO','R.Shrub')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
 logt=T
 
 tdat <- barplotSprouterSpecies(spSel,ss.name=spName,skip.op=T)
 dim(tdat)
 
-d <- tAll[which(tAll$Species %in% spSel),]
+if (uh) d <- tAllh[which(tAllh$FuncGroup %in% FSel),] else d <- tAll[which(tAll$FuncGroup %in% FSel),]
 dim(d)
 
 # Run interactively

@@ -730,6 +730,7 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
                      #backend="cmdstanr",
                      refresh=100,
                      control=list(adapt_delta=0.95))
+    if (uh) uhn <- 'Hect.noFS' else uhn <- 'Plot.noFS'
   } else {
     multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                    family="categorical", 
@@ -740,11 +741,12 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
                    #backend="cmdstanr",
                    refresh=100,
                    control=list(adapt_delta=0.95))
+    if (uh) uhn <- 'Hect' else uhn <- 'Plot'
   }
   #beep()
 
-  saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.',uh,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
-  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.',uh,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
+  saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
+  saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
   print(summary(multifit1))
 }
 

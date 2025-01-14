@@ -114,7 +114,7 @@ if (FALSE) {
   }
   
   ## ONLY DO THIS FOR 2018 AND BEYOND (i in 2:4)
-  # These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error requiring further investigation. As of 5/15/22 there are no problem saplings, and just 7 and 24 problem trees in 2018 and 2019. But there are >1000 in 2020, so there's some deeper problem we need to figure out.
+  # These are patterns of values for 8 fields in the data (see below) which represent the 'legal' combinations. Any tree that doesn't follow this pattern suggests either a data ehtry or a coding error re
   # SA.patts <- c('00NANA1010','01NANA0110','10NANA0101','11NANA0101')
   # TR.patts <- c('00001010','01000110','10010101','10100101','10110101','11010101','11100101','11110101')
   # 
@@ -650,52 +650,7 @@ inBoth
 htAll <- htAll[-which(htAll$Num %in% inBoth),]
 dim(htAll)
 
-table(htAll$Survival.18,htAll$Basal.18,useNA='always')
 
-htAll$DN.18 <- NA
-htAll$DN.18[which(htAll$Survival.18==0 & htAll$Basal.18==0)] <- 1
-htAll$DN.18[which(htAll$Survival.18==1 | htAll$Basal.18==1)] <- 0
-table(htAll$Survival.18,htAll$Basal.18,htAll$DN.18,useNA='always')
-
-htAll$DR.18 <- NA
-htAll$DR.18[which(htAll$Survival.18==0 & htAll$Basal.18==1)] <- 1
-htAll$DR.18[which(htAll$Survival.18==1 | htAll$DN.18==1)] <- 0
-table(htAll$Survival.18,htAll$Basal.18,htAll$DR.18,useNA='always')
-
-htAll$LR.18 <- NA
-htAll$LR.18[which(htAll$Survival.18==1 & htAll$Basal.18==1)] <- 1
-htAll$LR.18[which(htAll$Survival.18==0 | htAll$Basal.18==0)] <- 0
-table(htAll$Survival.18,htAll$Basal.18,htAll$LR.18,useNA='always')
-
-htAll$LN.18 <- NA
-htAll$LN.18[which(htAll$Survival.18==1 & htAll$Basal.18==0)] <- 1
-htAll$LN.18[which(htAll$Survival.18==0 | htAll$LR.18==1)] <- 0
-table(htAll$Survival.18,htAll$Basal.18,htAll$LN.18,useNA='always')
-
-# check only one of the four is assigned a 1 - looks good
-table(apply(htAll[,c('DN.18','DR.18','LN.18','LR.18')],1,sum),useNA='always')
-
-htAll$fate4.18 <- NA
-htAll$fate4.18[which(htAll$DN.18==1)] <- 'DN'
-htAll$fate4.18[which(htAll$DR.18==1)] <- 'DR'
-htAll$fate4.18[which(htAll$LN.18==1)] <- 'LN'
-htAll$fate4.18[which(htAll$LR.18==1)] <- 'LR'
-table(htAll$fate4.18,useNA='a')
-
-htAll$fate3.18 <- htAll$fate4.18
-htAll$fate3.18[which(htAll$fate4.18 %in% c('LN','LR'))] <- 'GC'
-
-table(tAll$fate3.18)
-table(htAll$fate3.18)
-
-# assign basal diameter
-#D10 = DBH.cm * 1.176 + 1.070
-htAll$d10.17 <- htAll$DBH_cm.17*1.176 + 1.07
-plot(htAll$DBH_cm.17,htAll$d10.17)
-
-htAll$Live.17 <- 1
-htAll$Type.17 <- 'TR'
-htAll$TreeNum <- floor(htAll$Num)
 
 names(tAll)
 names(htAll)
