@@ -24,6 +24,7 @@ range(ht16$Num[-plot.trees],na.rm=T)
 #remove from hectare data
 ht16 <- ht16[-plot.trees,]
 head(ht16)
+dim(ht16)
 
 #check species names
 table(ht16$Species)
@@ -39,19 +40,19 @@ table(ht18$Plot)
 ht18$Plot.Orig <- ht18$Plot
 ht18$Plot <- paste('PPW',ht18$Plot,sep='')
 substr(ht18$Plot,4,5) <- '13'
+table(ht18$Plot)
 head(ht18)
 names(ht18)
-str(ht18$Num)
 
-ht18$NumConvert <- as.numeric(ht18$Num)
-(badNums <- which(is.na(ht18$NumConvert)))
-ht18[badNums,]
+# it looks like trees from original Plots are included in this hectare data
+plot.trees <- which(ht18$Num<7000)
+length(plot.trees)
+ht18[plot.trees,]
 
-# fixed in github file - not sure why it's reading wrong
-ht18$Num[which(ht18$Num=='88??')] <- '8841'
-ht18$Num <- as.numeric(ht18$Num)
-ht18 <- ht18[,-c(which(names(ht18)=='NumConvert'))]
-names(ht18)
+#remove from hectare data
+ht18 <- ht18[-plot.trees,]
+head(ht18)
+dim(ht18)
 
 # now 2021
 ht21 <- read.csv('https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/2021/Hectare_2021/Hectare_trees_all_2021.csv')
@@ -85,6 +86,16 @@ ht18$Species[which(ht18$Species=='QURELOB')] <- 'QUELOB'
 ht18$Species[which(ht18$Species=='QURGAR')] <- 'QUEGAR'
 table(ht18$Species)
 
+#check for duplicate numbers
+dNum <- table(ht16$Num)
+dNum[which(dNum>1)]
+ht16[which(ht16$Num %in% as.numeric(names(dNum[which(dNum>1)]))),c('Plot','Num')]
+
+dNum <- table(ht18$Num)
+dNum[which(dNum>1)]
+tmp <- ht18[which(ht18$Num %in% as.numeric(names(dNum[which(dNum>1)]))),c('Plot','Num')]
+write.csv(tmp,'data/ht18dups.csv')
+
 # now paste together
 names(ht16)
 names(ht18)
@@ -100,6 +111,11 @@ htAll <- merge(ht16,ht18,by='Num',all = T)
 dim(htAll)
 names(htAll)
 
+# species name missing in 2018
+blSp <- which(htAll$Species.18=='')
+length(blSp)
+htAll[blSp,c('Species.15','Species.18')]
+
 # QC - trees that have changed plots
 misPlot <- (which(htAll$Plot.15!=htAll$Plot.18))
 misPlot
@@ -110,27 +126,22 @@ htAll <- htAll[-misPlot,]
 # changed species
 misSpp <- which(htAll$Species.15 != htAll$Species.18)
 length(misSpp)
+table(htAll$Species.15[misSpp],htAll$Species.18[misSpp])
+tmp <- htAll[misSpp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
+head(tmp)
+write.csv(tmp,'data/ht-misSpp.csv')
 
 # are these all senesced plants?
-table(htAll$Senesced.18)
-# find some mistakes in Senesced field
-htAll[grep('0',htAll$Senesced.18),]
-htAll[grep('NS',htAll$Senesced.18),]
-htAll[grep('Sh',htAll$Senesced.18),]
+dim(htAll)
+table(htAll$Senesced.18,useNA = 'always')
 
-notSen <- which(htAll$Senesced.18=='')
-length(notSen)
-
-misSp2 <- which(htAll$Species.15[notSen] != htAll$Species.18[notSen])
-length(misSp2)
-# still 85 with different species
-write.csv(htAll[misSpp,],'data/hectarePlantsWithDifferentSpecies.csv')
 
 # how well do sizes match up?
 plot(htAll$DBH_cm.15,htAll$DBH_cm.18,log='xy')
 htAll[which.max(htAll$DBH_cm.18),]
 
 # definitely looks like some errors, but I'll just rely on DBH.15, unless missing (mostly 2021 new superplot, presumably)
+# XXXXXX flip this around??? XXXXXXX
 htAll$DBH_cm.17 <- htAll$DBH_cm.15
 length(which(is.na(htAll$DBH_cm.17)))
 table(htAll$Plot.18[which(is.na(htAll$DBH_cm.17))])
@@ -150,6 +161,27 @@ htAll$Plot[which(is.na(htAll$Plot))] <- htAll$Plot.18[which(is.na(htAll$Plot))]
 
 # now assign 2018 fates
 table(htAll$Survival.18,htAll$Basal.18,useNA='always')
+nosurv <- which(is.na(htAll$Survival.18))
+nobasal <- which(is.na(htAll$Basal.18))
+nosorb <- intersect(nosurv,nobasal)
+survnobas <- which(is.na(htAll$Basal.18) & !is.na(htAll$Survival.18))
+
+table(htAll$Plot.18[nosorb],useNA='always')
+tmp <- which(!is.na(htAll$Plot.18[nosorb]))
+htAll[nosorb[tmp],]
+
+htAll[survnobas,c('Num','Plot','Survival.18','Basal.18','BasalResproutCount.18','BasalResproutHeight.18','Epicormic.18','Apical.18','Notes.18')]
+
+table(htAll$Basal.18,htAll$BasalResproutCount.18,useNA='always')
+tmp <- which(htAll$Basal.18==0 & htAll$BasalResproutCount.18==0)
+length(tmp)
+htAll$Num[tmp]
+write.csv(htAll[tmp,],'data/basal-problems.csv')
+
+tmp <- intersect(which(htAll$Apical.18==1 | htAll$Epicormic.18==1),which(htAll$Survival.18==0))
+length(tmp)
+htAll[tmp,c('Plot','Num','Survival.18','Epicormic.18','Apical.18','PercLivingCanopy.18','Senesced.18')]
+write.csv(htAll[tmp,],'data/surv-apical-epi-problem.csv')
 
 htAll$DN.18 <- NA
 htAll$DN.18[which(htAll$Survival.18==0 & htAll$Basal.18==0)] <- 1
