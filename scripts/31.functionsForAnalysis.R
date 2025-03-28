@@ -363,14 +363,16 @@ barplotOneNonSprouter <- function(d=tAll,ss,print.to.pdf=c(F,T),skip.op=T,plot.l
       nrow(d)
       
       (tot <- table(d$SizeCat,d$fsCat))
+      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
       barplot(tot,beside=T,col=tree.cols,main=paste(ss,'Sample Sizes'))
-      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
-      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
-      barplot(table(d$SizeCat,d$fsCat,d$fate3.18)[,,3]/tot,beside = T,col=tree.cols,main=paste(ss,'Green-Crown'),ylim=c(0,1))
+      if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
+      barplot(0/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
+      barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Green Crown'),ylim=c(0,1))
+      if (plot.live) barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Live'),ylim=c(0,1))
       if (skip.op) par(op)
     }
   }
-  return(d)
+  return(fates)
 }
 
 barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,ss.name=NA)
@@ -392,6 +394,7 @@ barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,
       d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
       d$SizeCat <- d$TSizeCat
       nrow(d)
+      d <- d[complete.cases(d$SizeCat,d$fsCat,d$fate3.18),]
       
       (tot <- table(d$SizeCat,d$fsCat))
       fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
@@ -420,7 +423,7 @@ barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,
       if (skip.op) par(op)
     }
   }
-  return(d)
+  return(fates)
 }
 
 barplotSprouters <- function(print.to.pdf=c(F,T))

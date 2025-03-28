@@ -211,7 +211,7 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
-spSel <- 'PSEMEN'
+spSel <- 'ARCMAN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
@@ -219,8 +219,10 @@ fs=c('low-medium') #'all','low-medium'
 iter=2000
 logt=T
 
-tdat <- barplotOneNonSprouter(d=tAllm,spSel,skip.op=T,print.to.pdf = F)
-dim(d)
+fates <- barplotOneNonSprouter(d=tAllm,spSel,skip.op=T,print.to.pdf = F)
+dim(fates)
+fates
+write.csv(fates,paste('results/',spSel,'-fates.csv',sep=''))
 
 if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
 dim(d)
@@ -235,7 +237,7 @@ sort(table(tAllm$Species),decreasing=T)
 source('scripts/31.functionsForAnalysis.R')
 
 ## CODE FOR INDIVIDUAL SPECIES - RUN INTERACTIVELY
-spSel <- 'QUEGAR'
+spSel <- 'NOTDEN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL')) fs=c('drop-high','low-medium')
@@ -246,6 +248,7 @@ iter=50000
 
 tdat <- barplotSprouterSpecies(spSel,skip.op=T)
 dim(tdat)
+tdat
 
 if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
 dim(d)
