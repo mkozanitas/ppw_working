@@ -15,6 +15,10 @@ head(ht16)
 table(ht16$Plot)
 table(ht16$Year)
 
+# any duplicate numbers:
+dn <- table(ht16$Num)
+dn[which(dn>1)]
+
 # it looks like trees from Plots are included in this hectare data
 plot.trees <- grep('from offset',ht16$Accuracy)
 length(plot.trees)
