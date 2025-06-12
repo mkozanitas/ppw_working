@@ -26,6 +26,7 @@ range(ht16$Num[plot.trees])
 range(ht16$Num[-plot.trees],na.rm=T)
 
 #remove from hectare data
+dim(ht16)
 ht16 <- ht16[-plot.trees,]
 head(ht16)
 dim(ht16)
@@ -92,13 +93,14 @@ table(ht18$Species)
 
 #check for duplicate numbers
 dNum <- table(ht16$Num)
-dNum[which(dNum>1)]
-ht16[which(ht16$Num %in% as.numeric(names(dNum[which(dNum>1)]))),c('Plot','Num')]
+dNum[which(dNum>1)] # NONE !!!!!
+#ht16[which(ht16$Num %in% as.numeric(names(dNum[which(dNum>1)]))),c('Plot','Num')]
 
 dNum <- table(ht18$Num)
 dNum[which(dNum>1)]
 tmp <- ht18[which(ht18$Num %in% as.numeric(names(dNum[which(dNum>1)]))),c('Plot','Num')]
-write.csv(tmp,'data/ht18dups.csv')
+tmp
+#write.csv(tmp,'data/ht18dups.csv')
 
 # now paste together
 names(ht16)
@@ -117,43 +119,49 @@ names(htAll)
 
 # species name missing in 2018
 blSp <- which(htAll$Species.18=='')
-length(blSp)
+length(blSp) # NONE
 htAll[blSp,c('Species.15','Species.18')]
 
 # QC - trees that have changed plots
 misPlot <- (which(htAll$Plot.15!=htAll$Plot.18))
-misPlot
-htAll[misPlot,c('Num','Plot.15','Subplot.15','Species.15','Plot.18','Subplot.18','Species.18')]
+misPlot # NONE
+# htAll[misPlot,c('Num','Plot.15','Subplot.15','Species.15','Plot.18','Subplot.18','Species.18')]
 # remove these
-htAll <- htAll[-misPlot,]
+# htAll <- htAll[-misPlot,]
 
-# changed species
+# changed species - NONE!
 misSpp <- which(htAll$Species.15 != htAll$Species.18)
 length(misSpp)
 table(htAll$Species.15[misSpp],htAll$Species.18[misSpp])
 tmp <- htAll[misSpp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
-head(tmp)
-write.csv(tmp,'data/ht-misSpp.csv')
+tmp
+# write.csv(tmp,'data/ht-misSpp.csv')
 
 # are these all senesced plants?
-dim(htAll)
-table(htAll$Senesced.18,useNA = 'always')
-
+# dim(htAll)
+# table(htAll$Senesced.18,useNA = 'always')
 
 # how well do sizes match up?
 plot(htAll$DBH_cm.15,htAll$DBH_cm.18,log='xy')
 htAll[which.max(htAll$DBH_cm.18),]
 
 # definitely looks like some errors, but I'll just rely on DBH.15, unless missing (mostly 2021 new superplot, presumably)
-# XXXXXX flip this around??? XXXXXXX
-htAll$DBH_cm.17 <- htAll$DBH_cm.15
+
+# some 2018 had 0 dbh instead of NA
+tmp0 <- which(htAll$DBH_cm.18==0)
+htAll$DBH_cm.18[tmp0] <- NA
+
+htAll$DBH_cm.17 <- htAll$DBH_cm.18
 length(which(is.na(htAll$DBH_cm.17)))
 table(htAll$Plot.18[which(is.na(htAll$DBH_cm.17))])
 
-htAll$DBH_cm.17[which(is.na(htAll$DBH_cm.17))] <- htAll$DBH_cm.18[which(is.na(htAll$DBH_cm.17))]
+htAll$DBH_cm.17[which(is.na(htAll$DBH_cm.17))] <- htAll$DBH_cm.15[which(is.na(htAll$DBH_cm.17))]
 length(which(is.na(htAll$DBH_cm.17)))
 
 # for now, assign 2015 species as 'correct', unless missing
+tmp <- which(is.na(htAll$Species.15) & htAll$Plot.18!='PPW1352')
+length(tmp)
+htAll[tmp,c('Num','Plot.15','Species.15','Plot.18','Species.18','DBH_cm.18')]
 htAll$Species <- htAll$Species.15
 length(which(is.na(htAll$Species)))
 htAll$Species[which(is.na(htAll$Species))] <- htAll$Species.18[which(is.na(htAll$Species))]
@@ -163,29 +171,52 @@ htAll$Plot <- htAll$Plot.15
 length(which(is.na(htAll$Plot)))
 htAll$Plot[which(is.na(htAll$Plot))] <- htAll$Plot.18[which(is.na(htAll$Plot))]
 
+# how many missing in 2015
+a15p18 <- which(is.na(htAll$Plot.15) & !is.na(htAll$Plot.18) & htAll$Plot.18!='PPW1352')
+length(a15p18)
+htAll[a15p18,c('Num','Plot','Species','DBH_cm.17','Plot.18','Species.18','DBH_cm.18')]
+write.csv(htAll[a15p18,],'data/abs15pres18.csv')
+
+# how many missing in 2018
+tmp <- which(!is.na(htAll$Plot.15) & is.na(htAll$Plot.18))
+length(tmp)
+htAll[tmp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
+write.csv(htAll[tmp,],'data/pres15abs18.csv')
+
+# how many under 20 cm
+dbhlt20 <- which(htAll$DBH_cm.17<20)
+length(dbhlt20)
+range(htAll$DBH_cm.17[dbhlt20],useNA=T)
+hist(htAll$DBH_cm.17[dbhlt20])
+
+# check species again and remove species not included in hectares
+# Hetarb are too small anyway, so don't exclude anything else
+table(htAll$Species[which(htAll$DBH_cm.17>=20)])
+
+
+#Create ExcStem flag for analysis step
+htAll$ExcStem <- 0
+htAll$ExcStem[which(htAll$Species=='HETARB')] <- 1
+htAll$ExcStem[dbhlt20] <- 1
+
 # now assign 2018 fates
 table(htAll$Survival.18,htAll$Basal.18,useNA='always')
 nosurv <- which(is.na(htAll$Survival.18))
 nobasal <- which(is.na(htAll$Basal.18))
 nosorb <- intersect(nosurv,nobasal)
 survnobas <- which(is.na(htAll$Basal.18) & !is.na(htAll$Survival.18))
+htAll[survnobas,]
+htAll[survnobas,'ExcStem'] <- 1
 
 table(htAll$Plot.18[nosorb],useNA='always')
 tmp <- which(!is.na(htAll$Plot.18[nosorb]))
 htAll[nosorb[tmp],]
+htAll[nosorb[tmp],'ExcStem'] <- 1
 
-htAll[survnobas,c('Num','Plot','Survival.18','Basal.18','BasalResproutCount.18','BasalResproutHeight.18','Epicormic.18','Apical.18','Notes.18')]
-
-table(htAll$Basal.18,htAll$BasalResproutCount.18,useNA='always')
-tmp <- which(htAll$Basal.18==0 & htAll$BasalResproutCount.18==0)
-length(tmp)
-htAll$Num[tmp]
-write.csv(htAll[tmp,],'data/basal-problems.csv')
-
-tmp <- intersect(which(htAll$Apical.18==1 | htAll$Epicormic.18==1),which(htAll$Survival.18==0))
-length(tmp)
-htAll[tmp,c('Plot','Num','Survival.18','Epicormic.18','Apical.18','PercLivingCanopy.18','Senesced.18')]
-write.csv(htAll[tmp,],'data/surv-apical-epi-problem.csv')
+# tmp <- intersect(which(htAll$Apical.18==1 | htAll$Epicormic.18==1),which(htAll$Survival.18==0))
+# length(tmp)
+# htAll[tmp,c('Plot','Num','Survival.18','Epicormic.18','Apical.18','PercLivingCanopy.18','Senesced.18')]
+# write.csv(htAll[tmp,],'data/surv-apical-epi-problem.csv')
 
 htAll$DN.18 <- NA
 htAll$DN.18[which(htAll$Survival.18==0 & htAll$Basal.18==0)] <- 1
@@ -221,6 +252,13 @@ htAll$fate3.18 <- htAll$fate4.18
 htAll$fate3.18[which(htAll$fate4.18 %in% c('LN','LR'))] <- 'GC'
 table(htAll$fate3.18,useNA='a')
 
+# who is missing
+tmp <- which(is.na(htAll$fate3.18))
+htAll[tmp,c('Num','Plot','Species','DBH_cm.17','Survival.18','Basal.18','ExcStem')]
+
+# fate of trees missing in 2015 and found in 2018
+htAll[a15p18,c('Num','Species','Plot','DBH_cm.17','fate3.18','ExcStem')]
+
 # assign basal diameter
 #D10 = DBH.cm * 1.176 + 1.070
 htAll$d10.17 <- htAll$DBH_cm.17*1.176 + 1.07
@@ -234,12 +272,13 @@ htAll$TreeNum <- floor(htAll$Num)
 # any obviously problematic fates records
 table(htAll$Apical.18,htAll$Epicormic.18,htAll$Survival.18)
 
-# 22 plants with survival = 0, and apical and/or epicormic = 1
-htAll$Num[which(htAll$Survival.18==0 & (htAll$Apical.18+htAll$Epicormic.18>0))]
-# changing Survival values
-htAll$Survival.18[which(htAll$Survival.18==0 & (htAll$Apical.18+htAll$Epicormic.18>0))] <- 1
+tmp <- which(htAll$Survival.18==1 & (htAll$Apical.18+htAll$Epicormic.18==0))
+htAll[tmp,c('Num','Plot.18','PercLivingCanopy.18')]
+length(tmp)
+write.csv(htAll[tmp,],'data/Surv1ApEpPer0.csv')
 
-# 29 plants with Survival = 1 and neither Basal or Epicormic - leave for now
+# identify this data set as hectares
+htAll$DataSet <- 'HECTS'
 
 saveRDS(htAll,'data/hectares.rds')
 
