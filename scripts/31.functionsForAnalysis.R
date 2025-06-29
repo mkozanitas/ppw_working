@@ -40,8 +40,8 @@ loadFireSeverity <- function(fs=fsall,fsmet='Tubbs.MTBS.RDNBR.30',verbose=F)
   # unburned: 1308, 1309, 1311, 1312, 1327, 1344, 1347
   
   # Create a discrete FireSev variable
-  if (verbose) hist(fs$fsvar,breaks=c(-100,0,50,100,150,200,300,400,500,600,700,800,1000))
-  fs.breaks <- c(-100,135,430,1000) # Based on Parks et al. 2014, but not using intermediate split at 304
+  if (verbose) hist(fs$fsvar,breaks=c(-400,0,50,100,150,200,300,400,500,600,700,800,1000))
+  fs.breaks <- c(-400,135,430,1000) # Based on Parks et al. 2014, but not using intermediate split at 304
   # !!this is for RDNBR.30 !!
   fsCat <- cut(fs$fsvar,fs.breaks)
   if (verbose) print(table(fsCat))

@@ -11,6 +11,14 @@ names(ht16)[which(names(ht16)=='DBH.cm')] <- 'DBH_cm'
 ht16$Plot.Orig <- ht16$Plot
 substr(ht16$Plot,1,3) <- 'PPW'
 head(ht16)
+table(ht16$Plot)
+table(ht16$Subplot)
+
+# examine in context +/- 1
+pm1 <- function(x) c(x-1,x,x+1)
+cb <- which(ht16$Subplot=='C')
+cb1 <- 854:865
+ht16[cb1,]
 
 table(ht16$Plot)
 table(ht16$Year)
@@ -42,8 +50,8 @@ head(ht18)
 names(ht18)
 head(ht18$Num)
 table(ht18$Plot)
-ht18$Plot.Orig <- ht18$Plot
 ht18$Plot <- paste('PPW',ht18$Plot,sep='')
+ht18$Plot.Orig <- ht18$Plot
 substr(ht18$Plot,4,5) <- '13'
 table(ht18$Plot)
 head(ht18)
@@ -67,7 +75,7 @@ ht21$Senesced <- NA
 names(ht21)
 ht21 <- ht21[,c(1:14,16,15)]
 head(ht21)
-ht21$Plot.Orig <- ht21$Plot
+ht21$Plot.Orig <- paste('PPW',ht21$Plot,sep='')
 ht21$Plot <- 'PPW1352'
 head(ht21)
 str(ht21$Num)
@@ -117,24 +125,24 @@ htAll <- merge(ht16,ht18,by='Num',all = T)
 dim(htAll)
 names(htAll)
 
-# species name missing in 2018
-blSp <- which(htAll$Species.18=='')
-length(blSp) # NONE
-htAll[blSp,c('Species.15','Species.18')]
+# species name missing in 2018  -NONE
+# blSp <- which(htAll$Species.18=='')
+# length(blSp) # NONE
+# htAll[blSp,c('Species.15','Species.18')]
 
 # QC - trees that have changed plots
 misPlot <- (which(htAll$Plot.15!=htAll$Plot.18))
 misPlot # NONE
-# htAll[misPlot,c('Num','Plot.15','Subplot.15','Species.15','Plot.18','Subplot.18','Species.18')]
+htAll[misPlot,c('Num','Plot.15','Subplot.15','Species.15','Plot.18','Subplot.18','Species.18')]
 # remove these
-# htAll <- htAll[-misPlot,]
+htAll <- htAll[-misPlot,]
 
 # changed species - NONE!
 misSpp <- which(htAll$Species.15 != htAll$Species.18)
 length(misSpp)
-table(htAll$Species.15[misSpp],htAll$Species.18[misSpp])
-tmp <- htAll[misSpp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
-tmp
+# table(htAll$Species.15[misSpp],htAll$Species.18[misSpp])
+# tmp <- htAll[misSpp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
+# tmp
 # write.csv(tmp,'data/ht-misSpp.csv')
 
 # are these all senesced plants?
@@ -165,6 +173,7 @@ htAll[tmp,c('Num','Plot.15','Species.15','Plot.18','Species.18','DBH_cm.18')]
 htAll$Species <- htAll$Species.15
 length(which(is.na(htAll$Species)))
 htAll$Species[which(is.na(htAll$Species))] <- htAll$Species.18[which(is.na(htAll$Species))]
+length(which(is.na(htAll$Species)))
 
 #same for plot
 htAll$Plot <- htAll$Plot.15
@@ -192,7 +201,6 @@ hist(htAll$DBH_cm.17[dbhlt20])
 # check species again and remove species not included in hectares
 # Hetarb are too small anyway, so don't exclude anything else
 table(htAll$Species[which(htAll$DBH_cm.17>=20)])
-
 
 #Create ExcStem flag for analysis step
 htAll$ExcStem <- 0
@@ -277,8 +285,130 @@ htAll[tmp,c('Num','Plot.18','PercLivingCanopy.18')]
 length(tmp)
 write.csv(htAll[tmp,],'data/Surv1ApEpPer0.csv')
 
-# identify this data set as hectares
-htAll$DataSet <- 'HECTS'
+# Assign subplots based on coordinates
+noUTM15 <- which(is.na(htAll$UTM.E.15) | is.na(htAll$UTM.N.15))
+length(noUTM15)
+
+noUTM18 <- which(is.na(htAll$UTM.E.18) | is.na(htAll$UTM.N.18))
+length(noUTM18)
+
+noUTM <- intersect(noUTM15,noUTM18)
+table(htAll$ExcStem[noUTM])
+
+htAll$UTM.E.17 <- htAll$UTM.E.15
+htAll$UTM.E.17[which(is.na(htAll$UTM.E.17))] <- htAll$UTM.E.18[which(is.na(htAll$UTM.E.17))]
+htAll$UTM.N.17 <- htAll$UTM.N.15
+htAll$UTM.N.17[which(is.na(htAll$UTM.N.17))] <- htAll$UTM.N.18[which(is.na(htAll$UTM.N.17))]
+
+# read plot coordinates
+htc <- read.csv('input_data/plot_info/hectares-18-20m-FS.csv')
+head(htc)
+htc$Plot.Orig <- htc$Plot
+substr(htc$Plot,4,5) <- '13'
+
+htAll$Subplot.17 <- 'XX'
+htAll$coordOutlier <- 0
+
+drawBox <- function(b,exlim=50,plot=NULL) {
+  plot(b[1],b[3],xlim=c(b[1]-exlim,b[2]+exlim),ylim=c(b[3]-exlim,b[4]+exlim),pch=19,cex=2,col='red',main=plot)
+  points(b[1],b[4],pch=19,cex=2,col='red')
+  points(b[2],b[3],pch=19,cex=2,col='red')
+  points(b[2],b[4],pch=19,cex=2,col='red')
+}
+
+plot.list <- sort(unique(htc$Plot))
+i=1
+for (i in 1:length(plot.list)) {
+  plot <- plot.list[i]
+  rs <- which(htAll$Plot==plot)
+  tmp <- htAll[rs,c('Plot','Subplot.17','Num','UTM.E.17','UTM.N.17')]
+  plot(htAll$UTM.E.17,htAll$UTM.N.17,asp=1,type='n',main=tmp[1,'Plot'])
+  points(tmp$UTM.E.17,tmp$UTM.N.17,pch=19)
+  
+  cs <- which(htc$Plot==plot)
+  uxm <- min(htc$UTM.x[cs])
+  uxx <- max(htc$UTM.x[cs]+20)
+  uym <- min(htc$UTM.y[cs])
+  uyx <- max(htc$UTM.y[cs]+20)
+  b <- c(uxm,uxx,uym,uyx)
+  
+  #drawBox(b,exlim=50,plot)
+  #points(tmp[,c('UTM.E.17','UTM.N.17')],asp=1)
+  source('scripts/adjustHectCoords.R')
+  #drawBox(b,exlim=50,plot)
+  #points(tmp$UTM.E.17+as.numeric(optRes[1]),tmp$UTM.N.17+as.numeric(optRes[2]))
+  print(optRes)
+  
+  tmp$UTM.E.17 <- tmp$UTM.E.17 + as.numeric(optRes[1])
+  tmp$UTM.N.17 <- tmp$UTM.N.17 + as.numeric(optRes[2])
+  
+  nrow(tmp)
+  tmp$Subplot.17 <- 'L0'
+  j=103
+  for (j in 1:nrow(tmp)) {
+    if (is.na(tmp$UTM.E.17[j] | tmp$UTM.N.17[j])) tmp$Subplot.17[j] <- NA else {
+      if (tmp$UTM.E.17[j] >= htc$UTM.x[cs[1]]) substr(tmp$Subplot.17[j],1,1) <- 'A'
+      if (tmp$UTM.E.17[j] >= htc$UTM.x[cs[6]]) substr(tmp$Subplot.17[j],1,1) <- 'B'
+      if (tmp$UTM.E.17[j] >= htc$UTM.x[cs[11]]) substr(tmp$Subplot.17[j],1,1) <- 'C'
+      if (tmp$UTM.E.17[j] >= htc$UTM.x[cs[16]]) substr(tmp$Subplot.17[j],1,1) <- 'D'
+      if (tmp$UTM.E.17[j] >= htc$UTM.x[cs[21]]) substr(tmp$Subplot.17[j],1,1) <- 'E'
+      if (tmp$UTM.E.17[j] > htc$UTM.x[cs[21]]+20) substr(tmp$Subplot.17[j],1,1) <- 'M'
+      if (tmp$UTM.N.17[j] >= htc$UTM.y[cs[1]]) substr(tmp$Subplot.17[j],2,2) <- '1'
+      if (tmp$UTM.N.17[j] >= htc$UTM.y[cs[2]]) substr(tmp$Subplot.17[j],2,2) <- '2'
+      if (tmp$UTM.N.17[j] >= htc$UTM.y[cs[3]]) substr(tmp$Subplot.17[j],2,2) <- '3'
+      if (tmp$UTM.N.17[j] >= htc$UTM.y[cs[4]]) substr(tmp$Subplot.17[j],2,2) <- '4'
+      if (tmp$UTM.N.17[j] >= htc$UTM.y[cs[5]]) substr(tmp$Subplot.17[j],2,2) <- '5'
+      if (tmp$UTM.N.17[j] > htc$UTM.y[cs[5]]+20) substr(tmp$Subplot.17[j],2,2) <- '9'
+    }
+  }
+  table(tmp$Subplot.17)
+  htAll[rs,c('Plot','Subplot.17','Num','UTM.E.17','UTM.N.17')] <- tmp
+}
+table(htAll$Subplot.17)
+htAll$coordOutlier[which(htAll$Subplot.17 %in% c('A0','A9','B0','B9','C0','C9','D0','D9','E0','E9') | substr(htAll$Subplot.17,1,1) %in% c('L','M'))] <- 1
+table(htAll$coordOutlier,htAll$ExcStem)
+
+# hardcode long outliers as Exclude for Analysis, pending Melina corrections
+htAll$ExcStem[which(htAll$Num %in% c(10568,10573,10998,99200,11046.1,11083,11083.1,99191,11158,11158.1,11158.2,99220))] <- 1
+
+# Now move near outliers to nearest plot
+table(htAll$Subplot.17)
+htAll$Subplot.17[which(htAll$Subplot.17=='A0')] <- 'A1'
+htAll$Subplot.17[which(htAll$Subplot.17=='B0')] <- 'B1'
+htAll$Subplot.17[which(htAll$Subplot.17=='C0')] <- 'C1'
+htAll$Subplot.17[which(htAll$Subplot.17=='D0')] <- 'D1'
+htAll$Subplot.17[which(htAll$Subplot.17=='E0')] <- 'E1'
+
+htAll$Subplot.17[which(htAll$Subplot.17=='A9')] <- 'A5'
+htAll$Subplot.17[which(htAll$Subplot.17=='B9')] <- 'B5'
+htAll$Subplot.17[which(htAll$Subplot.17=='C9')] <- 'C5'
+htAll$Subplot.17[which(htAll$Subplot.17=='D9')] <- 'D5'
+htAll$Subplot.17[which(htAll$Subplot.17=='E9')] <- 'E5'
+
+htAll$Subplot.17[which(htAll$Subplot.17=='L1')] <- 'A1'
+htAll$Subplot.17[which(htAll$Subplot.17=='L2')] <- 'A2'
+htAll$Subplot.17[which(htAll$Subplot.17=='L3')] <- 'A3'
+htAll$Subplot.17[which(htAll$Subplot.17=='L4')] <- 'A4'
+htAll$Subplot.17[which(htAll$Subplot.17=='L5')] <- 'A5'
+
+htAll$Subplot.17[which(htAll$Subplot.17=='M1')] <- 'E1'
+htAll$Subplot.17[which(htAll$Subplot.17=='M2')] <- 'E2'
+htAll$Subplot.17[which(htAll$Subplot.17=='M3')] <- 'E3'
+htAll$Subplot.17[which(htAll$Subplot.17=='M4')] <- 'E4'
+htAll$Subplot.17[which(htAll$Subplot.17=='M5')] <- 'E5'
+
+htAll$Subplot.17[which(htAll$Subplot.17=='L0')] <- 'A1'
+htAll$Subplot.17[which(htAll$Subplot.17=='L9')] <- 'E1'
+htAll$Subplot.17[which(htAll$Subplot.17=='M0')] <- 'A5'
+htAll$Subplot.17[which(htAll$Subplot.17=='M9')] <- 'E5'
+table(htAll$Subplot.17,htAll$ExcStem)
+
+plot(htAll$UTM.E.17,htAll$UTM.N.17,asp=1)
+points(htAll[which(htAll$coordOutlier==1),c('UTM.E.17','UTM.N.17')],col='red')
+
+# identifyPlot# identify this datanoUTM18# identify this data set as hectares
+htAll$Survey <- 'Hect'
+head(htAll)
 
 saveRDS(htAll,'data/hectares.rds')
 

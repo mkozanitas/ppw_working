@@ -7,15 +7,25 @@ source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
 fsCols <- c('blue','brown','orange','red')
 
-fsall <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
-head(fsall)
-tail(fsall)
-dim(fsall)
+fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
+head(fs)
+tail(fs)
+dim(fs)
 
-fs <- loadFireSeverity(fsall,'Tubbs.MTBS.RDNBR.30',verbose=T)
+hfs <- read.csv('input_data/plot_info/hectares-18-20m-FS.csv')
+hfs$Plot.Orig <- hfs$Plot
+substr(hfs$Plot,4,5) <- '13'
+names(hfs)[which(names(hfs)=='Quad')] <- 'Subplot'
+head(hfs)
+
+fs <- loadFireSeverity(fs,'Tubbs.MTBS.RDNBR.30',verbose=T)
 head(fs)
 head(fs[,c('Plot','fsvar','fsCat')])
 table(fs$fsCat)
+
+hfs <- loadFireSeverity(hfs,'Tubbs.MTBS.RDNBR.30',verbose=F)
+head(hfs)
+table(hfs$fsCat)
 
 if (FALSE) {
   cols <- c('purple','lightblue','darkblue','red')
@@ -35,21 +45,46 @@ table(spAtt$FuncGroup)
 tAll <- read.csv('data/tAllh.csv',as.is=T,row.names=1)
 head(tAll)
 dim(tAll)
+names(tAll)
+table(tAll$Survey)
 
 # convert Species# convert QUEBEGA to QUEBER, QUEDOGA to QUEDOU, QUEdec to QUEDOU, and remove unknowns
+table(tAll$Species)
 tAll <- convertHybrids()
 table(tAll$Species)
 
 # add functional groups to tAll
+# Are all species in spAtt?
+(tAllspec <- sort(unique(tAll$Species)))
+tAllspec[which(!tAllspec %in% spAtt$OrigSpecies)]
+length(which(tAll$Species=='QUEDEC'))
+
 tAll$FuncGroup <- spAtt$FuncGroup[match(tAll$Species,spAtt$OrigSpecies)]
 table(tAll$FuncGroup)
 
 # remove Type.13 = 'TS'; a few show up in 2018 - need to check
+dim(tAll)
 tAll <- tAll[-which(tAll$Type.17=='TS'),]
 dim(tAll)
 
+pRows <- which(tAll$Survey=='Plot')
+hRows <- which(tAll$Survey=='Hect')
+
 # add fire severity to tAll
-tAll$fsCat <- fs$fsCat[match(tAll$Plot,fs$Plot)]
+table(tAll$Plot,useNA='always')
+table(tAll$Plot.Orig,useNA='always')
+fs$Plot.Orig <- fs$Plot
+substr(fs$Plot,4,5) <- '13'
+tAll$fsCat <- NA
+tAll$fsCat[pRows] <- fs$fsCat[match(tAll$Plot[pRows],fs$Plot)]
+table(tAll$fsCat[pRows],useNA='always')
+
+tAll$PSp <- NA
+tAll$PSp[hRows] <- paste(tAll$Plot[hRows],tAll$Subplot.17[which(tAll$Survey=='Hect')])
+hfs$PSp <- paste(hfs$Plot,hfs$Subplot)
+length(which(!tAll$PSp[hRows] %in% hfs$PSp))
+tAll$fsCat[hRows] <- hfs$fsCat[match(tAll$PSp[hRows],hfs$PSp)]
+table(tAll$fsCat[hRows],useNA='always')
 table(tAll$fsCat,useNA='always')
 
 # archive tAll in tAll.arch and then reduce tAll to allow for easier examination during analysis
@@ -58,21 +93,49 @@ table(tAll.archive$Species)
 
 # use this to restore and recreate tAll - create dataframes with and without hectares
 tAll <- tAll.archive
+table(tAll$ExcStem)
 
-tAllh <- tAll[,c('Num','TreeNum','Species','FuncGroup','fPlot','Plot','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19','Survey')]
-dim(tAllh)
-tAll <- tAllh[which(tAllh$Survey=='Plot'),]
+# subset to live prefire - removes individuals newly added in 2019 and 2020
+tAll <- tAll[which(tAll$Live.17==1),c('Num','TreeNum','Species','FuncGroup','Plot','Subplot.17','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19','Survey')]
 dim(tAll)
 
+table(tAll$fate3.18,tAll$Survey,useNA='a')
+tAll <- tAll[-which(is.na(tAll$fate3.18)),]
+table(tAll$fate3.18,tAll$Survey,useNA='a')
+
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
-sum(tAll$Live.17,na.rm=T)
+dim(tAll)
+table(tAll$Survey,useNA='a')
+
+# at this point, can subset to Plot or Hect surveys
+pRows <- which(tAll$Survey=='Plot')
+hRows <- which(tAll$Survey=='Hect')
+
+# identify large trees, >20cm dbh, in Plots and Hects, for stats across this cohort. DBH 20 = d10 24.59
+ltRows <- which(tAll$d10.17>=24.59)
+length(ltRows) # how many large trees, >20 cm dbh
+table(tAll$Survey[ltRows],tAll$Species[ltRows])
+length(intersect(ltRows,pRows)) # how many in plots
+length(intersect(ltRows,hRows)) # how many in hects
+nrow(tAll)-length(ltRows) # how many not large trees, all pltos
+
+# tAllp <- tAll[pRows,]
+# tAllh <- tAll[hRows,]
+
+# add Subplot to Plot data
+tAll$Subplot.17[pRows] <- 'C3'
+table(tAll$Subplot.17,tAll$Survey)
 
 # Number of live species prefire in plots
-length(table(tAll$Species[which(tAll$Live.17==1 & tAll$Survey=='Plot')]))
-table(tAll$Plot)
+length(unique(tAll$Species))
+length(unique(tAll$Species[which(tAll$Survey=='Plot')]))
+length(unique(tAll$Species[which(tAll$Survey=='Hect')]))
+table(tAll$Species,tAll$Survey)
 
 # First result - ternary plot ordination of plots to describe veg types, intersected with fire severity
-pt <- drawTernaryPlots(d=tAll)
+pt <- drawTernaryPlots(d=tAll[pRows,])
+head(pt)
+tail(pt)
 if (all(pt$plot==fs$Plot)) pt$fsCat <- fs$fsCat else print('error')
 head(pt)
 table(pt$vt)
@@ -81,10 +144,14 @@ table(pt$fsCat)
 write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 
 # Second result - overall numbers
-table(tAll$Type.17)
-table(tAllh$Type.17)
-(allAb <- sum(table(tAll$Type.17[which(tAll$Live.17==1)])))
-(spAbund <- sort(table(tAll$Species[which(tAll$Live.17==1)]),decreasing = T))
+table(tAll$Type.17,tAll$Survey)
+table(tAll$Type.17[ltRows],tAll$Survey[ltRows])
+
+### CONTINUE FROM HERE....#####
+
+#Species abundance in PLOTS (hect removed to avoid mixing size class data)
+(allAb <- sum(table(tAll$Type.17[pRows])))
+(spAbund <- sort(table(tAll$Species[pRows]),decreasing = T))
 
 # PSEMEN as proportion of all non-sprouters
 spAbund[which(names(spAbund)=='PSEMEN')]
@@ -93,7 +160,7 @@ spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% s
 #### Summary stats
 (use.species <- spAtt$Species)
 
-Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])])
+(Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])]))
 
 (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
 (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
@@ -118,8 +185,8 @@ if (FALSE) {
 table(spAtt$Shrub.Tree)
 
 # summary of fates
-(ftab <- table(tAll$fate3.18[which(tAll$Type.18!='TS')]))
-(allAb18 <- sum(table(tAll$fate3.18[which(tAll$Type.18!='TS')])))
+(ftab <- table(tAll$fate3.18))
+(allAb18 <- sum(table(tAll$fate3.18)))
 
 # High level of 2018 fates
 ftab/allAb18

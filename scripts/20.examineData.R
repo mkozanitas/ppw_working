@@ -448,6 +448,7 @@ tAll$Plot <- tAll$Plot.13
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.18[which(is.na(tAll$Plot))]
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.19[which(is.na(tAll$Plot))]
 tAll$Plot[which(is.na(tAll$Plot))] <- tAll$Plot.20[which(is.na(tAll$Plot))]
+substr(tAll$Plot,4,5) <- '13'
 table(tAll$Plot,useNA='always')
 
 # create master Species variable - note there was one individual with a species problem, and this assigns it to first value
@@ -461,13 +462,7 @@ table(tAll$Species,useNA='always')
 tAll$TreeNum <- floor(tAll$Num)
 head(table(tAll$TreeNum))
 
-# create factor for plots, to use in models
-tAll$fPlot <- as.factor(tAll$Plot)
-
 # create 'proxy 2017 data'
-# rownums for new 2018 individuals from new plots
-table(tAll$Plot.17)
-table(tAll$Plot.18)
 
 # identify several subsets of individuals
 # present and measured in 2013
@@ -490,12 +485,22 @@ tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==1)] <- 'new17'
 # new plots
 tAll$Cat17[which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))] <- 'NewPlot'
 
-#tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0 & tAll$Live.19==1)] <- 'new19'
+tAll$Cat17[which(is.na(tAll$Live.13) & is.na(tAll$Live.18) & tAll$Live.19==1)] <- 'new19'
 
-#tAll$Cat17[which(is.na(tAll$Live.13) & tAll$Live.18==0 & tAll$Live.19==0 & tAll$Live.20==1)] <- 'new20'
+tAll$Cat17[which(is.na(tAll$Live.13) & is.na(tAll$Live.18) & is.na(tAll$Live.19) & tAll$Live.20==1)] <- 'new20'
 
 # summarize 2017 category data
 table(tAll$Cat17,useNA='always')
+
+# Not in any category - Check one at a time - DONE
+#tAll[which(is.na(tAll$Cat17))[8],]
+
+# create flag to exclude problematic stems
+tAll$ExcStem <- 0
+tAll$ExcStem[which(is.na(tAll$Cat17))[c(2:5,8)]] <- 1
+
+# one QUEAGR without a num
+tAll[tAll$Plot=='PPW1339',c('Species.13','Num')]
 
 # what plot were 99s found in
 table(tAll$Plot.18[which(tAll$Num>10000)])
@@ -528,6 +533,9 @@ newPlot <- which(tAll$Plot.18 %in% c('PPW1851','PPW1852','PPW1853','PPW1854'))
 length(newPlot)
 table(tAll$Type.18[newPlot])
 
+# flag to identify plants that really are post-fire recruits, and not overlooked plants that were there before the fire
+tAll$PFRecruit <- 0
+
 # New Trees - either not measured in 2013 or new recruits (or other error?)
 newTrees <- which(!tAll$Num %in% tAll$Num[n99] & !tAll$Num %in% tAll$Num[newPlot] & tAll$Type.18=='TR' & is.na(tAll$Plot.13) & tAll$Num %% 1==0)
 length(newTrees)
@@ -546,8 +554,30 @@ table(tAll$Type.13,tAll$Type.18,useNA = 'always')
 table(tAll$Type.18,tAll$Type.19,useNA = 'always')
 table(tAll$Type.19,tAll$Type.20,useNA = 'always')
 
-# one mistake, remove line after Melina fixes
-tAll$Type.13[which(tAll$Type.13=='A2')] <- 'SA'
+# where are the new plants
+new18 <- which(is.na(tAll$Type.13) & !is.na(tAll$Type.18))
+length(new18)
+new19 <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
+length(new19)
+new20 <- which(is.na(tAll$Type.19) & !is.na(tAll$Type.20))
+length(new20)
+
+(p18 <- table(tAll$Plot[new18],useNA='always'))
+sum(p18)
+
+# how many new plants in previously surveyed plots - found in 44 of 50 plots:
+sum(p18[1:44])
+
+table(tAll$Plot[new19],useNA='always')
+table(tAll$Plot[new20],useNA='always')
+
+table(tAll$Plot[new18],tAll$Species[new18])
+table(tAll$Plot[new19],tAll$Species[new19])
+table(tAll$Plot[new20],tAll$Species[new20])
+
+hist(tAll$DBH_cm.18[new18])
+hist(tAll$DBH_cm.19[new19])
+hist(tAll$DBH_cm.20[new20])
 
 # output suspicious transitions- can switch Type and year here to look at other combos
 # MELINA_CHECK
@@ -563,9 +593,12 @@ tAll[s1,c('Plot.13','Num')]
 new19sap <- which(is.na(tAll$Type.18) & !is.na(tAll$Type.19))
 tAll[new19sap,c('Plot.19','Num')]
 table(tAll$Plot.19[new19sap])
+table(tAll$Type.19[new19sap])
+
 
 # Now start filling in pre-fire data from 2018 data, to complete 2017 proxy data, for all new individuals
 #create13Data <- c(newPlot,newTrees[1:12])
+table(tAll$Plot.17)
 tAll$Plot.17[newIndvs] <- tAll$Plot.18[newIndvs]
 tAll$Quad.17[newIndvs] <- tAll$Quad.18[newIndvs]
 tAll$Type.17[newIndvs] <- tAll$Type.18[newIndvs]
@@ -636,21 +669,23 @@ tAll$eastness <- plotInfo$eastness[p2t]
 
 ## Write results to master data file!!
 tAll$Survey <- 'Plot'
-write.csv(tAll,'data/tAll.csv')
+table(tAll$Plot)
+names(tAll)
+tAll$Plot.Orig <- tAll$Plot
+substr(tAll$Plot,4,5) <- '13'
+write.csv(tAll,'data/tAllPlot.csv')
 
 # now add hectares for expanded data set
-names(tAll)
 htAll <- readRDS('data/hectares.rds')
-htAll$Survey <- 'Hect'
 names(htAll)
+dim(htAll)
 
 inBoth <- intersect(tAll$Num,htAll$Num)
 inBoth
+
 # remove from htAll
-htAll <- htAll[-which(htAll$Num %in% inBoth),]
+# htAll <- htAll[-which(htAll$Num %in% inBoth),]
 dim(htAll)
-
-
 
 names(tAll)
 names(htAll)
@@ -661,8 +696,15 @@ dim(tAll)
 dim(htAll)
 tAllh <- merge(tAll,htAll,by=names(htAll)[which(names(htAll) %in% names(tAll))],all=T)
 dim(tAllh)
+tAllh <- tAllh[-which(tAllh$ExcStem==1),]
+dim(tAllh)
 
 names(tAllh)
 tail(tAllh)
+table(tAllh$ExcStem,useNA='always')
+table(tAllh$Plot,useNA='always')
+table(tAllh$Plot.Orig.18,useNA='always')
+table(tAllh$Live.17,useNA='always')
+table(tAllh$Live.17,tAllh$Survey,useNA='always')
 
 write.csv(tAllh,'data/tAllh.csv')
