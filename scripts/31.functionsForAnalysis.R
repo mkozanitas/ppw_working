@@ -131,7 +131,7 @@ drawTernaryPlots <- function(d=tAll)
   return(pt)
 }
 
-calcFatesTableBySpecies <- function()
+calcFatesTableBySpecies <- function(use.species=use.species,survey='Plot')
 {
   fst12 <- data.frame(SpCode=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
   head(fst12)                  
@@ -142,7 +142,7 @@ calcFatesTableBySpecies <- function()
   {
     sp <- fst12$SpCode[i]
     ty <- fst12$Type[i]
-    temp <- tAll[which(tAll$Species==sp & tAll$Type.17==ty),]
+    temp <- tAll[which(tAll$Species==sp & tAll$Type.17==ty & tAll$Survey %in% survey),]
     nrow(temp)
     
     fst12$N17[i] <- sum(temp$Live.17,na.rm=T)
@@ -238,7 +238,7 @@ prepareForBarPlots <- function(d=tAll)
   # tAllm <- tAllm[-newSap,]
   
   # OPTION: if needed trim data by stem size
-  # tAllm <- tAllm[which(tAllm$ld10>=c(0)),]
+  # tAllm <- tAllm[which(tAllm$d10.17>=c(1)),]
   
   # SECTION 'THREE_FATES' - binomial and multinomial compared, for visual purposes
   
@@ -248,16 +248,16 @@ prepareForBarPlots <- function(d=tAll)
   (f3PlotCols <- c('black','red','green'))
   fsPlotSize <- c(0.5,0.75,1,1.25)
   
-  tAllm$f3PlotVals <- f3PlotVals[match(tAllm$fate3.18,f3Levels)]
-  tAllm$f3PlotCols <- f3PlotCols[match(tAllm$fate3.18,f3Levels)]
-  tAllm$fsPlotSize <- fsPlotSize[match(tAllm$fsCat,fsPlotSize)]
+  tAllm$f3PlotVals <- f3PlotVals[match(tAllm$fate3.18,f3Labs)]
+  tAllm$f3PlotCols <- f3PlotCols[match(tAllm$fate3.18,f3Labs)]
+  #tAllm$fsPlotSize <- fsPlotSize[match(tAllm$fsCat,fsPlotSize)]
   
   # comment in or out to select one of these options
   #FireLevels <- c('Mod+High'); FVals <- 2:3
-  #FireLevels <- c('Low'); FVals <- 1
-  #FireLevels <- c('None'); FVals <- 0
-  #FireLevels <- c('None:Low'); FVals <- 0:1 #changes FireSev range to all c(1:3)
-  FireLevels <- c('All'); FVals <- 0:3 #changes FireSev range to all c(1:3)
+  #FireLevels <- c('Low'); FVals <- 2
+  #FireLevels <- c('None'); FVals <- 1
+  #FireLevels <- c('None:Low'); FVals <- 1:2 
+  FireLevels <- c('All'); FVals <- 1:4 #changes FireSev range to all c(1:3)
   
   #### Subset to selected fire values and species
   tAllm <- tAllm[which(tAllm$fsCat %in% FVals),]
@@ -271,8 +271,8 @@ prepareForBarPlots <- function(d=tAll)
   tAllm$TSizeCat <- NA
   tAllm$TSizeCat[which(tAllm$Type.17=='SA' & tAllm$d10.17 <= max(tAll$d10.17,na.rm=T))] <- 'SA'
   tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 <= max(tAllm$DBH_cm.17,na.rm=T))] <- 'TR3'
-  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 20)] <- 'TR2'
-  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 10)] <- 'TR1'
+  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 24.59)] <- 'TR2'
+  tAllm$TSizeCat[which(tAllm$Type.17=='TR' & tAllm$DBH_cm.17 < 12.83)] <- 'TR1'
   table(tAllm$TSizeCat,useNA='always')
   
   tAllm$SSizeCat <- NA

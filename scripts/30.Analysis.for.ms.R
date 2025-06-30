@@ -147,8 +147,6 @@ write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 table(tAll$Type.17,tAll$Survey)
 table(tAll$Type.17[ltRows],tAll$Survey[ltRows])
 
-### CONTINUE FROM HERE....#####
-
 #Species abundance in PLOTS (hect removed to avoid mixing size class data)
 (allAb <- sum(table(tAll$Type.17[pRows])))
 (spAbund <- sort(table(tAll$Species[pRows]),decreasing = T))
@@ -165,6 +163,12 @@ spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% s
 (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
 (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
 sumAb/allAb
+
+## Abundance of common species for PLOTS + HECTS
+(spAbund.ph <- sort(table(tAll$Species),decreasing = T))
+(spAbund.ph.common <- sort(table(tAll$Species[which(tAll$Species %in% common.species)]),decreasing = T))
+sum(spAbund.ph.common)/sum(spAbund.ph)
+
 
 # MELINA: QUESTION
 if (FALSE) {
@@ -184,19 +188,22 @@ if (FALSE) {
 # summary of species types
 table(spAtt$Shrub.Tree)
 
-# summary of fates
-(ftab <- table(tAll$fate3.18))
-(allAb18 <- sum(table(tAll$fate3.18)))
+# summary of fates - All SA and TR, PLOTS
+(ftab <- table(tAll$fate3.18[pRows]))
+(allAb18 <- sum(table(tAll$fate3.18[pRows])))
+ftab/allAb18 # High level of 2018 fates
 
-# High level of 2018 fates
-ftab/allAb18
+# summary of fates - Large Trees
+(ftab <- table(tAll$fate3.18[ltRows]))
+(allAb18 <- sum(table(tAll$fate3.18[ltRows])))
+ftab/allAb18 # High level of 2018 fates
 
-# create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018)
-fst12 <- calcFatesTableBySpecies()
+# create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018) - PLOTS
+fst12 <- calcFatesTableBySpecies(use.species,survey='Plot')
 head(fst12)
 tail(fst12)
 
-sort(tapply(fst12$N17,fst12$SpCode,sum))
+sort(tapply(fst12$N17[pRows],fst12$SpCode[pRows],sum))
 
 # reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
 fst12c <- reduce_fst12()
@@ -258,16 +265,16 @@ table(nspd$Type.17)/table(tAll$Type.17)
 sum(table(nspd$Type.17))/sum(table(tAll$Type.17))
 
 #### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
-# tAllm has all the living plants from 2017, with their 2018 fates
+# tAll has all the living plants from 2017, with their 2018 fates
 # doesn't have new plants added in 2019
 uh <- TRUE #whether to use hectares for model fitting
-if (uh) dat <- tAllh else dat = tAll
+if (uh) dat <- tAll else dat = tAll[pRows,]
 tAllm <- prepareForBarPlots(d=dat)
 dim(tAll)
-dim(tAllh)
 dim(tAllm)
 table(tAllm$TSizeCat)
 sum(table(tAllm$TSizeCat))
+sort(table(tAllm$Species),decreasing = T)
 
 # results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
 #P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
@@ -278,7 +285,7 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
-spSel <- 'ARCMAN'
+spSel <- 'PSEMEN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
@@ -291,11 +298,12 @@ dim(fates)
 fates
 write.csv(fates,paste('results/',spSel,'-fates.csv',sep=''))
 
-if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
+if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
 dim(d)
 
 # Fit once for PSEMEN, don't need to rerun for now
-# fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T,uh=uh)
+## RUNTIME ERROR WITH STAN
+#fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T,uh=uh)
 
 sort(table(tAllm$Species),decreasing=T)
 ## Set species, fire severity option, and log-size option
@@ -304,7 +312,7 @@ sort(table(tAllm$Species),decreasing=T)
 source('scripts/31.functionsForAnalysis.R')
 
 ## CODE FOR INDIVIDUAL SPECIES - RUN INTERACTIVELY
-spSel <- 'NOTDEN'
+spSel <- 'UMBCAL'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL')) fs=c('drop-high','low-medium')
@@ -317,7 +325,7 @@ tdat <- barplotSprouterSpecies(spSel,skip.op=T)
 dim(tdat)
 tdat
 
-if (uh) d <- tAllh[which(tAllh$Species == spSel),] else d <- tAll[which(tAll$Species == spSel),]
+if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
 dim(d)
 
 # Run interactively
