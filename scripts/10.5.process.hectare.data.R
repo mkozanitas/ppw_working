@@ -300,6 +300,8 @@ htAll$UTM.E.17[which(is.na(htAll$UTM.E.17))] <- htAll$UTM.E.18[which(is.na(htAll
 htAll$UTM.N.17 <- htAll$UTM.N.15
 htAll$UTM.N.17[which(is.na(htAll$UTM.N.17))] <- htAll$UTM.N.18[which(is.na(htAll$UTM.N.17))]
 
+plot(htAll$UTM.E.17,htAll$UTM.N.17,asp=1)
+
 # read plot coordinates
 htc <- read.csv('input_data/plot_info/hectares-18-20m-FS.csv')
 head(htc)

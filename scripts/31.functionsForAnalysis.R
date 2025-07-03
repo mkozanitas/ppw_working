@@ -858,7 +858,7 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
   print(fslevels)
   table(d$fac.fsCat)
   
-  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$DN.18,d$Plot,d$TreeNum),]
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
   if (logt) dd$d10.17 <- log10(dd$d10.17)
   dim(dd)
   
@@ -867,17 +867,28 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
   reset.warnings()
   
   #fit5brm <- brm(Live.18 ~ d10.17 * fac.fsCat + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
-  
-  fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                 family="bernoulli", 
-                 chains = 2,
-                 cores = 2, 
-                 seed=726, 
-                 iter=iter,
-                 #backend="cmdstanr",
-                 refresh=100,
-                 control=list(adapt_delta=0.95));beep()
-  
+  if (spName=='PSEMEN') { # remove 1|TreeNum since PSEMEN only have one stem - check if this should be used for ARCMAN too.
+    fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot), data=dd,
+                   family="bernoulli", 
+                   chains = 2,
+                   cores = 2, 
+                   seed=726, 
+                   iter=iter,
+                   #backend="cmdstanr",
+                   refresh=100,
+                   control=list(adapt_delta=0.95));beep()
+  } else {
+    fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
+                   family="bernoulli", 
+                   chains = 2,
+                   cores = 2, 
+                   seed=726, 
+                   iter=iter,
+                   #backend="cmdstanr",
+                   refresh=100,
+                   control=list(adapt_delta=0.95));beep()
+  }
+
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
   print(summary(fit5brm))
   saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))

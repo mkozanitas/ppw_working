@@ -34,5 +34,5 @@ for (i in 1:nrow(adjRes)) {
 head(adjRes)
 (optRes <- adjRes[which.max(adjRes[,4]),])
 
-# drawBox(b,exlim=50)
-# points(tmp$UTM.E.17+as.numeric(optRes[1]),tmp$UTM.N.17+as.numeric(optRes[2]))
+#drawBox(b,exlim=50)
+#points(tmp$UTM.E.17+as.numeric(optRes[1]),tmp$UTM.N.17+as.numeric(optRes[2]))
