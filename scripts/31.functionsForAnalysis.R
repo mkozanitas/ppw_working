@@ -15,6 +15,7 @@ require(beepr)
 require(patchwork)
 #require(cmdstanr)
 require(expandFunctions)
+library(viridis)
 
 local.dir <- '/Users/david/Documents/My_Docs/Projects/Pepperwood/model_fitting'
 
@@ -131,9 +132,9 @@ drawTernaryPlots <- function(d=tAll)
   return(pt)
 }
 
-calcFatesTableBySpecies <- function(use.species=use.species,survey='Plot')
+calcFatesTableBySpecies <- function(use.species=use.species,survey=c('Plot','Hect'))
 {
-  fst12 <- data.frame(SpCode=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.LN=NA,N18.LR=NA,nMissing=NA)
+  fst12 <- data.frame(SpCode=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.Lx=NA,nMissing=NA)
   head(fst12)                  
   tail(fst12)
   
@@ -153,11 +154,10 @@ calcFatesTableBySpecies <- function(use.species=use.species,survey='Plot')
     fst12$N18.DN[i] <- sum(temp$DN.18,na.rm = T)
     
     fst12$N18.DR[i] <- sum(temp$DR.18,na.rm = T)
-    fst12$N18.LN[i] <- sum(temp$LN.18,na.rm = T)
-    fst12$N18.LR[i] <- sum(temp$LR.18,na.rm = T)
+    fst12$N18.Lx[i] <- sum(temp$LN.18,na.rm = T) + sum(temp$LR.18,na.rm = T)
     miss <- which(temp$Live.17==1 & is.na(temp$DN.18)==1)
     if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot','Num')])
-    fst12$nMissing <- fst12$N17-(fst12$N18.DN+fst12$N18.DR+fst12$N18.LN+fst12$N18.LR)
+    fst12$nMissing <- fst12$N17-(fst12$N18.DN+fst12$N18.DR+fst12$N18.Lx)
   }
   return(fst12)
 }
@@ -722,6 +722,8 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   
   saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
+  # For ARBMEN, run model from 31.5 ARBMEN script
+  
   reset.warnings()
   if (FALSE) { # use this to run a model without fire levels
     multifit1 <- brm(fate3.18 ~ s(d10.17, k=3)  + (1|Plot) + (1|TreeNum), data=dd,
@@ -735,6 +737,7 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
                      control=list(adapt_delta=0.95))
     if (uh) uhn <- 'Hect.noFS' else uhn <- 'Plot.noFS'
   } else {
+    #rsamp <- sample(1:nrow(dd),300)
     multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                    family="categorical", 
                    chains = 2,
@@ -743,7 +746,7 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
                    iter=iter,
                    #backend="cmdstanr",
                    refresh=100,
-                   control=list(adapt_delta=0.95))
+                   control=list(adapt_delta=0.99));beep()
     if (uh) uhn <- 'Hect' else uhn <- 'Plot'
   }
   #beep()
@@ -751,10 +754,12 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
   saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
   print(summary(multifit1))
+  
+  visualizeMultifitBayes(multifit1,sp='MN.Splk3') 
 }
 
 
-visualizeMultifitBayes <- function(mf=multifit,sp=splk)
+visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2.3))
 {
   # set up grid for conditional mean predictions
   d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
@@ -779,14 +784,20 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
   predgrid <- cbind(predgrid, pepmeans, pep2.5, pep97.5)
   predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
   
-  mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=DN_mean, group=fac.fsCat, color=fac.fsCat))+
+  cpall <- magma(7)
+  
+  c3 <- c("0.U" = cpall[6],
+          "12.LM" = cpall[4],
+          "3.H" = cpall[2])
+
+    mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=DN_mean, group=fac.fsCat, color=fac.fsCat))+
     ggtitle(paste(spName,'; ',sp,sep=''))+
+    xlim(xlims)+
+    geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=DN_q2.5, ymax=DN_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-    scale_color_viridis_d(name="Fire\nSeverity",
-                          labels=c("Unburned", "Low/Medium", "High"))+
-    scale_fill_viridis_d(name="Fire\nSeverity",
-                         labels=c("Unburned", "Low/Medium", "High"))+
+      scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+      scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Mortality)")+
     theme_bw()+
@@ -794,12 +805,12 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
           aspect.ratio=1)
   
   resprplot <- ggplot(data=predgrid, aes(x=d10.17, y=DR_mean, group=fac.fsCat, color=fac.fsCat))+
+    xlim(xlims)+
+    geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=DR_q2.5, ymax=DR_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-    scale_color_viridis_d(name="Fire\nSeverity",
-                          labels=c("Unburned", "Low/Medium", "High"))+
-    scale_fill_viridis_d(name="Fire\nSeverity",
-                         labels=c("Unburned", "Low/Medium", "High"))+
+    scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Resprout)")+
     theme_bw()+
@@ -807,18 +818,19 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk)
           aspect.ratio=1)
   
   gcplot <- ggplot(data=predgrid, aes(x=d10.17, y=GC_mean, group=fac.fsCat, color=fac.fsCat))+
+    xlim(xlims)+
+    geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=GC_q2.5, ymax=GC_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-    scale_color_viridis_d(name="Fire\nSeverity",
-                          labels=c("Unburned", "Low/Medium", "High"))+
-    scale_fill_viridis_d(name="Fire\nSeverity",
-                         labels=c("Unburned", "Low/Medium", "High"))+
+     scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Green Crown)")+
     theme_bw()+
     theme()
   
   mortplot+resprplot+gcplot
+  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=12)
 }
 
 fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=uh)
@@ -860,11 +872,12 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
   
   dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
   if (logt) dd$d10.17 <- log10(dd$d10.17)
+  table(d$fate3.18,d$fac.fsCat)
   dim(dd)
   
   saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
-  reset.warnings()
+  #reset.warnings()
   
   #fit5brm <- brm(Live.18 ~ d10.17 * fac.fsCat + (1|Plot) + (1|TreeNum), data=dd, family= 'bernoulli');beep()
   if (spName=='PSEMEN') { # remove 1|TreeNum since PSEMEN only have one stem - check if this should be used for ARCMAN too.
@@ -876,7 +889,7 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
                    iter=iter,
                    #backend="cmdstanr",
                    refresh=100,
-                   control=list(adapt_delta=0.95));beep()
+                   control=list(adapt_delta=0.99));beep()
   } else {
     fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
                    family="bernoulli", 
@@ -892,10 +905,10 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
   print(summary(fit5brm))
   saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
-  
+  visualizeBernfitBayes(fit5brm,sp='SPLK3',xlims=log10(drange)) 
 }
 
-visualizeBernfitBayes <- function(mf=multifit,sp=splk)
+visualizeBernfitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2))
 {
   # set up grid for conditional mean predictions
   d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
@@ -921,20 +934,28 @@ visualizeBernfitBayes <- function(mf=multifit,sp=splk)
   predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
   head(predgrid)
   
+  cpall <- magma(7)
+  
+  c3 <- c("0.U" = cpall[6],
+          "12.LM" = cpall[4],
+          "3.H" = cpall[2])
+  
   mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=Live.mean, group=fac.fsCat, color=fac.fsCat))+
     ggtitle(paste(spName,'; ',sp,sep=''))+
     geom_line()+
+    geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
+    xlim(xlims)+
+    geom_vline(xintercept=c(0.351,1.391),linetype='dashed')+
     geom_ribbon(aes(ymin=Live.q2.5, ymax=Live.q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-    scale_color_viridis_d(name="Fire\nSeverity",
-                          labels=c("Unburned", "Low/Medium", "High"))+
-    scale_fill_viridis_d(name="Fire\nSeverity",
-                         labels=c("Unburned", "Low/Medium", "High"))+
+    scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Mortality)")+
     theme_bw()+
     theme()
   
   mortplot
+  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=5.2)
 }
 
 ##

@@ -323,7 +323,7 @@ i=1
 for (i in 1:length(plot.list)) {
   plot <- plot.list[i]
   rs <- which(htAll$Plot==plot)
-  tmp <- htAll[rs,c('Plot','Subplot.17','Num','UTM.E.17','UTM.N.17')]
+  tmp <- htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17')]
   plot(htAll$UTM.E.17,htAll$UTM.N.17,asp=1,type='n',main=tmp[1,'Plot'])
   points(tmp$UTM.E.17,tmp$UTM.N.17,pch=19)
   
@@ -334,8 +334,8 @@ for (i in 1:length(plot.list)) {
   uyx <- max(htc$UTM.y[cs]+20)
   b <- c(uxm,uxx,uym,uyx)
   
-  #drawBox(b,exlim=50,plot)
-  #points(tmp[,c('UTM.E.17','UTM.N.17')],asp=1)
+  drawBox(b,exlim=500,plot)
+  points(tmp[,c('UTM.E.17','UTM.N.17')],asp=1)
   source('scripts/adjustHectCoords.R')
   #drawBox(b,exlim=50,plot)
   #points(tmp$UTM.E.17+as.numeric(optRes[1]),tmp$UTM.N.17+as.numeric(optRes[2]))
@@ -364,14 +364,13 @@ for (i in 1:length(plot.list)) {
     }
   }
   table(tmp$Subplot.17)
-  htAll[rs,c('Plot','Subplot.17','Num','UTM.E.17','UTM.N.17')] <- tmp
+  htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17')] <- tmp
 }
 table(htAll$Subplot.17)
-htAll$coordOutlier[which(htAll$Subplot.17 %in% c('A0','A9','B0','B9','C0','C9','D0','D9','E0','E9') | substr(htAll$Subplot.17,1,1) %in% c('L','M'))] <- 1
+htAll$coordOutlier[which(substr(htAll$Subplot.17,2,2) %in% c(0,9))] <- 1
+table(htAll$coordOutlier)
+htAll$coordOutlier[which(substr(htAll$Subplot.17,1,1) %in% c('L','M'))] <- 1
 table(htAll$coordOutlier,htAll$ExcStem)
-
-# hardcode long outliers as Exclude for Analysis, pending Melina corrections
-htAll$ExcStem[which(htAll$Num %in% c(10568,10573,10998,99200,11046.1,11083,11083.1,99191,11158,11158.1,11158.2,99220))] <- 1
 
 # Now move near outliers to nearest plot
 table(htAll$Subplot.17)

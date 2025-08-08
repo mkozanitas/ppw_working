@@ -1,0 +1,31 @@
+Scientific name,Common name,Species code,Lifeform,Resprouter,Functional Group,Abundance,,WHTO,EHRO,NS.Con,R.Shrub,Other,,Shrub.Tree,Dec.Ever,Resprout,Con.Ang,Common,SGroup,Functional Group,,X,OrigSpecies
+Umbellularia californica,California Bay,UMBCAL,T,Y,EHRO,2094,,,X,,,,,T,E,Y,A,Yes,EHRO,EHRO,31,31,UMBCAL
+Quercus garryana,Oregon White Oak,QUEGAR,T,Y,WHTO,1871,,X,,,,,,T,D,Y,A,Yes,WHTO,WHTO,22,22,QUEGAR
+Quercus agrifolia,Coast Live Oak,QUEAGR,T,Y,EHRO,1791,,,X,,,,,T,E,Y,A,Yes,EHRO,EHRO,19,19,QUEAGR
+Pseudotsuga menziesii,Douglas-Fir,PSEMEN,T,N,NS.Con,1491,,,,X,,,,T,E,N,C,Yes,CON,NS.Con,18,18,PSEMEN
+Heteromeles arbutifolia,Toyon,HETARB,S,Y,R.Shrub,708,,,,,X,,,S,E,Y,A,Yes,Other,R.Shrub,14,14,HETARB
+Quercus kelloggii,California Black Oak,QUEKEL,T,Y,EHRO,536,,,X,,,,,T,D,Y,A,Yes,EHRO,EHRO,23,23,QUEKEL
+Arbutus menziesii,Madrone,ARBMEN,T,Y,EHRO,493,,,X,,,,,T,E,Y,A,Yes,EHRO,EHRO,5,5,ARBMEN
+Quercus douglassii,Blue Oak,QUEDOU,T,Y,WHTO,481,,X,,,,,,T,D,Y,A,Yes,WHTO,WHTO,21,21,QUEDOU
+Amorpha californica,California False Indigo,AMOCAL,S,Y,R.Shrub,427,,,,,X,,,S,D,Y,A,Yes,Other,R.Shrub,4,4,AMOCAL
+Frangula californica,Coffeeberry,FRACAL,S,Y,R.Shrub,148,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,12,12,FRACAL
+Arctostaphylos manzanita,Common Manzanita,ARCMAN,S,N,NS.Shrub,68,,,,,,NS Shrub,,S,E,N,A,No,Other,NS.Shrub,6,6,ARCMAN
+Baccharis pilularis,Coyote Brush,BACPIL,S,Y,R.Shrub,67,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,7,7,BACPIL
+Quercus berberidifolia,Scrub Oak,QUEBER,S,Y,R.Shrub,56,,,,,X,,,S,E,Y,A,No,WHTO,R.Shrub,20,20,QUEBER
+Aesculus californica,Buckeye,AESCAL,T,Y,R.Shrub,49,,,,,X,,,T,D,Y,A,No,Other,R.Shrub,3,3,AESCAL
+Notholithocarpus densiflorus,Tanoak,NOTDEN,T,Y,EHRO,25,,,X,,,,,T,E,Y,A,No,EHRO,EHRO,16,16,NOTDEN
+Cercocarpus betuloides,Mountain Mahogany,CERBET,S,Y,R.Shrub,22,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,10,10,CERBET
+Sequoia sempervirens,Redood,SEQSEM,T,Y,R.Con,18,,,,,,R Con,,T,E,Y,C,No,CON,R.Con,29,29,SEQSEM
+Acer macrophyllum,Bigleaf maple,ACEMAC,T,Y,Riparian.Tree,14,,,,,,Rip Tree,,T,D,Y,A,No,Other,Riparian.Tree,1,1,ACEMAC
+Fraxinus latifolia,Ash,FRALAT,T,Y,Riparian.Tree,12,,,,,,Rip Tree,,T,D,Y,A,No,Other,Riparian.Tree,13,13,FRALAT
+Adenostoma fasciculatum,Chamise,ADEFAS,S,Y,R.Shrub,10,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,2,2,ADEFAS
+Quercus lobata,Valley Oak,QUELOB,T,Y,WHTO,10,,X,,,,,,T,D,Y,A,No,WHTO,WHTO,24,24,QUELOB
+Rhamnus crocea,Spriny Reberry,RHACRO,S,Y,R.Shrub,8,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,26,26,RHACRO
+Prunus cerasifera,Cherry Plum,PRUCER,T,Y,R.Shrub,5,,,,,X,,,T,D,Y,A,No,Other,R.Shrub,17,17,PRUCER
+Torreya californica,California Torreya,TORCAL,S,Y,R.Shrub,5,,,,,X,,,S,E,Y,C,No,CON,R.Shrub,30,30,TORCAL
+Quercus wislizeni,Interior Live Oak,QUEWIS,T,Y,EHRO,4,,,X,,,,,T,E,Y,A,No,EHRO,EHRO,25,25,QUEWIS
+Ceanother parryi,Parry's Ceanothus,CEAPAR,S,Y,R.Shrub,4,,,,,X,,,S,E,Y,A,No,Other,R.Shrub,9,9,CEAPAR
+Ceanothus cuneatus,Buckbrush,CEACUN,S,N,NS.Shrub,3,,,,,,NS Shrub,,S,E,N,A,No,Other,NS.Shrub,8,8,CEACUN
+Corylus cornuta,Beaked Hazelnut,CORCOR,S,Y,R.Shrub,2,,,,,X,,,S,D,Y,A,No,Other,R.Shrub,11,11,CORCOR
+Sambucus nigra,Black Elderberry,SAMNIG,S,Y,R.Shrub,2,,,,,X,,,S,D,Y,A,No,Other,R.Shrub,28,28,SAMNIG
+Holodiscus discolor,Ocean Spray,HOLDIS,S,Y,R.Shrub,1,,,,,X,,,S,D,Y,A,No,Other,R.Shrub,15,15,HOLDIS

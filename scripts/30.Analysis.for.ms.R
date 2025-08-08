@@ -37,6 +37,7 @@ if (FALSE) {
 # Read in species codes - in this script, called 'Species'
 spAtt <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodVegPlots/master/SpeciesData/all-spp-attributes.csv")
 
+dim(spAtt)
 head(spAtt)
 tail(spAtt)
 table(spAtt$FuncGroup)
@@ -69,6 +70,11 @@ dim(tAll)
 
 pRows <- which(tAll$Survey=='Plot')
 hRows <- which(tAll$Survey=='Hect')
+
+# summary statistics for fire severity by plots
+table(fs$fsCat)
+table(hfs$fsCat,hfs$Plot)
+table(hfs$fsCat)
 
 # add fire severity to tAll
 table(tAll$Plot,useNA='always')
@@ -138,18 +144,42 @@ head(pt)
 tail(pt)
 if (all(pt$plot==fs$Plot)) pt$fsCat <- fs$fsCat else print('error')
 head(pt)
+tail(pt)
 table(pt$vt)
-table(pt$fsCat)
+write.csv(pt,'results/plot-types-fs.csv')
+table(pt$fsLevel)
+
 (vtfs <- table(pt[,c('vt','fsCat')]))
 write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 
 # Second result - overall numbers
 table(tAll$Type.17,tAll$Survey)
+sum(table(tAll$Type.17,tAll$Survey))
 table(tAll$Type.17[ltRows],tAll$Survey[ltRows])
+
+# Size distribution in four levels
+tAll$Type.17.4 <- tAll$Type.17
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17<= 10)] <- 'ST'
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 10 & tAll$DBH_cm.17<=20)] <- 'MT'
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 20)] <- 'LT'
+
+# now check d10 to try and assign a few remaining individuals
+tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17 <= 12.83)] <- 'ST'
+tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17 > 12.83 & tAll$DBH_cm.17<=24.59)] <- 'MT'
+tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17> 24.59)] <- 'LT'
+tAll$Type.17.4[which(tAll$Type.17.4=='LT' & tAll$Survey=='Hect')] <- 'HLT'
+table(tAll$Type.17.4,useNA='a')
+table(tAll$Type.17.4,tAll$fsCat,useNA='a')
+
 
 #Species abundance in PLOTS (hect removed to avoid mixing size class data)
 (allAb <- sum(table(tAll$Type.17[pRows])))
 (spAbund <- sort(table(tAll$Species[pRows]),decreasing = T))
+(spAbund.all <- table(tAll$Species))
+a2s <- match(spAtt$OrigSpecies,names(spAbund.all))
+spAtt$tot.abund <- spAbund.all[a2s]
+write.csv(spAtt,'results/all-spp-attributes.csv')
+
 
 # PSEMEN as proportion of all non-sprouters
 spAbund[which(names(spAbund)=='PSEMEN')]
@@ -199,11 +229,11 @@ ftab/allAb18 # High level of 2018 fates
 ftab/allAb18 # High level of 2018 fates
 
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018) - PLOTS
-fst12 <- calcFatesTableBySpecies(use.species,survey='Plot')
+use.species <- names(spAbund.all)
+fst12 <- calcFatesTableBySpecies(use.species,survey=c('Plot','Hect'))
 head(fst12)
 tail(fst12)
-
-sort(tapply(fst12$N17[pRows],fst12$SpCode[pRows],sum))
+write.csv(fst12,'results/fates.x.species.csv')
 
 # reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
 fst12c <- reduce_fst12()
@@ -285,12 +315,18 @@ length(tdat)
 d <- tdat[[1]]
 table(d$Species)
 
+## Next three sections cover PSEMEN, then all the resprouters, and then the resprouting functional groups. These are focused on building the models and the figures showing fate3 as a function of size and fire severity, by species or FG. 
+
+#In order to have the same range of x-axes on all figures, this next line identifying the range of size values. Then for each figure it's adjusted to only calculate and show the curves for the span of sizes covered by that species or group
+drange <- range(tAll$d10.17,na.rm=T)
+log10(drange)
+
 spSel <- 'PSEMEN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
 #fs=c('drop-high','low-medium') #AMOCAL, QUEGAR
 #fs=c('low-medium','drop-high','drop-unburned') #FRACAL
-iter=2000
+iter=10000
 logt=T
 
 fates <- barplotOneNonSprouter(d=tAllm,spSel,skip.op=T,print.to.pdf = F)
@@ -300,22 +336,23 @@ write.csv(fates,paste('results/',spSel,'-fates.csv',sep=''))
 
 if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
 dim(d)
+table(d$Survey)
 
 # Fit once for PSEMEN, don't need to rerun for now
-## RUNTIME ERROR WITH STAN
 #fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T,uh=uh)
 
-sort(table(tAllm$Species),decreasing=T)
-## Set species, fire severity option, and log-size option
 
 # refresh script 31 if needed
 source('scripts/31.functionsForAnalysis.R')
 
+sort(table(tAllm$Species),decreasing=T)
+## Set species, fire severity option, and log-size option
+
 ## CODE FOR INDIVIDUAL SPECIES - RUN INTERACTIVELY
-spSel <- 'UMBCAL'
+spSel <- 'ARBMEN'
 spName <- spSel
 fs=c('low-medium') #'all','low-medium'
-if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL')) fs=c('drop-high','low-medium')
+if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL','QUEDOU')) fs=c('drop-high','low-medium')
 if (spSel %in% c('FRACAL')) fs=c('low-medium','drop-high','drop-unburned')
 #if (spSel %in% c('QUEGAR','QUEDOU','QUEKEL')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
 logt=T
@@ -340,9 +377,14 @@ dim(d)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'EHRO'
+FSel <- 'R.Shrub'
 spName <- FSel
 (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
+spSel <- spSel[-which(spSel=='BACPIL')]
+sRow <- which(tAllm$Species %in% spSel)
+table(tAllm$Species[sRow])
+sum(table(tAllm$Species[sRow]))
+
 fs=c('low-medium') #'all','low-medium'
 if (spName %in% c('WHTO','R.Shrub')) fs=c('drop-high','low-medium')
 #if (spName %in% c('WHTO','R.Shrub')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
@@ -351,13 +393,12 @@ logt=T
 tdat <- barplotSprouterSpecies(spSel,ss.name=spName,skip.op=T)
 dim(tdat)
 
-if (uh) d <- tAllh[which(tAllh$FuncGroup %in% FSel),] else d <- tAll[which(tAll$FuncGroup %in% FSel),]
+if (uh) d <- tAll[which(tAll$FuncGroup %in% FSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
 dim(d)
 
 # Run interactively
 # # this function runs k=3 spline, with more iterations
 # fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
-
 
 if (FALSE) {
   # next four line pairs run 3 different spline models and then quadratic - I tested all of these, and settled on spline k=3, which is implemented above with more iterations to help with convergence.
@@ -373,7 +414,7 @@ if (FALSE) {
   fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
 }
 
-
+write.csv(tAll,'data/tAll30.csv')
 
 #### END HERE FOR NOW
 

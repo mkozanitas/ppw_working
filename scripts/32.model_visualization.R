@@ -1,6 +1,7 @@
 ## Visualizing model results
 rm(list=ls())
 source('scripts/31.functionsForAnalysis.R')
+unlockBinding("last.warning", baseenv())
 
 mod <- 'brm'
 fit.type <- c('MN.Quad','MN.Splk3','MN.Splk6','MN.Splk20')
@@ -9,36 +10,69 @@ dep.var <- 'fate3.18' #'Live.18','gCxLv', 'fate3.18', 'gCrown.18'
 iter <- 'i50000'
 uhn <- 'Hect' # or 'Plot', if no FS: 'Hect.noFS' or 'Plot.noFS'
 
-spList <- c('UMBCAL','QUEAGR','HETARB','AMOCAL','QUEGAR','ARBMEN','EHRO','WHTO','R.Shrub')
-spName <- spList[7]
-dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
-dim(dd)
-table(dd$fate3.18,dd$fac.fsCat)
+# UMBCAL QUEGAR QUEAGR PSEMEN HETARB QUEKEL ARBMEN QUEDOU AMOCAL
+spList <- c('UMBCAL','QUEGAR','QUEAGR','HETARB','QUEKEL','ARBMEN','QUEDOU','AMOCAL','EHRO','WHTO','R.Shrub')
 
-reset.warnings()
-(mfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
-(wfname <- paste(local.dir,'/',paste(mod,spName,uh,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
-mf <- multifit1
-mf <- readRDS(mfname)
-wf <- readRDS(wfname)
-print(wf)
-print(mf)
-
-visualizeMultifitBayes(mf,sp=fit.type[f]) 
+spN <- 11
+for (spN in 1:length(spList))
+{
+  print(spN)
+  spName <- spList[spN]
+  dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
+  dim(dd)
+  dd$large.trees <- 'Sap+ST'
+  dd$large.trees[which(dd$d10.17>=1.39076)] <- 'LT'
+  
+  #reset.warnings()
+  (mfname <- paste(local.dir,'/',paste(mod,spName,uhn,fit.type[f],dep.var,iter,'rds',sep='.'),sep=''))
+  (wfname <- paste(local.dir,'/',paste(mod,spName,uhn,fit.type[f],dep.var,iter,'WARNINGS.rds',sep='.'),sep=''))
+  #mf <- multifit1
+  mf <- readRDS(mfname)
+  wf <- readRDS(wfname)
+  #print(mf)
+  
+  print(c(spName,nrow(dd)))
+  print(wf)
+  print(table(dd$fate3.18,dd$fac.fsCat))
+  print(table(dd$Survey,dd$large.trees))
+  xlims <- range(dd$d10.17,na.rm=T)
+  
+  #conditional_effects(mf, categorical=TRUE)
+  # use xlims set here for local range, default is study wide range
+  #visualizeMultifitBayes(mf,sp=fit.type[f],print.to.pdf=T,xlims=xlims) 
+  #visualizeMultifitBayes(mf,sp=fit.type[f],print.to.pdf=T) 
+}
 
 # NOW FOR PSEMEN
 reset.warnings()
 spName <- 'PSEMEN'
 dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
+dim(dd)
+dd$large.trees <- 'Sap+ST'
+dd$large.trees[which(dd$d10.17>=1.39076)] <- 'LT'
 
-(mfname <- paste(local.dir,'/brm.PSEMEN.TRUE.2000.BERN.Splk3.Live18.rds',sep=''))
-(wfname <- paste(local.dir,'/brm.PSEMEN.TRUE.2000.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+(mfname <- paste(local.dir,'/brm.PSEMEN.TRUE.10000.BERN.Splk3.Live18.rds',sep=''))
+(wfname <- paste(local.dir,'/brm.PSEMEN.TRUE.10000.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+
+print(c(spName,nrow(dd)))
+print(wf)
+print(table(dd$fate3.18,dd$fac.fsCat))
+print(table(dd$Survey,dd$large.trees))
+
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
 print(mf)
 print(wf)
 
-visualizeBernfitBayes(mf,sp='SPLK3') 
+{
+  print(c(spName,nrow(dd)))
+  print(wf)
+  print(table(dd$fate3.18,dd$fac.fsCat))
+  print(table(dd$Survey,dd$large.trees))
+}
+xlims <- range(dd$d10.17,na.rm=T)
+
+visualizeBernfitBayes(mf,sp='SPLK3',print.to.pdf=T,xlims=xlims) 
 
 ## code below just to review warnings
 i=6
