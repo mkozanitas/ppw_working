@@ -103,20 +103,12 @@ drawTernaryPlots <- function(d=tAll)
   
   SGBA <- tapply(d$BA.17,list(d$Plot,d$SGroup),sum,na.rm=T)
   SGBA[is.na(SGBA)] <- 0
+  SGBA
   sumBA <- apply(SGBA,1,sum)
   pSGBA <- SGBA/sumBA
   pSGBA3 <- pSGBA
   pSGBA3[,4] <- pSGBA3[,3] + pSGBA3[,4]
   (pSGBA3 <- round(100*pSGBA3[,-3],1))
-  
-  for (i in c(F,T)) {
-    if (i) pdf('results/ternary.pdf',8.8)
-    TernaryPlot(alab='CON',blab='EHRO',clab='WHTO')
-    TernaryPoints(pSGBA3,pch=19,col=fsCols[fs$fsLevel+1],cex=2)
-    #TernaryText(pSGBA3,substr(row.names(pSGBA3),6,7)) 
-    if (i) dev.off()
-  }
-  
   
   # classify plots
   pt <- data.frame(plot=row.names(pSGBA),vt=NA)
@@ -127,23 +119,38 @@ drawTernaryPlots <- function(d=tAll)
   #pt$vt[which(is.na(pt$vt) & pSGBA3[,3]<20)] <- 'MH-CON'
   pt$vt[which(is.na(pt$vt))] <- 'Mix3'
   pt$fsLevel <- fs$fsLevel
+  pt$fsCol <- fsCols[pt$fsLevel+1]
+  pt$vtshp <- vtShapes$shp[match(pt$vt,vtShapes$vt)]
+  pt <- cbind(pt,pSGBA3)
   pt
   write.csv(pt,'data/vegtypes-fs.csv')
+  write.csv(pt,'results/vegtypes-fs.csv')
+  
+  
+  for (i in c(F,T)) {
+    if (i) pdf('figures/ternary.pdf',8.8)
+    TernaryPlot(alab='CON',blab='EHRO',clab='WHTO')
+    TernaryPoints(pSGBA3,col=pt$fsCol,pch=pt$vtshp,cex=2)
+    #TernaryText(pSGBA3,substr(row.names(pSGBA3),6,7)) 
+    if (i) dev.off()
+  }
+  
   return(pt)
 }
 
 calcFatesTableBySpecies <- function(use.species=use.species,survey=c('Plot','Hect'))
 {
-  fst12 <- data.frame(SpCode=rep(use.species,each=2),Type=rep(c('SA','TR'),length(use.species)),N17=NA,N18.DN=NA,N18.DR=NA,N18.Lx=NA,nMissing=NA)
+  use.speciest <- c(use.species,'TOTAL')
+  fst12 <- data.frame(SpCode=rep(use.speciest,each=5),Type=rep(c('SA','ST','MT','LT','HLT'),length(use.speciest)),N17=NA,N18.DN=NA,N18.DR=NA,N18.Lx=NA,nMissing=NA)
   head(fst12)                  
   tail(fst12)
   
   i=1
   for (i in 1:nrow(fst12))
   {
-    sp <- fst12$SpCode[i]
+    if (fst12$SpCode[i]=='TOTAL') sp <-use.species else sp <- fst12$SpCode[i]
     ty <- fst12$Type[i]
-    temp <- tAll[which(tAll$Species==sp & tAll$Type.17==ty & tAll$Survey %in% survey),]
+    temp <- tAll[which(tAll$Species %in% sp & tAll$Type.17.4 %in% ty & tAll$Survey %in% survey),]
     nrow(temp)
     
     fst12$N17[i] <- sum(temp$Live.17,na.rm=T)
@@ -159,6 +166,7 @@ calcFatesTableBySpecies <- function(use.species=use.species,survey=c('Plot','Hec
     if (length(miss)>0) for (j in 1:length(miss)) print(temp[miss[j],c('Plot','Num')])
     fst12$nMissing <- fst12$N17-(fst12$N18.DN+fst12$N18.DR+fst12$N18.Lx)
   }
+  fst12 <- fst12[-which(apply(fst12[,3:6],1,sum)==0),]
   return(fst12)
 }
 
@@ -327,31 +335,40 @@ barplotNonSprouters <- function(d=tAll,print.to.pdf=c(F,T))
   return(tdat)
 }
 
-barplotOneNonSprouter <- function(d=tAll,ss,print.to.pdf=c(F,T),skip.op=T,plot.live=T)
+barplotOneNonSprouter <- function(d=tAll,ss,print.to.pdf=c(F,T),skip.op=T,plot.live=F)
 {
   tree.cols <- c('grey90','grey60','grey30','black')
   shrub.cols <- c('grey90','black')
   tree.names <- spAtt$Species[which(spAtt$Shrub.Tree=='T')]
   shrub.names <- spAtt$Species[which(spAtt$Shrub.Tree=='S')]
   
-  d <- tAllm[which(tAllm$Species %in% ss),]
+  d <- d[which(d$Species %in% ss),]
   dim(d)
   
   if (ss %in% tree.names) {
     for (p2p in print.to.pdf) {
       if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
       if (skip.op) op=par(mfrow=c(1,4))
+      if ('HLT' %in% unique(d$Type.17.4))
+      {
+        d$TSizeCat <- NA
+        d$TSizeCat[which(d$Type.17.4=='SA')] <- 'SA'
+        d$TSizeCat[which(d$Type.17.4=='ST')] <- 'TR1'
+        d$TSizeCat[which(d$Type.17.4=='MT')] <- 'TR2'
+        d$TSizeCat[which(d$Type.17.4 %in% c('LT','HLT'))] <- 'TR3'
+      }
       d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
       d$SizeCat <- d$TSizeCat
       nrow(d)
       
-      (tot <- table(d$SizeCat,d$fsCat))
-      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      (tot <- table(d$SizeCat,d$fac.fsCat))
+      fates <- table(d$SizeCat,d$fac.fsCat,d$fate3.18)
       barplot(tot,beside=T,col=tree.cols,main=paste(ss,'Sample Sizes'))
       if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
       barplot(0/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
       barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Green Crown'),ylim=c(0,1))
       if (plot.live) barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Live'),ylim=c(0,1))
+      if (p2p) dev.off()
       if (skip.op) par(op)
     }
   } else {
@@ -362,20 +379,21 @@ barplotOneNonSprouter <- function(d=tAll,ss,print.to.pdf=c(F,T),skip.op=T,plot.l
       d$SizeCat <- d$SSizeCat
       nrow(d)
       
-      (tot <- table(d$SizeCat,d$fsCat))
-      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      (tot <- table(d$SizeCat,d$fac.fsCat))
+      fates <- table(d$SizeCat,d$fac.fsCat,d$fate3.18)
       barplot(tot,beside=T,col=tree.cols,main=paste(ss,'Sample Sizes'))
       if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss,'Mortality'),ylim=c(0,1))
       barplot(0/tot,beside = T,col=tree.cols,main=paste(ss,'Topkill-Resprout'),ylim=c(0,1))
       barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Green Crown'),ylim=c(0,1))
       if (plot.live) barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss,'Live'),ylim=c(0,1))
+      if (p2p) dev.off()
       if (skip.op) par(op)
     }
   }
   return(fates)
 }
 
-barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,ss.name=NA)
+barplotSprouterSpecies <- function(d,ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,ss.name=NA)
 {
   tree.cols <- c('grey90','grey60','grey30','black')
   shrub.cols <- c('grey90','black')
@@ -383,46 +401,100 @@ barplotSprouterSpecies <- function(ss,print.to.pdf=c(F,T),skip.op=F,plot.live=F,
   shrub.names <- spAtt$Species[which(spAtt$Shrub.Tree=='S')]
   if (is.na(ss.name)) ss.name <- ss
   
-  d <- tAllm[which(tAllm$Species %in% ss),]
-  if (ss[1] %in% c('QUEGAR','AMOCAL')) d$fsCat[which(d$fsCat==3)] <- 2
+  #if (ss[1] %in% c('QUEGAR','AMOCAL')) d$fsCat[which(d$fsCat==3)] <- 2
   dim(d)
+  print(ss)
   
   if (ss[1] %in% tree.names) {
     for (p2p in print.to.pdf) {
-      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      print('enter tree loop')
+      if (p2p) pdf(paste('results/fates-',ss.name,'.pdf',sep=''),10,3)
       if (skip.op) op=par(mfrow=c(1,4))
+      if ('HLT' %in% unique(d$Type.17.4))
+      {
+        d$TSizeCat <- NA
+        d$TSizeCat[which(d$Type.17.4=='SA')] <- 'SA'
+        d$TSizeCat[which(d$Type.17.4=='ST')] <- 'TR1'
+        d$TSizeCat[which(d$Type.17.4=='MT')] <- 'TR2'
+        d$TSizeCat[which(d$Type.17.4 %in% c('LT','HLT'))] <- 'TR3'
+      }
       d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
       d$SizeCat <- d$TSizeCat
       nrow(d)
       d <- d[complete.cases(d$SizeCat,d$fsCat,d$fate3.18),]
       
-      (tot <- table(d$SizeCat,d$fsCat))
-      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      (tot <- table(d$SizeCat,d$fac.fsCat))
+      fates <- table(d$SizeCat,d$fac.fsCat,d$fate3.18)
+      print(fates)
       barplot(tot,beside=T,col=tree.cols,main=paste(ss.name,'Sample Sizes'))
       if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Mortality'),ylim=c(0,1))
       barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Topkill-Resprout'),ylim=c(0,1))
       barplot(fates[,,3]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Green-Crown'),ylim=c(0,1))
       if (plot.live) barplot(1-(fates[,,1]/tot),beside = T,col=tree.cols,main=paste(ss.name,'Live'),ylim=c(0,1))
+      if (p2p) dev.off()
       if (skip.op) par(op)
     }
   } else {
     for (p2p in print.to.pdf) {
-      if (p2p) pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+      print('enter shrub loop')
+      if (p2p) pdf(paste('results/fates-',ss.name,'.pdf',sep=''),10,3)
       if (skip.op) op=par(mfrow=c(1,4))
+      
+      if ('SA' %in% unique(d$Type.17.4))
+      {
+        d$SSizeCat <- NA
+        d$SSizeCat[which(d$Type.17.4=='SA')] <- 'SA'
+        d$SSizeCat[which(d$Type.17.4=='ST')] <- 'TR'
+        d$SSizeCat[which(d$Type.17.4=='MT')] <- 'TR'
+      }
+      
       d <- d[which(d$SSizeCat %in% c('SA','TR')),]
       d$SizeCat <- d$SSizeCat
       nrow(d)
       
-      (tot <- table(d$SizeCat,d$fsCat))
-      fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+      (tot <- table(d$SizeCat,d$fac.fsCat))
+      fates <- table(d$SizeCat,d$fac.fsCat,d$fate3.18)
+      print(fates)
       barplot(tot,beside=T,col=shrub.cols,main=paste(ss.name,'Sample Sizes'))
       if (!plot.live) barplot(fates[,,1]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Mortality'),ylim=c(0,1))
       barplot(fates[,,2]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Topkill-Resprout'),ylim=c(0,1))
       barplot(fates[,,3]/tot,beside = T,col=shrub.cols,main=paste(ss.name,'Green-Crown'),ylim=c(0,1))
       if (plot.live) barplot(1-(fates[,,1]/tot),beside = T,col=shrub.cols,main=paste(ss.name,'Live'),ylim=c(0,1))
+      if (p2p) dev.off()
       if (skip.op) par(op)
     }
   }
+  return(fates)
+}
+
+barplotSprouterTree2pdf <- function(d,ss,ss.name=NA)
+{
+  tree.cols <- c('grey90','grey60','grey30','black')
+  tree.names <- spAtt$Species[which(spAtt$Shrub.Tree=='T')]
+  if (is.na(ss.name)) ss.name <- ss
+  
+  pdf(paste('results/fates-',ss,'.pdf',sep=''),10,3)
+  op=par(mfrow=c(1,4))
+  d$TSizeCat <- NA
+  d$TSizeCat[which(d$Type.17.4=='SA')] <- 'SA'
+  d$TSizeCat[which(d$Type.17.4=='ST')] <- 'TR1'
+  d$TSizeCat[which(d$Type.17.4=='MT')] <- 'TR2'
+  d$TSizeCat[which(d$Type.17.4 %in% c('LT','HLT'))] <- 'TR3'
+  d <- d[which(d$TSizeCat %in% c('SA','TR1','TR2','TR3')),]
+  d$SizeCat <- d$TSizeCat
+  table(d$SizeCat)
+  nrow(d)
+  d <- d[complete.cases(d$SizeCat,d$fsCat,d$fate3.18),]
+  
+  (tot <- table(d$SizeCat,d$fsCat))
+  fates <- table(d$SizeCat,d$fsCat,d$fate3.18)
+  barplot(tot,beside=T,col=tree.cols,main=paste(ss.name,'Sample Sizes'))
+  barplot(fates[,,1]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Mortality'),ylim=c(0,1))
+  barplot(fates[,,2]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Topkill-Resprout'),ylim=c(0,1))
+  barplot(fates[,,3]/tot,beside = T,col=tree.cols,main=paste(ss.name,'Green-Crown'),ylim=c(0,1))
+  dev.off()
+  par(op)
+  
   return(fates)
 }
 
@@ -684,43 +756,6 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   # local.dir <- local file directory for storing models - too large for github
   
   # model fitting
-  table(d$Species)
-  
-  table(as.numeric(d$fsCat))
-  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
-  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
-  table(d$fac.fsCat)
-  
-  fslevels <- c()
-  if ('all' %in% fs) {
-    fslevels <- c(fslevels,'fs.all')
-  }
-  if ('drop-high' %in% fs)
-  {
-    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
-    fslevels <- c(fslevels,'drop.high')
-  }
-  if ('drop-unburned' %in% fs)
-  {
-    d <- d[-which(d$fac.fsCat=='0.U'),]
-    #d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
-    fslevels <- c(fslevels,'drop-unburned')
-  }
-  if ('low-medium' %in% fs)
-  {
-    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
-    fslevels <- c(fslevels,'comb-low-med')
-  }
-  print(fslevels)
-  table(d$fac.fsCat)
-  
-  # fit multinomial first
-  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
-  if (logt) dd$d10.17 <- log10(dd$d10.17)
-  dim(dd)
-  table(dd$fate3.18,dd$fac.fsCat)
-  
-  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
   # For ARBMEN, run model from 31.5 ARBMEN script
   
@@ -739,18 +774,18 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   } else {
     #rsamp <- sample(1:nrow(dd),300)
     multifit1 <- brm(fate3.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot) + (1|TreeNum), data=dd,
-                   family="categorical", 
-                   chains = 2,
-                   cores = 2, 
-                   seed=726,
-                   iter=iter,
-                   #backend="cmdstanr",
-                   refresh=100,
-                   control=list(adapt_delta=0.99));beep()
+                     family="categorical", 
+                     chains = 2,
+                     cores = 2, 
+                     seed=726,
+                     iter=iter,
+                     #backend="cmdstanr",
+                     refresh=100,
+                     control=list(adapt_delta=0.99));beep()
     if (uh) uhn <- 'Hect' else uhn <- 'Plot'
   }
   #beep()
-
+  
   saveRDS(summary(warnings()),paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.WARNINGS.rds',sep=''))
   saveRDS(multifit1,paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
   print(summary(multifit1))
@@ -758,12 +793,25 @@ fitFatesMultinomial2.brm <- function(d,spName=NA,fs='all',logt=T, iter=2000)
   visualizeMultifitBayes(multifit1,sp='MN.Splk3') 
 }
 
+visualizeMultifitBayes_redraw <- function(spName=spName,sp='MN.Splk3')
+{
+  #spName <- 'HETARB'
+  uhn <- 'Hect'
+  multifit1 <- readRDS(paste(local.dir,'/brm.',spName,'.',uhn,'.MN.Splk3.fate3.18.i',iter,'.rds',sep=''))
+  visualizeMultifitBayes(multifit1,sp='MN.Splk3',print.to.pdf=T,fs='all') 
+}
 
-visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2.3))
+
+visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2.3),fs='all')
 {
   # set up grid for conditional mean predictions
   d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
   fac.fsCat_grid <- sort(unique(dd$fac.fsCat))
+  if (spName %in% c('WHTO','QUEGAR','QUEDOU','QUEKEL')) 
+  {
+    fac.fsCat_grid <- fac.fsCat_grid[-which(fac.fsCat_grid=='0.U')]
+    fslabs <- c("Low/Medium","High") 
+  } else fslabs <- c("Unburned","Low/Medium","High")
   predgrid <- expand.grid(d10.17_grid, fac.fsCat_grid)
   names(predgrid) <- c("d10.17", "fac.fsCat")
   predgrid$d10.17q <- predgrid$d10.17^2
@@ -784,20 +832,25 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1
   predgrid <- cbind(predgrid, pepmeans, pep2.5, pep97.5)
   predgrid$fac.fsCat <- factor(predgrid$fac.fsCat, levels=c("0.U", "12.LM", "3.H"))
   
-  cpall <- magma(7)
+  #cpall <- magma(7)
   
-  c3 <- c("0.U" = cpall[6],
-          "12.LM" = cpall[4],
-          "3.H" = cpall[2])
-
-    mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=DN_mean, group=fac.fsCat, color=fac.fsCat))+
-    ggtitle(paste(spName,'; ',sp,sep=''))+
+  #c3 <- c("0.U" = cpall[6],
+  #        "12.LM" = cpall[4],
+  #        "3.H" = cpall[2])
+  
+  c3 <- c("0.U" = '#00FF01',
+          "12.LM" = '#FE8800',
+          "3.H" = '#DC267F')
+  
+  mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=DN_mean, group=fac.fsCat, color=fac.fsCat))+
+    ggtitle(paste(spName,sep=''))+
     xlim(xlims)+
+    ylim(c(0,1))+
     geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=DN_q2.5, ymax=DN_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-      scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
-      scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_color_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Mortality)")+
     theme_bw()+
@@ -806,11 +859,12 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1
   
   resprplot <- ggplot(data=predgrid, aes(x=d10.17, y=DR_mean, group=fac.fsCat, color=fac.fsCat))+
     xlim(xlims)+
+    ylim(c(0,1))+
     geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=DR_q2.5, ymax=DR_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-    scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
-    scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_color_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Resprout)")+
     theme_bw()+
@@ -819,18 +873,19 @@ visualizeMultifitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1
   
   gcplot <- ggplot(data=predgrid, aes(x=d10.17, y=GC_mean, group=fac.fsCat, color=fac.fsCat))+
     xlim(xlims)+
+    ylim(c(0,1))+
     geom_vline(xintercept=c(0.351,1.391,2.074),linetype='dashed')+
     geom_line()+
     geom_ribbon(aes(ymin=GC_q2.5, ymax=GC_q97.5, group=fac.fsCat, fill=fac.fsCat, color=NULL), alpha=0.2)+
-     scale_color_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
-    scale_fill_manual(name="Fire\nSeverity", labels=c("Unburned","Low/Medium","High"),values = c3)+
+    scale_color_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
+    scale_fill_manual(name="Fire\nSeverity", labels=fslabs,values = c3)+
     xlab("Log(Basal Stem Diameter [cm])")+
     ylab("P(Green Crown)")+
     theme_bw()+
     theme()
   
   mortplot+resprplot+gcplot
-  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=12)
+  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood Drive/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=12)
 }
 
 fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=uh)
@@ -841,41 +896,7 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
   # local.dir <- local file directory for storing models - too large for github
   
   # model fitting
-  table(d$Species)
   
-  table(as.numeric(d$fsCat))
-  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
-  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
-  table(d$fac.fsCat)
-  
-  fslevels <- c()
-  if ('all' %in% fs) {
-    fslevels <- c(fslevels,'fs.all')
-  }
-  if ('drop-high' %in% fs)
-  {
-    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
-    fslevels <- c(fslevels,'drop.high')
-  }
-  if ('drop-unburned' %in% fs)
-  {
-    d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
-    fslevels <- c(fslevels,'drop-unburned')
-  }
-  if ('low-medium' %in% fs)
-  {
-    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
-    fslevels <- c(fslevels,'comb-low-med')
-  }
-  print(fslevels)
-  table(d$fac.fsCat)
-  
-  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
-  if (logt) dd$d10.17 <- log10(dd$d10.17)
-  table(d$fate3.18,d$fac.fsCat)
-  dim(dd)
-  
-  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
   
   #reset.warnings()
   
@@ -901,14 +922,14 @@ fitFatesNonSprouter.brm <- function(d,spName=NA,fs='all',logt=T,live.only=F,uh=u
                    refresh=100,
                    control=list(adapt_delta=0.95));beep()
   }
-
+  
   saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
   print(summary(fit5brm))
   saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
-  visualizeBernfitBayes(fit5brm,sp='SPLK3',xlims=log10(drange)) 
+  #visualizeBernfitBayes(fit5brm,sp='SPLK3',xlims=log10(drange)) 
 }
 
-visualizeBernfitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2))
+visualizeBernfitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,2.3),spName=spName)
 {
   # set up grid for conditional mean predictions
   d10.17_grid <- seq(from=min(dd$d10.17), to=max(dd$d10.17), length.out=300)
@@ -940,6 +961,10 @@ visualizeBernfitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,
           "12.LM" = cpall[4],
           "3.H" = cpall[2])
   
+  c3 <- c("0.U" = '#00FF01',
+          "12.LM" = '#FE8800',
+          "3.H" = '#DC267F')
+  
   mortplot <- ggplot(data=predgrid, aes(x=d10.17, y=Live.mean, group=fac.fsCat, color=fac.fsCat))+
     ggtitle(paste(spName,'; ',sp,sep=''))+
     geom_line()+
@@ -955,7 +980,7 @@ visualizeBernfitBayes <- function(mf=multifit,sp=splk,print.to.pdf=F,xlims=c(-1,
     theme()
   
   mortplot
-  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=5.2)
+  if (print.to.pdf) ggsave(paste("/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood Drive/Fire_2017/Demography paper 2024/model_figs_2025/", spName,'.pdf',sep=""), height=4, width=5.2)
 }
 
 ##
@@ -1492,48 +1517,51 @@ fitModelsDiscreteFates <- function()
   
 }
 
-delayedMortality <- function()
+delayedMortality <- function(survey=c('Plot','Hect'))
 {
-  table(tAll$fate.18)
-  table(tAll$fate.19)
-  table(tAll$fate.18,tAll$fate.19,useNA = 'always')
+  tmp <- tAll[which(tAll$Survey %in% survey),]
+  table(tmp$fate3.18)
+  table(tmp$fate3.19)
+  table(tmp$fate3.18,tmp$fate3.19,useNA = 'always')
   # Came back to life!! Should these be reclassified in 2018 based on 2019
-  # DN-DR = 78
-  # DN-LN = 46
+  # DN-DR = 73
+  # DN-LN = 49
   
-  print('file ressurect.csv written to data, with 124 plants recorded as live in 2019, but dead in 2018')
-  resurrect <- which(tAll$fate.18=='DN' & (tAll$fate.19=='DR' | tAll$fate.19=='LN'))
-  write.csv(tAll[resurrect,c('Plot','Num')],'data/resurrect.csv')
+  print('file ressurect.csv written to data, with 122 plants recorded as live in 2019, but dead in 2018')
+  resurrect <- which(tmp$fate3.18=='DN' & (tmp$fate3.19 %in% c('DR','GC')))
+  table(tmp$Species[resurrect])
+  write.csv(tmp[resurrect,c('Plot','Num')],'data/resurrect.csv')
   
   # delayed mortality
-  # DR-DN = 98
+  # DR-DN = 96
   # DR-NA = 17
-  # LN-DN = 57
-  # LN-NA = 3
-  # LR-DN = 3
-  dmort <- c(which(tAll$fate.18=='DR' & tAll$fate.19=='DN'),
-             which(tAll$fate.18=='DR' & is.na(tAll$fate.19)),
-             which(tAll$fate.18=='LN' & tAll$fate.19=='DN'),
-             which(tAll$fate.18=='LN' & is.na(tAll$fate.19)),
-             which(tAll$fate.18=='LR' & tAll$fate.19=='DN'))
+  # GC-DN = 59
+  # GC-DR = 24
+  # GC-NA = 3
+  dmort <- c(which(tmp$fate3.18=='DR' & tmp$fate3.19=='DN'),
+             which(tmp$fate3.18=='DR' & is.na(tmp$fate3.19)),
+             which(tmp$fate3.18=='GC' & tmp$fate3.19=='DN'),
+             which(tmp$fate3.18=='GC' & is.na(tmp$fate3.19)))
   print(length(dmort))
-  # Total = 178
+  
+  # Total = 175
   # out of how many living in 2018?
   print('proportions of delayed mortality, overall and by group')
   print('overall')
-  print(length(dmort)/sum(tAll$Live.18,na.rm=T))
+  #Live.18 has a lot missing, maybe hectares? 
+  print(length(dmort)/sum(tmp$Live.18,na.rm=T))
   
-  dmort <- tAll[dmort,]
+  dmort <- tmp[dmort,]
   
   print('by fire severity')
   print(table(dmort$fsCat))
-  print(table(dmort$fsCat)/table(tAll$fsCat[which(tAll$Live.18==1)]))
+  print(table(dmort$fsCat)/table(tmp$fsCat[which(tmp$Live.18==1)]))
   print('by type')
-  print(table(dmort$Type.17))
-  print(table(dmort$Type.17)/table(tAll$Type.17[which(tAll$Live.18==1)]))
+  print(table(dmort$Type.17.4))
+  print(table(dmort$Type.17.4)/table(tmp$Type.17.4[which(tmp$Live.18==1)]))
   
   dms <- table(dmort$Species)
-  dma <- table(tAll$Species[which(tAll$Live.18==1)])
+  dma <- table(tmp$Species[which(tmp$Live.18==1)])
   xx <- dms[match(names(dma),names(dms))]
   names(xx) <- names(dma)
   xx[which(is.na(xx))] <- 0
@@ -1702,116 +1730,7 @@ basalDiameterLogisticRegressions <- function()
   par(op.reset)
 }
 
-basalResprouts <- function()
-{
-  names(tAllm)
-  cs <- spAtt$Species[which(spAtt$Shrub.Tree %in% c('S','T') & spAtt$Common=='Yes' & spAtt$Resprout=='Y')]
-  tAllc <- tAllm[which(tAllm$Species %in% cs & (tAllm$DR.18==1 | tAllm$LR.18==1)),]
-  dim(tAllc)
-  tAllc$Basal.Resprout.Height_cm.18 <- as.numeric(tAllc$Basal.Resprout.Height_cm.18)
-  tAllc$Basal.Resprout.Height_cm.19 <- as.numeric(tAllc$Basal.Resprout.Height_cm.19)
-  
-  # fix two outlier - remove this after data file is fixed
-  tAllc$Basal.Resprout.Height_cm.18[which.max(tAllc$Basal.Resprout.Height_cm.18)] <- NA
-  tAllc$Basal.Resprout.Count.18[which.max(tAllc$Basal.Resprout.Count.18)] <- NA
-  
-  # change zeros to NAs to avoid including in analysis
-  tAllc$Basal.Resprout.Height_cm.18[which(tAllc$Basal.Resprout.Height_cm.18==0)] <- NA
-  tAllc$Basal.Resprout.Count.18[which(tAllc$Basal.Resprout.Count.18==0)] <- NA
-  tAllc$Basal.Resprout.Height_cm.19[which(tAllc$Basal.Resprout.Height_cm.19==0)] <- NA
-  tAllc$Basal.Resprout.Count.19[which(tAllc$Basal.Resprout.Count.19==0)] <- NA
-  
-  tAllc$lBasal.Resprout.Count.18 <- log10(tAllc$Basal.Resprout.Count.18+1)
-  hist(tAllc$lBasal.Resprout.Count.18)
-  hist(log10(tAllc$Basal.Resprout.Height_cm.18))
-  plot(tAllc$lBasal.Resprout.Count.18,log10(tAllc$Basal.Resprout.Count.19+1))
-  abline(0,1)
-  
-  fit <- lm(Basal.Resprout.Height_cm.18~Species*fsCat,data=tAllc)
-  anova(fit)
-  hist(fit$residuals)
-  par(mfrow=c(2,1),mar=c(5,5,3,1))
-  boxplot(Basal.Resprout.Height_cm.18~Species,data=tAllc,ylab='Resprout height (cm), 2018')
-  boxplot(Basal.Resprout.Height_cm.18~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout height (cm), 2018')
-  
-  length(which(tAllc$Basal.Resprout.Height_cm.18>0 & tAllc$fsCat==0))
-  
-  fit <- lm(lBasal.Resprout.Count.18~Species*fsCat,data=tAllc)
-  anova(fit)
-  hist(fit$residuals)
-  par(mfrow=c(2,1),mar=c(5,5,3,1))
-  boxplot(lBasal.Resprout.Count.18~Species,data=tAllc,ylab='Resprout count (+1,log10), 2018')
-  boxplot(lBasal.Resprout.Count.18~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout count (+1,log10), 2018')
-  range(tAllc$Basal.Resprout.Count.18,na.rm=T)
-  
-  tAllc$RespGrowth <- tAllc$Basal.Resprout.Height_cm.19-tAllc$Basal.Resprout.Height_cm.18
-  fit <- lm(RespGrowth~Species*fsCat,data=tAllc)
-  anova(fit)
-  hist(fit$residuals)
-  boxplot(RespGrowth~Species,data=tAllc,ylab='Resprout growth, 2018-19 (cm)')
-  abline(h=0,lty=2)
-  boxplot(RespGrowth~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout growth, 2018-19 (cm)')
-  abline(h=0,lty=2)
-  
-  par(op.reset)
-  plot(Basal.Resprout.Height_cm.19~Basal.Resprout.Height_cm.18,data=tAllc,xlab='Basal Resprought Height (cm), 2018',ylab='Basal Resprought Height (cm), 2019',asp=1,xlim=c(0,500),ylim=c(0,500),col=fsCols[as.numeric(tAllc$fsCat)],pch=19,cex=1.5)
-  fit <- lm(Basal.Resprout.Height_cm.19~Basal.Resprout.Height_cm.18,data=tAllc)
-  abline(fit)
-  anova(fit)
-  abline(0,1,lty=2)
-  
-  relGrowth <- tAllc$Basal.Resprout.Height_cm.19/tAllc$Basal.Resprout.Height_cm.18
-  summary(relGrowth)
-  
-  # PSEMEN with basal resprouts - doesn't affect analyses above
-  xx <- which(tAllm$Basal.Resprout.Height_cm.18>=0 & tAllm$Species=='PSEMEN')
-  tAllm[xx,]
-  tAllm$Basal.Resprout.Count.18[xx] <- NA
-  tAllm$Basal.Resprout.Height_cm.18[xx] <- NA
-  xx <- which(tAllm$Basal.Resprout.Height_cm.19>=0 & tAllm$Species=='PSEMEN')
-  tAllm[xx,]
-  tAllm$Basal.Resprout.Count.19[xx] <- NA
-  tAllm$Basal.Resprout.Height_cm.19[xx] <- NA
-}
 
-new2019recruits <- function()
-{
-  r9 <- which(is.na(tAll$fate.18) & tAll$Type.19 %in% c('SA','TR') & tAll$Species!='BACPIL')
-  print('number of new recruits, by type, species, fire severity')
-  print(table(tAll$Type.19[r9]))
-  print(table(tAll$Species[r9],tAll$Type.19[r9]))
-  newr <- table(tAll$fsCat[r9],tAll$Type.19[r9])
-  print(newr)
-  s18 <- table(tAllm$fsCat[which(tAllm$Live.18==1)],tAllm$Type.19[which(tAllm$Live.18==1)])
-  #newr/s18
-  
-  print('saplings by species and plot for unburned;low+medium;high severity')
-  r9ubsa <- intersect(r9,which(tAll$fsCat %in% c(0) & tAll$Type.19=='SA'))
-  print(table(tAll$Species[r9ubsa],tAll$Plot[r9ubsa]))
-  
-  r9lmssa <- intersect(r9,which(tAll$fsCat %in% c(1,2) & tAll$Type.19=='SA'))
-  print(table(tAll$Species[r9lmssa],tAll$Plot[r9lmssa]))
-  
-  r9hssa <- intersect(r9,which(tAll$fsCat==3 & tAll$Type.19=='SA'))
-  print(table(tAll$Species[r9hssa],tAll$Plot[r9hssa]))
-  
-  # What was the species composition of plots where Ceanothus germinated
-  (cp <- unique(tAll$Plot[intersect(r9,which(tAll$Species=='CEACUN'))]))
-  table(tAll$Species[which(tAll$Plot %in% cp[1] & tAll$Live.17==1)])
-  table(tAll$Species[which(tAll$Plot %in% cp[1] & tAll$Live.18==1)])
-  table(tAll$Species[which(tAll$Plot %in% cp[2] & tAll$Live.19==1)])
-  table(tAll$Species[which(tAll$Plot %in% cp[2] & tAll$Live.17==1)])
-  table(tAll$Species[which(tAll$Plot %in% cp[2] & tAll$Live.18==1)])
-  table(tAll$Species[which(tAll$Plot %in% cp[2] & tAll$Live.19==1)])
-  
-  (cp <- unique(tAll$Plot[intersect(r9,which(tAll$Species=='AMOCAL'))]))
-  unique(tAll$fsCat[tAll$Plot %in% c('PPW1348','PPW1350')])
-  
-  # tree size individuals recorded as new - some of these are too big to be new, and some have no dbh which seems strage - need to assess?
-  r9t <- which(is.na(tAll$fate.18) & tAll$Type.19=='TR')
-  length(r9t)
-  r9tdbh <- tAll$DBH_cm.19[r9t]
-}
 
 
 # ATTEMPT AT GENERIC MODELS BUT IN THE END FIT THEM FOR EACH SPECIES

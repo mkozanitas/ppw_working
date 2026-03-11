@@ -5,7 +5,12 @@ rm(list=ls())
 
 source('scripts/31.functionsForAnalysis.R')
 op.reset <- par(mfcol=c(1,1),mar=c(5,5,3,3))
-fsCols <- c('blue','brown','orange','red')
+#fsCols <- c('blue','brown','orange','red')
+fsCols <- c('#00FF01','#FFB000','#FE6100','#DC267F')
+fsCols3 <- c("0.U" = '#00FF01',
+        "12.LM" = '#FE8800',
+        "3.H" = '#DC267F')
+vtShapes <- data.frame(vt=c('CON','MH','Mix3','WO'),shp=c(18,15,17,16))
 
 fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
 head(fs)
@@ -53,6 +58,7 @@ table(tAll$Survey)
 table(tAll$Species)
 tAll <- convertHybrids()
 table(tAll$Species)
+sum(table(tAll$Species))
 
 # add functional groups to tAll
 # Are all species in spAtt?
@@ -68,6 +74,7 @@ dim(tAll)
 tAll <- tAll[-which(tAll$Type.17=='TS'),]
 dim(tAll)
 
+# assign plot and hectare rows
 pRows <- which(tAll$Survey=='Plot')
 hRows <- which(tAll$Survey=='Hect')
 
@@ -101,14 +108,70 @@ table(tAll.archive$Species)
 tAll <- tAll.archive
 table(tAll$ExcStem)
 
+tAll$BABH.17 <- pi*(tAll$DBH_cm.17/2^2)
+tAll$BAd10.17 <- pi*(tAll$d10.17/2^2)
+
 # subset to live prefire - removes individuals newly added in 2019 and 2020
-tAll <- tAll[which(tAll$Live.17==1),c('Num','TreeNum','Species','FuncGroup','Plot','Subplot.17','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19','Survey')]
+tAll <- tAll[which(tAll$Live.17==1),c('Num','TreeNum','Species','FuncGroup','Plot','Subplot.17','fsCat','Year.13','Point.13','Year.17','Type.17','Live.17','DBH_cm.17','d10.17','BABH.17','BAd10.17','SA.Height_cm.17','Year.18','Type.18','Live.18','fate3.18','DN.18','DR.18','LN.18','LR.18','gCrown.18','DBH_cm.18','d10.18','Basal.Resprout.Count.18','Basal.Resprout.Height_cm.18','Year.19','Live.19','fate3.19','Type.19','DBH_cm.19','d10.19','Basal.Resprout.Count.19','Basal.Resprout.Height_cm.19','Survey')]
+
+# Remove Baccharis and QUEDEC
+tAll <- tAll[-which(tAll$Species %in% c('BACPIL','QUEDEC')),]
 dim(tAll)
 
 table(tAll$fate3.18,tAll$Survey,useNA='a')
 tAll <- tAll[-which(is.na(tAll$fate3.18)),]
 table(tAll$fate3.18,tAll$Survey,useNA='a')
 
+# Size distribution in four levels
+tAll$Type.17.4 <- NA
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='SA')] <- 'SA'
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17<= 10)] <- 'ST'
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 10 & tAll$DBH_cm.17<=20)] <- 'MT'
+tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 20)] <- 'LT'
+
+table(tAll$Type.17.4,useNA='a')
+summary(tAll$DBH_cm.17[which(is.na(tAll$Type.17.4))])
+summary(tAll$d10.17[which(is.na(tAll$Type.17.4))])
+table(tAll$Type.17[which(is.na(tAll$Type.17.4))])
+
+# now check d10 to try and assign a few remaining individuals
+tAll$Type.17.4[which(is.na(tAll$Type.17.4) & tAll$Type.17=='TR' & tAll$d10.17 <= 12.83)] <- 'ST'
+tAll$Type.17.4[which(is.na(tAll$Type.17.4) & tAll$Type.17=='TR' & tAll$d10.17 > 12.83 & tAll$d10.17<=24.59)] <- 'MT'
+tAll$Type.17.4[which(is.na(tAll$Type.17.4) & tAll$Type.17=='TR' & tAll$d10.17> 24.59)] <- 'LT'
+tAll$Type.17.4[which(tAll$Type.17.4=='LT' & tAll$Survey=='Hect')] <- 'HLT'
+table(tAll$Type.17.4,useNA='a')
+table(tAll$fsCat,tAll$Type.17.4,useNA='a')
+
+## Drop 37 individuals that are not classified by size and 37 individuals (coincidence it's the same?) without FS
+tAll <- tAll[-which(is.na(tAll$Type.17.4)),]
+tAll <- tAll[-which(is.na(tAll$fsCat)),]
+
+# Table 2
+(T2 <- table(tAll$Type.17.4,tAll$fsCat,useNA='a'))
+sum(T2)
+
+# Table 1
+T1 <- table(tAll$Species)
+prows <- which(tAll$Survey=='Plot')
+hrows <- which(tAll$Survey=='Hect')
+T1N.p <- table(tAll$Species[prows])
+T1N.p <- T1N.p[match(names(T1),names(T1N.p))]
+T1N.h <- table(tAll$Species[hrows])
+T1N.h <- T1N.h[match(names(T1),names(T1N.h))]
+T1babh.plots <- tapply(tAll$BABH.17[prows],tAll$Species[prows],sum,na.rm=T)
+T1babh.plots <- T1babh.plots[match(names(T1),names(T1babh.plots))]
+T1babh.hect <- tapply(tAll$BABH.17[hrows],tAll$Species[hrows],sum,na.rm=T)
+T1babh.hect <- T1babh.hect[match(names(T1),names(T1babh.hect))]
+T1babh <- tapply(tAll$BABH.17,tAll$Species,sum,na.rm=T)
+T1bad10 <- tapply(tAll$BAd10.17,tAll$Species,sum,na.rm=T)
+T1 <- cbind(T1,T1N.p,T1N.h,T1babh.plots,T1babh.hect,T1bad10)
+T1
+T1 <- T1[order(T1[,1],decreasing = T),]
+write.csv(T1,'results/table1.csv')
+summary(tAll$BABH.17)
+summary(tAll$BAd10.17)
+
+# THIS IS FINAL ANALYSIS SET
 # Introduction - lists number of stems sampled. Include 2018 plots as this is just a general statement about size of the network
 dim(tAll)
 table(tAll$Survey,useNA='a')
@@ -117,29 +180,20 @@ table(tAll$Survey,useNA='a')
 pRows <- which(tAll$Survey=='Plot')
 hRows <- which(tAll$Survey=='Hect')
 
-# identify large trees, >20cm dbh, in Plots and Hects, for stats across this cohort. DBH 20 = d10 24.59
-ltRows <- which(tAll$d10.17>=24.59)
-length(ltRows) # how many large trees, >20 cm dbh
-table(tAll$Survey[ltRows],tAll$Species[ltRows])
-length(intersect(ltRows,pRows)) # how many in plots
-length(intersect(ltRows,hRows)) # how many in hects
-nrow(tAll)-length(ltRows) # how many not large trees, all pltos
-
-# tAllp <- tAll[pRows,]
-# tAllh <- tAll[hRows,]
-
 # add Subplot to Plot data
 tAll$Subplot.17[pRows] <- 'C3'
 table(tAll$Subplot.17,tAll$Survey)
 
-# Number of live species prefire in plots
-length(unique(tAll$Species))
-length(unique(tAll$Species[which(tAll$Survey=='Plot')]))
-length(unique(tAll$Species[which(tAll$Survey=='Hect')]))
-table(tAll$Species,tAll$Survey)
+# mortality in unburned, as control on rates of mortality we may have missed before fire
+unb.mort <- table(tAll$Type.17[which(tAll$fsCat==1)],tAll$fate3.18[which(tAll$fsCat==1)])
+sum(unb.mort[,1])/sum(unb.mort)
+
+# RESULTS
+table(fs$fsCat)
 
 # First result - ternary plot ordination of plots to describe veg types, intersected with fire severity
 pt <- drawTernaryPlots(d=tAll[pRows,])
+
 head(pt)
 tail(pt)
 if (all(pt$plot==fs$Plot)) pt$fsCat <- fs$fsCat else print('error')
@@ -153,70 +207,18 @@ table(pt$fsLevel)
 write.csv(vtfs,'results/veg-type-fire-sev-table.csv')
 
 # Second result - overall numbers
-table(tAll$Type.17,tAll$Survey)
-sum(table(tAll$Type.17,tAll$Survey))
-table(tAll$Type.17[ltRows],tAll$Survey[ltRows])
+dim(tAll)
 
-# Size distribution in four levels
-tAll$Type.17.4 <- tAll$Type.17
-tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17<= 10)] <- 'ST'
-tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 10 & tAll$DBH_cm.17<=20)] <- 'MT'
-tAll$Type.17.4[which(tAll$Live.17==1 & tAll$Type.17=='TR' & tAll$DBH_cm.17> 20)] <- 'LT'
+# total number of large trees
+length(which(tAll$Type.17.4 %in% c('LT','HLT')))
 
-# now check d10 to try and assign a few remaining individuals
-tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17 <= 12.83)] <- 'ST'
-tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17 > 12.83 & tAll$DBH_cm.17<=24.59)] <- 'MT'
-tAll$Type.17.4[which(tAll$Type.17.4=='TR' & tAll$d10.17> 24.59)] <- 'LT'
-tAll$Type.17.4[which(tAll$Type.17.4=='LT' & tAll$Survey=='Hect')] <- 'HLT'
-table(tAll$Type.17.4,useNA='a')
-table(tAll$Type.17.4,tAll$fsCat,useNA='a')
+# count by tree size and whether in plots of hectares
+table(tAll$Type.17.4,tAll$Survey)
 
-
-#Species abundance in PLOTS (hect removed to avoid mixing size class data)
-(allAb <- sum(table(tAll$Type.17[pRows])))
-(spAbund <- sort(table(tAll$Species[pRows]),decreasing = T))
-(spAbund.all <- table(tAll$Species))
-a2s <- match(spAtt$OrigSpecies,names(spAbund.all))
-spAtt$tot.abund <- spAbund.all[a2s]
-write.csv(spAtt,'results/all-spp-attributes.csv')
-
-
-# PSEMEN as proportion of all non-sprouters
-spAbund[which(names(spAbund)=='PSEMEN')]
-spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='N')])])
-
-#### Summary stats
-(use.species <- spAtt$Species)
-
-(Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])]))
-
-(common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
-(sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
-sumAb/allAb
-
-## Abundance of common species for PLOTS + HECTS
-(spAbund.ph <- sort(table(tAll$Species),decreasing = T))
-(spAbund.ph.common <- sort(table(tAll$Species[which(tAll$Species %in% common.species)]),decreasing = T))
-sum(spAbund.ph.common)/sum(spAbund.ph)
-
-
-# MELINA: QUESTION
-if (FALSE) {
-  # how many 'new' saplings 
-  newSap <- which(is.na(tAll$Year.13) & tAll$Year.18==2018 & tAll$Type.18=='SA')
-  table(tAll$Plot[newSap])
-  length(newSap)
-  table(tAll$Year.13,tAll$Year.17,useNA='always')
-  
-  #tAllm$Num[newSap]
-  #table(tAllm$Plot[newSap])
-  #table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
-  
-  # MELINA: Remind me about these - they were either tagged but data failed to record in 2013, or newly recruited from 2013 to 2017 and inferred in '2017' data. They are detected here by NA in Year.17 which I think means 
-}
-
-# summary of species types
-table(spAtt$Shrub.Tree)
+# TABLE B (2)
+table(fs$fsCat)
+table(hfs$fsCat)
+table(tAll$Type.17.4,tAll$fsCat)
 
 # summary of fates - All SA and TR, PLOTS
 (ftab <- table(tAll$fate3.18[pRows]))
@@ -224,96 +226,169 @@ table(spAtt$Shrub.Tree)
 ftab/allAb18 # High level of 2018 fates
 
 # summary of fates - Large Trees
+ltRows <- which(tAll$Type.17.4 %in% c('LT','HLT'))
 (ftab <- table(tAll$fate3.18[ltRows]))
 (allAb18 <- sum(table(tAll$fate3.18[ltRows])))
 ftab/allAb18 # High level of 2018 fates
 
+# MISCELLANEOUS STATS NOT SHOWN IN MS CURRENTLY
+if (FALSE) {
+  # Number of live species prefire in plots
+  table(tAll$Species)
+  length(unique(tAll$Species))
+  length(unique(tAll$Species[which(tAll$Survey=='Plot')]))
+  length(unique(tAll$Species[which(tAll$Survey=='Hect')]))
+  table(tAll$Species,tAll$Survey)
+  
+  table(tAll$Type.17,tAll$Survey)
+  sum(table(tAll$Type.17,tAll$Survey))
+  table(tAll$Type.17[ltRows],tAll$Survey[ltRows])
+  
+  #Species abundance in PLOTS (hect removed to avoid mixing size class data)
+  (allAb <- sum(table(tAll$Type.17[pRows])))
+  (spAbund <- sort(table(tAll$Species[pRows]),decreasing = T))
+  (spAbund.all <- table(tAll$Species))
+  a2s <- match(spAtt$OrigSpecies,names(spAbund.all))
+  spAtt$tot.abund <- spAbund.all[a2s]
+  write.csv(spAtt,'results/all-spp-attributes.csv')
+  
+  # PSEMEN as proportion of all non-sprouters
+  spAbund[which(names(spAbund)=='PSEMEN')]
+  spAbund[which(names(spAbund)=='PSEMEN')]/sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='N')])])
+  
+  #### Summary stats
+  (use.species <- spAtt$Species)
+  
+  (Nresprouters <- sum(spAbund[which(names(spAbund) %in% spAtt$Species[which(spAtt$Resprout=='Y')])]))
+  
+  (common.species <- spAtt$Species[which(spAtt$Common=='Yes')])
+  (sumAb <- sum(spAbund[which(names(spAbund) %in% common.species)]))
+  sumAb/allAb
+  
+  ## Abundance of common species for PLOTS + HECTS
+  (spAbund.ph <- sort(table(tAll$Species),decreasing = T))
+  (spAbund.ph.common <- sort(table(tAll$Species[which(tAll$Species %in% common.species)]),decreasing = T))
+  sum(spAbund.ph.common)/sum(spAbund.ph)
+  
+  
+  # MELINA: QUESTION
+  if (FALSE) {
+    # how many 'new' saplings 
+    newSap <- which(is.na(tAll$Year.13) & tAll$Year.18==2018 & tAll$Type.18=='SA')
+    table(tAll$Plot[newSap])
+    length(newSap)
+        
+    hist(tAll$SA.Height_cm.17[newSap])
+    newTr <- which(is.na(tAll$Year.13) & tAll$Year.18==2018 & tAll$Type.18=='TR')
+    
+    # how many 'new' trees
+    #tAllm$Num[newSap]
+    #table(tAllm$Plot[newSap])
+    #table(tAllm$fate.18[newSap],tAllm$fsCat[newSap])
+    
+    # MELINA: Remind me about these - they were either tagged but data failed to record in 2013, or newly recruited from 2013 to 2017 and inferred in '2017' data. They are detected here by NA in Year.17 which I think means 
+  }
+  
+  # summary of species types
+  table(spAtt$Shrub.Tree)
+}
+
 # create fst dataframe - FateSummaryTable for time 1 -> 2 (2017 and 2018) - PLOTS
-use.species <- names(spAbund.all)
+use.species <- sort(unique(tAll$Species))
 fst12 <- calcFatesTableBySpecies(use.species,survey=c('Plot','Hect'))
 head(fst12)
 tail(fst12)
 write.csv(fst12,'results/fates.x.species.csv')
 
-# reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
-fst12c <- reduce_fst12()
-fst12c
-for (i in 3:7) fst12c[,i] <- as.numeric(fst12c[,i])
+table(tAll$Type.17.4,tAll$fate3.18)
+table(tAll$Type.17.4)
+table(tAll$fate3.18)
 
-# column sums of fst12c, and as percentage of total
-(allSum <- apply(as.matrix(fst12c[,-c(1:2)]),2,sum))
-allSum/allSum[1]
-
-rs <- which(fst12c$Type=='SA')
-(SASum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
-rs <- which(fst12c$Type=='TR')
-(TRSum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
-
-## summary of fates for all, saplings alone, trees alone
-allSum/allSum[1]
-SASum/SASum[1]
-TRSum/TRSum[1]
-
-write.csv(fst12c,'results/summary-table.csv')
-
-# preliminary poster results, not used in the end
+#NOT USED IN MS
 if (FALSE) {
-  poster.species <- c('PSEMEN','QUEAGR','UMBCAL','QUEGAR','HETARB')
-  fst12p <- fst12c[which(fst12c$SpCode %in% poster.species),]
-  fst12p
+  # reduce fst12 table to common species plus other shrubs and trees each tallied by SA and TR
+  fst12c <- reduce_fst12()
+  fst12c
+  for (i in 3:7) fst12c[,i] <- as.numeric(fst12c[,i])
   
-  fst12p[,4:7]/fst12p[,3]
+  # column sums of fst12c, and as percentage of total
+  (allSum <- apply(as.matrix(fst12c[,-c(1:2)]),2,sum))
+  allSum/allSum[1]
   
-  (allSum.p <- apply(as.matrix(fst12p[,-c(1:2)]),2,sum))
-  allSum.p/allSum.p[1]
-  rs <- which(fst12p$Type=='SA')
-  (SASum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
-  rs <- which(fst12p$Type=='TR')
-  (TRSum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+  rs <- which(fst12c$Type=='SA')
+  (SASum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
+  rs <- which(fst12c$Type=='TR')
+  (TRSum <- apply(as.matrix(fst12c[rs,-c(1:2)]),2,sum))
   
-  allSum.p/allSum.p[1]
-  SASum.p/SASum.p[1]
-  TRSum.p/TRSum.p[1]
+  ## summary of fates for all, saplings alone, trees alone
+  allSum/allSum[1]
+  SASum/SASum[1]
+  TRSum/TRSum[1]
   
-  allSum.p/allSum
+  write.csv(fst12c,'results/summary-table.csv')
+  
+  # preliminary poster results, not used in the end
+  if (FALSE) {
+    poster.species <- c('PSEMEN','QUEAGR','UMBCAL','QUEGAR','HETARB')
+    fst12p <- fst12c[which(fst12c$SpCode %in% poster.species),]
+    fst12p
+    
+    fst12p[,4:7]/fst12p[,3]
+    
+    (allSum.p <- apply(as.matrix(fst12p[,-c(1:2)]),2,sum))
+    allSum.p/allSum.p[1]
+    rs <- which(fst12p$Type=='SA')
+    (SASum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+    rs <- which(fst12p$Type=='TR')
+    (TRSum.p <- apply(as.matrix(fst12p[rs,-c(1:2)]),2,sum))
+    
+    allSum.p/allSum.p[1]
+    SASum.p/SASum.p[1]
+    TRSum.p/TRSum.p[1]
+    
+    allSum.p/allSum
+  }
 }
 
-# Barplots for sprouters and non-sprouters, all species
-fbp.list <- barplotFates(tAll,fs='low-medium')
-
-rspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='Y')]),]
-fbp.rsp.list <- barplotFates(rspd,fs='low-medium')
-table(rspd$Type.17)
-
-nspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='N')]),]
-fbp.nsp.list <- barplotFates(nspd,fs='low-medium')
-fbp.nsp.list
-table(nspd$Type.17)
-
-# non sprouters as proportion of all individuals
-table(nspd$Type.17)/table(tAll$Type.17)
-sum(table(nspd$Type.17))/sum(table(tAll$Type.17))
-
-#### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
-# tAll has all the living plants from 2017, with their 2018 fates
-# doesn't have new plants added in 2019
-uh <- TRUE #whether to use hectares for model fitting
-if (uh) dat <- tAll else dat = tAll[pRows,]
-tAllm <- prepareForBarPlots(d=dat)
-dim(tAll)
-dim(tAllm)
-table(tAllm$TSizeCat)
-sum(table(tAllm$TSizeCat))
-sort(table(tAllm$Species),decreasing = T)
-
-# results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
-#P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
-
-# barplot for PSEMEN, first to see here, and then to pdf
-tdat <- barplotNonSprouters(d=tAllm)
-length(tdat)
-d <- tdat[[1]]
-table(d$Species)
+# FOR NOW NOT UPDATING BARPLOTS FOR MS
+if (FALSE) {
+  # Barplots for sprouters and non-sprouters, all species
+  fbp.list <- barplotFates(tAll,fs='low-medium')
+  
+  rspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='Y')]),]
+  fbp.rsp.list <- barplotFates(rspd,fs='low-medium')
+  table(rspd$Type.17)
+  
+  nspd <- tAll[which(tAll$Species %in% spAtt$Species[which(spAtt$Resprout=='N')]),]
+  fbp.nsp.list <- barplotFates(nspd,fs='low-medium')
+  fbp.nsp.list
+  table(nspd$Type.17)
+  
+  # non sprouters as proportion of all individuals
+  table(nspd$Type.17)/table(tAll$Type.17)
+  sum(table(nspd$Type.17))/sum(table(tAll$Type.17))
+  
+  #### makeffsp2#### make bar plotsum#### make bar plots for different subgroups and individual species
+  # tAll has all the living plants from 2017, with their 2018 fates
+  # doesn't have new plants added in 2019
+  uh <- TRUE #whether to use hectares for model fitting
+  if (uh) dat <- tAll else dat = tAll[pRows,]
+  tAllm <- prepareForBarPlots(d=dat)
+  dim(tAll)
+  dim(tAllm)
+  table(tAllm$TSizeCat)
+  sum(table(tAllm$TSizeCat))
+  sort(table(tAllm$Species),decreasing = T)
+  
+  # results holder for P50 results - critical size to reach 50% green crown or topkill.resprout, based on either maxlikelihood or baseyian models
+  #P50res <- data.frame(Species=NA,yvar=NA,GCml.0=NA,GCml.1=0,GCml.2=0,GCml.3=0,GCby.0=NA,GCby.1=0,GCby.2=0,GCby.3=0)
+  
+  # barplot for PSEMEN, first to see here, and then to pdf
+  tdat <- barplotNonSprouters(d=tAllm)
+  length(tdat)
+  d <- tdat[[1]]
+  table(d$Species)
+}
 
 ## Next three sections cover PSEMEN, then all the resprouters, and then the resprouting functional groups. These are focused on building the models and the figures showing fate3 as a function of size and fire severity, by species or FG. 
 
@@ -328,47 +403,173 @@ fs=c('low-medium') #'all','low-medium'
 #fs=c('low-medium','drop-high','drop-unburned') #FRACAL
 iter=10000
 logt=T
-
-fates <- barplotOneNonSprouter(d=tAllm,spSel,skip.op=T,print.to.pdf = F)
-dim(fates)
-fates
-write.csv(fates,paste('results/',spSel,'-fates.csv',sep=''))
+uh <- TRUE
 
 if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
+range(log10(d$d10.17),na.rm=T)
 dim(d)
+names(d)
 table(d$Survey)
 
-# Fit once for PSEMEN, don't need to rerun for now
-#fitFatesNonSprouter.brm <- function(d,spName=NA,fs,logt=T,uh=uh)
+table(d$Species)
 
+table(as.numeric(d$fsCat))
+fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+table(d$fac.fsCat,d$Survey)
+
+fslevels <- c()
+if ('all' %in% fs) {
+  fslevels <- c(fslevels,'fs.all')
+}
+if ('drop-high' %in% fs)
+{
+  d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+  fslevels <- c(fslevels,'drop.high')
+}
+if ('drop-unburned' %in% fs)
+{
+  d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+  fslevels <- c(fslevels,'drop-unburned')
+}
+if ('low-medium' %in% fs)
+{
+  d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+  fslevels <- c(fslevels,'comb-low-med')
+}
+print(fslevels)
+table(d$fac.fsCat,d$Survey)
+d$Live.18[which(d$fate3.18=='GC')] <- 1
+d$Live.18[which(d$fate3.18=='DN')] <- 0
+table(d$Live.18,d$fate3.18,useNA='a')
+
+dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$Live.18,d$Plot,d$TreeNum),]
+table(dd$Survey)
+if (logt) dd$d10.17 <- log10(dd$d10.17)
+table(d$fate3.18,d$fac.fsCat)
+dim(dd)
+names(dd)
+
+saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+
+table(dd$Plot,dd$fac.fsCat)
+spSel
+
+tdat <- barplotOneNonSprouter(dd,spSel,T,T,F)
+
+# model fitting, if needed 
+if (FALSE) {
+  fit5brm <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat + (1|Plot), data=dd,
+               family="bernoulli", 
+               chains = 2,
+               cores = 2, 
+               seed=726, 
+               iter=iter,
+               #backend="cmdstanr",
+               refresh=100,
+               control=list(adapt_delta=0.99))
+  # fit5brm.noplot <- brm(Live.18 ~ s(d10.17, k=3, by=fac.fsCat) + fac.fsCat, data=dd,
+  #                family="bernoulli", 
+  #                chains = 2,
+  #                cores = 2, 
+  #                seed=726, 
+  #                iter=iter,
+  #                #backend="cmdstanr",
+  #                refresh=100,
+  #                control=list(adapt_delta=0.99))
+  beep()
+saveRDS(warnings(),paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
+print(summary(fit5brm))
+saveRDS(fit5brm,paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
+
+multifit <- readRDS(paste(local.dir,'/brm.',spName,'.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
+visualizeBernfitBayes(mf=multifit,sp='',print.to.pdf=T,xlims=c(-1,2.3),spName=spName)
+
+multifit <- readRDS(paste(local.dir,'/brm.',spName,'.noplot.',uh,'.',iter,'.BERN.Splk3.Live18.rds',sep=''))
+visualizeBernfitBayes(mf=multifit,sp='',print.to.pdf=T,xlims=c(-1,2.3),spName=spName)
+
+}
 
 # refresh script 31 if needed
 source('scripts/31.functionsForAnalysis.R')
 
-sort(table(tAllm$Species),decreasing=T)
+spList <- sort(table(tAll$Species),decreasing=T)
+spList <- spList[-which(spList<400)]
+(spList <- spList[-which(names(spList)=='PSEMEN')])
+
 ## Set species, fire severity option, and log-size option
 
 ## CODE FOR INDIVIDUAL SPECIES - RUN INTERACTIVELY
-spSel <- 'ARBMEN'
-spName <- spSel
-fs=c('low-medium') #'all','low-medium'
-if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL','QUEDOU')) fs=c('drop-high','low-medium')
-if (spSel %in% c('FRACAL')) fs=c('low-medium','drop-high','drop-unburned')
-#if (spSel %in% c('QUEGAR','QUEDOU','QUEKEL')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
-logt=T
-iter=50000
+i=7
 
-tdat <- barplotSprouterSpecies(spSel,skip.op=T)
-dim(tdat)
-tdat
-
-if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
-dim(d)
-
-# Run interactively
-# # this function runs k=3 spline, with more iterations
-# fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
-
+# BAR PLOT FUNCTION NOT WORKING FOR SHRUBS
+for (i in 5:length(spList)) 
+{
+  spSel <- names(spList)[i]
+  spName <- spSel
+  fs=c('low-medium') #'all','low-medium'
+  if (spSel %in% c('AMOCAL','QUEGAR','QUEKEL','QUEDOU')) fs=c('drop-high','low-medium')
+  if (spSel %in% c('FRACAL')) fs=c('low-medium','drop-high','drop-unburned')
+  #if (spSel %in% c('QUEGAR','QUEDOU','QUEKEL')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
+  logt=T
+  iter=50000
+  uh <- TRUE
+  
+  
+  #tdat <- barplotSprouterSpecies(spSel,skip.op=T)
+  #dim(tdat)
+  #tdat
+  
+  if (uh) d <- tAll[which(tAll$Species == spSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
+  range(log10(d$d10.17),na.rm=T)
+  dim(d)
+  
+  table(d$Species)
+  
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  fslevels <- c()
+  if ('all' %in% fs) {
+    fslevels <- c(fslevels,'fs.all')
+  }
+  if ('drop-high' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d <- d[-which(d$fac.fsCat=='0.U'),]
+    #d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+    fslevels <- c(fslevels,'comb-low-med')
+  }
+  print(fslevels)
+  table(d$fac.fsCat)
+  
+  # fit multinomial first
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
+  if (logt) dd$d10.17 <- log10(dd$d10.17)
+  dim(dd)
+  table(dd$fate3.18,dd$fac.fsCat)
+  table(dd$fate3.18,dd$fac.fsCat,dd$Type.17.4)
+  
+  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+  tdat <- barplotSprouterSpecies(dd,spSel,print.to.pdf=T,T,F)
+  
+  # Run interactively
+  # # this function runs k=3 spline, with more iterations
+  # fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+  visualizeMultifitBayes_redraw(spName,sp='MN.Splk3')
+  
+}
 
 ## CODE FOR FUNCTIONAL GROUPS - RUN INTERACTIVELY
 # now functional groups
@@ -377,28 +578,76 @@ dim(d)
 #2850     1208      287     1845      477 
 
 table(spAtt$FuncGroup,useNA='always')
-FSel <- 'R.Shrub'
-spName <- FSel
-(spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
-spSel <- spSel[-which(spSel=='BACPIL')]
-sRow <- which(tAllm$Species %in% spSel)
-table(tAllm$Species[sRow])
-sum(table(tAllm$Species[sRow]))
-
-fs=c('low-medium') #'all','low-medium'
-if (spName %in% c('WHTO','R.Shrub')) fs=c('drop-high','low-medium')
-#if (spName %in% c('WHTO','R.Shrub')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
-logt=T
-
-tdat <- barplotSprouterSpecies(spSel,ss.name=spName,skip.op=T)
-dim(tdat)
-
-if (uh) d <- tAll[which(tAll$FuncGroup %in% FSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
-dim(d)
-
-# Run interactively
-# # this function runs k=3 spline, with more iterations
-# fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+FGroupList <- c('EHRO','WHTO','R.Shrub')
+i=1
+for (i in 1:length(FGroupList))
+{
+  FSel <- FGroupList[i]
+  spName <- FSel
+  (spSel <- spAtt$OrigSpecies[which(spAtt$FuncGroup==FSel)])
+  if (FSel=='R.Shrub') spSel <- spSel[-which(spSel=='BACPIL')]
+  sRow <- which(tAll$Species %in% spSel)
+  table(tAll$Species[sRow])
+  sum(table(tAll$Species[sRow]))
+  
+  fs=c('low-medium') #'all','low-medium'
+  if (spName %in% c('WHTO','R.Shrub')) fs=c('drop-high','low-medium')
+  #if (spName %in% c('WHTO','R.Shrub')) fs=c('low-medium','drop-high','drop-unburned') # analyze for burned only, with no FS term
+  logt=T
+  
+  #tdat <- barplotSprouterSpecies(spSel,ss.name=spName,skip.op=T)
+  #dim(tdat)
+  
+  if (uh) d <- tAll[which(tAll$FuncGroup %in% FSel),] else d <- tAll[which(tAll$Species == spSel & tAll$Survey=='Plot'),]
+  range(log10(d$d10.17),na.rm=T)
+  dim(d)
+  
+  table(d$Species)
+  
+  table(as.numeric(d$fsCat))
+  fac.fsCat.levels <- c('0.U','1.L','2.M','3.H')
+  d$fac.fsCat <- fac.fsCat.levels[as.numeric(d$fsCat)]
+  table(d$fac.fsCat)
+  
+  fslevels <- c()
+  if ('all' %in% fs) {
+    fslevels <- c(fslevels,'fs.all')
+  }
+  if ('drop-high' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat=='3.H')] <- '2.M'
+    fslevels <- c(fslevels,'drop.high')
+  }
+  if ('drop-unburned' %in% fs)
+  {
+    d <- d[-which(d$fac.fsCat=='0.U'),]
+    #d$fac.fsCat[which(d$fac.fsCat=='0.U')] <- '1.L'
+    fslevels <- c(fslevels,'drop-unburned')
+  }
+  if ('low-medium' %in% fs)
+  {
+    d$fac.fsCat[which(d$fac.fsCat %in% c('1.L','2.M'))] <- '12.LM'
+    fslevels <- c(fslevels,'comb-low-med')
+  }
+  print(fslevels)
+  table(d$fac.fsCat)
+  
+  # fit multinomial first
+  dd <- d[complete.cases(d$fac.fsCat,d$d10.17,d$fate3.18),]
+  if (logt) dd$d10.17 <- log10(dd$d10.17)
+  dim(dd)
+  table(dd$fate3.18,dd$fac.fsCat)
+  
+  saveRDS(dd,paste(local.dir,'/brm.',spName,'.dd.rds',sep=''))
+  
+  tdat <- barplotSprouterSpecies(dd,spSel,T,T,F,ss.name=FSel)
+  
+  # Run interactively
+  # # this function runs k=3 spline, with more iterations
+  # fitFatesMultinomial2.brm(d,spName,fs,logt,iter=2000)
+  visualizeMultifitBayes_redraw(spName,sp='MN.Splk3')
+  
+}
 
 if (FALSE) {
   # next four line pairs run 3 different spline models and then quadratic - I tested all of these, and settled on spline k=3, which is implemented above with more iterations to help with convergence.
@@ -412,6 +661,141 @@ if (FALSE) {
   fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='spline',splk=k)
   
   fitFatesMultinomial.brm(d,spName,fs,logt,m.choice='quad')
+}
+
+## what about delayed mortality
+# function only works for Plot data for now
+delayedMortality(survey='Plot')
+
+## resprout height growth
+survey <- 'Plot'
+# BASAL RESPROUTS script, in brackets
+{
+  tAll$Basal.Resprout.Height_cm.18 <- as.numeric(tAll$Basal.Resprout.Height_cm.18)
+  tAll$Basal.Resprout.Height_cm.19 <- as.numeric(tAll$Basal.Resprout.Height_cm.19)
+  tAll$Basal.Resprout.Count.18[which(tAll$Basal.Resprout.Count.18==0)] <- NA
+  tAll$Basal.Resprout.Height_cm.18[which(tAll$Basal.Resprout.Height_cm.18==0)] <- NA
+  tAll$Basal.Resprout.Count.19[which(tAll$Basal.Resprout.Count.19==0)] <- NA
+  tAll$Basal.Resprout.Height_cm.19[which(tAll$Basal.Resprout.Height_cm.19==0)] <- NA
+  
+  # fix two outliers - remove this after data file is fixed
+  tAll$Basal.Resprout.Height_cm.18[which.max(tAll$Basal.Resprout.Height_cm.18)] <- NA
+  tAll$Basal.Resprout.Count.18[which.max(tAll$Basal.Resprout.Count.18)] <- NA
+  
+  # PSEMEN with basal resprouts 
+  xx <- which(tAll$Basal.Resprout.Height_cm.18>=0 & tAll$Species=='PSEMEN')
+  tAll[xx,]
+  tAll$Basal.Resprout.Count.18[xx] <- NA
+  tAll$Basal.Resprout.Height_cm.18[xx] <- NA
+  xx <- which(tAll$Basal.Resprout.Height_cm.19>=0 & tAll$Species=='PSEMEN')
+  tAll[xx,]
+  tAll$Basal.Resprout.Count.19[xx] <- NA
+  tAll$Basal.Resprout.Height_cm.19[xx] <- NA
+  
+  names(tAll)
+  message('average resprout count and height - all species')
+  print(mean(tAll$Basal.Resprout.Count.18,na.rm=T))
+  print(mean(tAll$Basal.Resprout.Height_cm.18,na.rm=T))
+  message('max resprout count and height')
+  print(max(tAll$Basal.Resprout.Count.18,na.rm=T))
+  print(max(tAll$Basal.Resprout.Height_cm.18,na.rm=T))
+  
+  cs <- spAtt$Species[which(spAtt$Shrub.Tree %in% c('S','T') & spAtt$Common=='Yes' & spAtt$Resprout=='Y')]
+  tAllc <- tAll[which(tAll$Species %in% cs & (tAll$DR.18==1 | tAll$LR.18==1) & tAll$Survey %in% survey),]
+  dim(tAllc)
+  head(tAllc)
+  
+  tAllc$lBasal.Resprout.Count.18 <- log10(tAllc$Basal.Resprout.Count.18+1)
+  hist(tAllc$lBasal.Resprout.Count.18)
+  hist(log10(tAllc$Basal.Resprout.Height_cm.18))
+  plot(tAllc$lBasal.Resprout.Count.18,log10(tAllc$Basal.Resprout.Count.19+1))
+  abline(0,1)
+  
+  fit <- lm(Basal.Resprout.Height_cm.18~Species*fsCat,data=tAllc)
+  anova(fit)
+  summary(fit)
+  hist(fit$residuals)
+  par(mfrow=c(2,1),mar=c(5,5,3,1))
+  boxplot(Basal.Resprout.Height_cm.18~Species,data=tAllc,ylab='Resprout height (cm), 2018')
+  boxplot(Basal.Resprout.Height_cm.18~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout height (cm), 2018')
+  
+  
+  length(which(tAllc$Basal.Resprout.Height_cm.18>0 & tAllc$fsCat==1))
+  
+  fit <- lm(lBasal.Resprout.Count.18~Species*fsCat,data=tAllc)
+  anova(fit)
+  hist(fit$residuals)
+  par(mfrow=c(2,1),mar=c(5,5,3,1))
+  boxplot(lBasal.Resprout.Count.18~Species,data=tAllc,ylab='Resprout count (+1,log10), 2018')
+  boxplot(lBasal.Resprout.Count.18~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout count (+1,log10), 2018')
+  range(tAllc$Basal.Resprout.Count.18,na.rm=T)
+  
+  tAllc$RespGrowth <- tAllc$Basal.Resprout.Height_cm.19-tAllc$Basal.Resprout.Height_cm.18
+  fit <- lm(RespGrowth~Species*fsCat,data=tAllc)
+  anova(fit)
+  hist(fit$residuals)
+  par(mfrow=c(2,1),mar=c(5,5,3,1))
+  boxplot(RespGrowth~Species,data=tAllc,ylab='Resprout growth, 2018-19 (cm)')
+  abline(h=0,lty=2)
+  boxplot(RespGrowth~fsCat,data=tAllc,xlab='Fire Severity',ylab='Resprout growth, 2018-19 (cm)')
+  abline(h=0,lty=2)
+  
+  par(op.reset)
+  plot(Basal.Resprout.Height_cm.19~Basal.Resprout.Height_cm.18,data=tAllc,xlab='Basal Resprout Height (cm), 2018',ylab='Basal Resprout Height (cm), 2019',asp=1,xlim=c(0,500),ylim=c(0,500),col=fsCols[as.numeric(tAllc$fsCat)],pch=19,cex=1.5,cex.lab=1.5)
+  fit <- lm(Basal.Resprout.Height_cm.19~Basal.Resprout.Height_cm.18,data=tAllc)
+  abline(fit)
+  anova(fit)
+  abline(0,1,lty=2)
+  
+  relGrowth <- tAllc$Basal.Resprout.Height_cm.19/tAllc$Basal.Resprout.Height_cm.18
+  summary(relGrowth)
+}
+
+# 2019 recruits
+length(which(tAll$Live.18==1))
+length(which(tAll$Live.18==1 & tAll$Type.18=='SA'))
+
+
+# NEW RECRUITS script, in brackets
+# FIX THIS
+{
+  # restore from archive to get new individuals
+  t19 <- tAll.archive
+  t19 <- t19[-which(t19$Species %in% c('BACPIL','QUEDEC')),]
+  t19 <- t19[which(is.na(t19$fate3.18) & !is.na(t19$fate3.19)),]
+  t19 <- t19[-which(t19$Type.19=='TS'),]
+  dim(t19)
+  
+  print('number of new recruits, by type, species, fire severity')
+  table(t19$Type.19,useNA='a')
+  table(t19$Species,t19$Type.19,useNA='a')
+  
+  t19tr <- which(t19$Type.19=='TR')
+  summary(t19$d10.19[t19tr])
+  t19[t19tr,c('Plot','Species','Num','d10.19')]
+  
+  # newr <- table(tAll$fsCat[r9],tAll$Type.19[r9])
+  # print(newr)
+  # s18 <- table(tAllm$fsCat[which(tAllm$Live.18==1)],tAllm$Type.19[which(tAllm$Live.18==1)])
+  # #newr/s18
+  # 
+  # print('saplings by species and plot for unburned;low+medium;high severity')
+  # r9ubsa <- intersect(r9,which(tAll$fsCat %in% c(0) & tAll$Type.19=='SA'))
+  # print(table(tAll$Species[r9ubsa],tAll$Plot[r9ubsa]))
+  # 
+  # r9lmssa <- intersect(r9,which(tAll$fsCat %in% c(1,2) & tAll$Type.19=='SA'))
+  # print(table(tAll$Species[r9lmssa],tAll$Plot[r9lmssa]))
+  # 
+  # r9hssa <- intersect(r9,which(tAll$fsCat==3 & tAll$Type.19=='SA'))
+  # print(table(tAll$Species[r9hssa],tAll$Plot[r9hssa]))
+  # 
+  # What was the species composition of plots where Ceanothus germinated
+  (cp <- unique(t19$Plot[which(t19$Species=='CEACUN')]))
+  table(tAll$Species[which(tAll$Plot==cp[[1]])])
+  table(tAll$Species[which(tAll$Plot==cp[[2]])])
+  
+  (cp <- unique(t19$Plot[which(t19$Species=='AMOCAL')]))
+  table(tAll$Species[which(tAll$Plot %in% cp)])
 }
 
 write.csv(tAll,'data/tAll30.csv')
@@ -557,7 +941,7 @@ yvar <- 'Live'
 
 op=par(mfrow=c(5,4))
 spSel <- 'PSEMEN'
-tdat <- barplotOneNonSprouter(spSel,F,F,T)
+tdat <- barplotOneNonSprouter(d,spSel,F,F,T)
 spSel <- 'UMBCAL'
 d <- barplotSprouterSpecies(spSel,F,F,T)
 spSel <- 'QUEAGR'
@@ -568,8 +952,7 @@ spSel <- 'HETARB'
 d <- barplotSprouterSpecies(spSel,F,F,T)
 par(op)
 
-## what about delayed mortality
-delayedMortality()
+
 
 #### some continuous regressions
 # Check histograms of sample sizes to decide which species can be analyzed - for d10 and sapling height
@@ -578,13 +961,7 @@ basalDiameterHistograms()
 # just run logistic regressions on tree
 basalDiameterLogisticRegressions()
 
-## resprout height growth
-basalResprouts()
 
-# 2019 recruits
-length(which(tAllm$Live.18==1))
-length(which(tAllm$Live.18==1 & tAllm$Type.18=='SA'))
-new2019recruits()
 
 ##### TO HERE
 # MOdels for ARCMAN, AMOCAL, ARBMEN - won't be using them

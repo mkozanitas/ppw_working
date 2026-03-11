@@ -1,5 +1,6 @@
 ## Visualizing model results
 rm(list=ls())
+library(rstantools)
 source('scripts/31.functionsForAnalysis.R')
 unlockBinding("last.warning", baseenv())
 
@@ -13,13 +14,42 @@ uhn <- 'Hect' # or 'Plot', if no FS: 'Hect.noFS' or 'Plot.noFS'
 # UMBCAL QUEGAR QUEAGR PSEMEN HETARB QUEKEL ARBMEN QUEDOU AMOCAL
 spList <- c('UMBCAL','QUEGAR','QUEAGR','HETARB','QUEKEL','ARBMEN','QUEDOU','AMOCAL','EHRO','WHTO','R.Shrub')
 
-spN <- 11
+makeSpTabl <- function(dd) {
+  fsCatLevels <- c('0.U','12.LM','3.H')
+  SizeClassLevels <- c('SA','ST','MT','LT')
+  spTab <- data.frame(fsCat=rep(fsCatLevels,each=4),SizeClass=rep(SizeClassLevels,3),N=NA,N.LT=NA,DN=NA,DR=NA,GC=NA)
+  fc <- fsCatLevels[2]
+  sc <- SizeClassLevels[1]
+  for (fc in fsCatLevels)
+    for (sc in SizeClassLevels)
+    {
+      st.row <- which(spTab$fsCat==fc & spTab$SizeClass==sc)
+      if (sc=='LT') {
+        rsel <- which(dd$fac.fsCat==fc & dd$Type.17.4 == 'LT')
+        spTab$N.LT[st.row] <- length(rsel)
+        rsel <- which(dd$fac.fsCat==fc & dd$Type.17.4 %in% c('LT','HLT'))
+      } else rsel <- which(dd$fac.fsCat==fc & dd$Type.17.4 == sc)
+      ddt <- dd[rsel,]
+      spTab$N[st.row] <- length(rsel)
+      if (length(rsel)!=0) {
+        spTab$DN[st.row] <- length(dd$fate3.18[which(ddt$fate3.18=='DN')])/spTab$N[st.row]
+        spTab$DR[st.row] <- length(dd$fate3.18[which(ddt$fate3.18=='DR')])/spTab$N[st.row]
+        spTab$GC[st.row] <- length(dd$fate3.18[which(ddt$fate3.18=='GC')])/spTab$N[st.row]
+        spTab[st.row,c('DN','DR','GC')] <- round(spTab[st.row,c('DN','DR','GC')],3)
+      }
+    }
+  return(spTab)
+}
+
+sink('/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/species-model-output.txt')
+spN <- 1
 for (spN in 1:length(spList))
 {
   print(spN)
   spName <- spList[spN]
   dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
   dim(dd)
+  names(dd)
   dd$large.trees <- 'Sap+ST'
   dd$large.trees[which(dd$d10.17>=1.39076)] <- 'LT'
   
@@ -29,50 +59,56 @@ for (spN in 1:length(spList))
   #mf <- multifit1
   mf <- readRDS(mfname)
   wf <- readRDS(wfname)
-  #print(mf)
+  
+  rstantools::bayes_R2(mf)
   
   print(c(spName,nrow(dd)))
+  print(mf)
   print(wf)
-  print(table(dd$fate3.18,dd$fac.fsCat))
-  print(table(dd$Survey,dd$large.trees))
+  
+  # sample size and fate
+  #print(table(dd$fate3.18,dd$fac.fsCat))
+  spTab <- makeSpTabl(dd)
+  write.csv(spTab,paste('/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/',spName,'spTable.csv',sep=''))
+  
+  #print(table(dd$Survey,dd$large.trees))
   xlims <- range(dd$d10.17,na.rm=T)
   
   #conditional_effects(mf, categorical=TRUE)
   # use xlims set here for local range, default is study wide range
-  #visualizeMultifitBayes(mf,sp=fit.type[f],print.to.pdf=T,xlims=xlims) 
+  visualizeMultifitBayes(mf,sp=fit.type[f],print.to.pdf=T,xlims=xlims) 
   #visualizeMultifitBayes(mf,sp=fit.type[f],print.to.pdf=T) 
 }
+
 
 # NOW FOR PSEMEN
 reset.warnings()
 spName <- 'PSEMEN'
 dd <- readRDS(paste(local.dir,'/',paste(mod,spName,'dd.rds',sep='.'),sep=''))
 dim(dd)
+names(dd)
 dd$large.trees <- 'Sap+ST'
 dd$large.trees[which(dd$d10.17>=1.39076)] <- 'LT'
+table(dd$Survey)
 
 (mfname <- paste(local.dir,'/brm.PSEMEN.TRUE.10000.BERN.Splk3.Live18.rds',sep=''))
 (wfname <- paste(local.dir,'/brm.PSEMEN.TRUE.10000.BERN.Splk3.Live18.WARNINGS.rds',sep=''))
 
-print(c(spName,nrow(dd)))
-print(wf)
-print(table(dd$fate3.18,dd$fac.fsCat))
-print(table(dd$Survey,dd$large.trees))
+spTab <- makeSpTabl(dd)
+write.csv(spTab,paste('/Users/david/My Drive/My_Drive_Cloud/Drive-Projects/Pepperwood/Fire_2017/Demography paper 2024/model_figs_2025/',spName,'spTable.csv',sep=''))
 
+print(c(spName,nrow(dd)))
+
+mf <- fit5brm.noplot
 mf <- readRDS(mfname)
 wf <- readRDS(wfname)
 print(mf)
 print(wf)
 
-{
-  print(c(spName,nrow(dd)))
-  print(wf)
-  print(table(dd$fate3.18,dd$fac.fsCat))
-  print(table(dd$Survey,dd$large.trees))
-}
 xlims <- range(dd$d10.17,na.rm=T)
 
 visualizeBernfitBayes(mf,sp='SPLK3',print.to.pdf=T,xlims=xlims) 
+sink()
 
 ## code below just to review warnings
 i=6

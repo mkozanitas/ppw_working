@@ -9,12 +9,16 @@ require(Ternary)
 
 source('scripts/31.functionsForAnalysis.R')
 fsCols <- c('blue','brown','orange','red')
+fsCols <- c('#00FF01','#FFB000','#FE6100','#DC267F')
+
+vtShapes <- data.frame(vt=c('CON','MH','Mix3','WO'),shp=c(18,15,17,16))
 
 # Functions to convert basal area to diameter and log-diameter, and back
 lba2d <- function(x) 2*sqrt((10^x)/pi)
 ba2d <- function(x) 2*sqrt((x)/pi)
 d2ba <- function(x) pi*(x/2)^2
 d2lba <- function(x) log10(pi*(x/2)^2)
+d2BIOM <- function(x,B0,B1) exp(B0+B1*log(x))
 
 # Read in species codes - in this script, called 'Species'
 spAtt <- read.csv('data/all-spp-attributes.csv',row.names = 1)
@@ -22,6 +26,7 @@ head(spAtt)
 tail(spAtt)
 
 spNames <- spAtt$Species
+spNames <- spNames[-which(spNames %in% c('SAL.SP','BACPIL'))]
 
 # input merged dataframe
 tAll <- read.csv('data/tAll30.csv',as.is=T,row.names=1)
@@ -32,6 +37,8 @@ names(tAll)
 
 (brc <- grep('Basal.Resprout.Count',names(tAll)))
 names(tAll)[brc] <- c('BRC.18','BRC.19')
+
+Hect.plots <- sort(unique(tAll$Plot[which(tAll$Survey=='Hect')]))
 # 
 
 ## Calculate BA per plot, and BA by fate
@@ -40,34 +47,56 @@ dim(tAllp)
 names(tAllp)
 tAllp$TBA.17 <- d2ba(tAllp$DBH_cm.17)
 
+tAllp$Biom[which(tAllp$Species=='PSEMEN')] <- d2BIOM(tAllp$DBH_cm.17[which(tAllp$Species=='PSEMEN')],-1.93,2.29)
+tAllp$Biom[which(tAllp$Species!='PSEMEN')] <- d2BIOM(tAllp$DBH_cm.17[which(tAllp$Species!='PSEMEN')],-0.97,2.15)
+plot(tAllp$DBH_cm.17,tAllp$Biom)
+
 pt <- read.csv('results/plot-types-fs.csv')
-fsCols <- c('blue','brown','orange','red')
 pt$fsCols <- fsCols[pt$fsLevel+1]
+head(pt)
 
 vtShapes <- data.frame(vt=c('CON','MH','Mix3','WO'),shp=c(18,15,17,16))
 pt$shp <- vtShapes$shp[match(pt$vt,vtShapes$vt)]
 head(pt)
 
 ## basal area by plot
+pt$TBiom <- tapply(tAllp$Biom,tAllp$Plot,sum,na.rm=T)
 pt$TBA <- tapply(tAllp$TBA.17,tAllp$Plot,sum,na.rm=T)
 rsel <- which(tAllp$fate3.18=='DN')
 TBA.mort <- tapply(tAllp$TBA.17[rsel],tAllp$Plot[rsel],sum,na.rm=T)
 pt$TBA.mort <- TBA.mort[match(pt$plot,names(TBA.mort))]
 pt$TBA.mort[which(is.na(pt$TBA.mort))] <- 0
 
+Biom.mort <- tapply(tAllp$Biom[rsel],tAllp$Plot[rsel],sum,na.rm=T)
+pt$Biom.mort <- Biom.mort[match(pt$plot,names(Biom.mort))]
+pt$Biom.mort[which(is.na(pt$Biom.mort))] <- 0
+
 rsel <- which(tAllp$fate3.18=='DR')
 TBA.tkrs <- tapply(tAllp$TBA.17[rsel],tAllp$Plot[rsel],sum,na.rm=T)
 pt$TBA.tkrs <- TBA.tkrs[match(pt$plot,names(TBA.tkrs))]
 pt$TBA.tkrs[which(is.na(pt$TBA.tkrs))] <- 0
+
+Biom.tkrs <- tapply(tAllp$Biom[rsel],tAllp$Plot[rsel],sum,na.rm=T)
+pt$Biom.tkrs <- Biom.tkrs[match(pt$plot,names(Biom.tkrs))]
+pt$Biom.tkrs[which(is.na(pt$Biom.tkrs))] <- 0
 
 rsel <- which(tAllp$fate3.18=='GC')
 TBA.gcrn <- tapply(tAllp$TBA.17[rsel],tAllp$Plot[rsel],sum,na.rm=T)
 pt$TBA.gcrn <- TBA.gcrn[match(pt$plot,names(TBA.gcrn))]
 pt$TBA.gcrn[which(is.na(pt$TBA.gcrn))] <- 0
 
+Biom.gcrn <- tapply(tAllp$Biom[rsel],tAllp$Plot[rsel],sum,na.rm=T)
+pt$Biom.gcrn <- Biom.gcrn[match(pt$plot,names(Biom.gcrn))]
+pt$Biom.gcrn[which(is.na(pt$Biom.gcrn))] <- 0
+
 pt$TBA.rmort <- pt$TBA.mort/pt$TBA
 pt$TBA.rtkrs <- pt$TBA.tkrs/pt$TBA
 pt$TBA.rgcrn <- pt$TBA.gcrn/pt$TBA
+
+head(pt)
+pt$Biom.rmort <- pt$Biom.mort/pt$TBiom
+pt$Biom.rtkrs <- pt$Biom.tkrs/pt$TBiom
+pt$Biom.rgcrn <- pt$Biom.gcrn/pt$TBiom
 head(pt)
 
 plot(pt$TBA.tkrs,pt$TBA.mort,col=pt$fsCols,pch=pt$shp,cex=4)
@@ -85,11 +114,9 @@ boxplot(pt$TBA.tkrs~pt$fsLevel)
 boxplot(pt$TBA.gcrn~pt$vt)
 boxplot(pt$TBA.gcrn~pt$fsLevel)
 
-barplot(as.matrix(t(pt[order(pt$fsLevel),c('TBA.gcrn','TBA.tkrs','TBA.mort')])),stack=T,col=c('green','blue','black'))
+barplot(as.matrix(t(pt[order(pt$fsLevel),c('TBA.gcrn','TBA.tkrs','TBA.mort')])),col=c('green','blue','black'))
 
-
-
-## BELOW HERE IS OLD, NEED TO CHECK
+##
 table(tAllp$Type.17.4)
 SGBA <- as.data.frame(tapply(tAllp$TBA.17,list(tAllp$Plot,tAllp$Type.17.4),sum,na.rm=T))
 head(SGBA)
@@ -114,30 +141,142 @@ names(pSGBA) <- c('SA.rTBA','ST.rTBA','MT.rTBA','LT.rTBA')
 # rs <- which(tAllp$Species %in% c('PSEMEN','HETARB','QUEAGR','QUEGAR','UMBCAL'))
 # sum(tAllp$TBA.17[rs],na.rm=T)/sum(tAllp$TBA.17,na.rm=T)
 
+head(pSGBA)
 library(vegan)
 sgord <- decorana(pSGBA)
 plot(sgord)
 
 # add basal area to pt
 hist(pt$TBA) # note this is in cm^2 per 20x20 m plot. Divide by 10,000 to get m^2, and multiple by 25 to get m2/ha
-hist(pt$TBA*25/10000)
+
+pt$TBA.m2.ha <- pt$TBA*25/10000
+hist(pt$TBA.m2.ha)
+summary(pt$TBA.m2.ha)
+sd(pt$TBA.m2.ha)
+
+pt$TBiom.mt.ha <- pt$TBiom*25/1000
+hist(pt$TBiom.mt.ha)
+summary(pt$TBiom.mt.ha)
+sd(pt$TBiom.mt.ha)
+
+op=par(mfrow=c(2,1))
+#hist(pt$TBA.rmort)
+summary(pt$TBA.rmort)
+boxplot(pt$TBA.rmort~pt$fsLevel,main='Percent basal area loss to mortality',xlab='Fire severity',ylab='Percent loss')
+boxplot(pt$TBA.rmort~pt$vt,xlab='Community type',ylab='Percent loss')
+fit <- lm(TBA.rmort ~ fsLevel + vt,data=pt)
+anova(fit)
+
+#hist(pt$TBA.rtkrs)
+summary(pt$TBA.rtkrs)
+boxplot(pt$TBA.rtkrs~pt$fsLevel,main='Percent basal area loss to topkill',xlab='Fire severity',ylab='Percent loss')
+boxplot(pt$TBA.rtkrs~pt$vt,xlab='Community type',ylab='Percent loss')
+fit <- lm(TBA.rtkrs ~ fsLevel + vt,data=pt)
+anova(fit)
+
+pt$TBA.rloss <- pt$TBA.rmort+pt$TBA.rtkrs
+#hist(pt$TBA.rloss)
+summary(pt$TBA.rloss)
+boxplot(pt$TBA.rloss~pt$fsLevel,main='Percent basal area loss to mortality + topkill',xlab='Fire severity',ylab='Percent loss')
+boxplot(pt$TBA.rloss~pt$vt,xlab='Community type',ylab='Percent loss')
+fit <- lm(TBA.rloss ~ fsLevel + vt,data=pt)
+anova(fit)
+summary(fit)
+par(op)
 
 pt <- cbind(pt,SGBA)
 head(pt)
 
-## NOW WHAT?
+head(pt)
+pt$TBiomLoss.mt.ha <- (pt$Biom.mort+pt$Biom.tkrs)*25/1000
+boxplot(TBiomLoss.mt.ha~fsCat,data=pt)
+boxplot(TBiomLoss.mt.ha~vt,data=pt)
+
+table(pt$fsCat,pt$vt)
+fit <- lm(TBiomLoss.mt.ha~vt+fsCat,data=pt)
+anova(fit)
+summary(fit)
+
+sink('results/table-biomassXvtfs.txt')
+table(pt$fsLevel,pt$vt)
+tapply(pt$TBiom.mt.ha,list(pt$fsLevel,pt$vt),mean,na.rm=T)
+tapply(pt$TBiom.mt.ha,list(pt$fsLevel,pt$vt),sd,na.rm=T)
+tapply(pt$TBiomLoss.mt.ha/pt$TBiom.mt.ha,list(pt$fsLevel,pt$vt),mean,na.rm=T)
+tapply(pt$TBiomLoss.mt.ha/pt$TBiom.mt.ha,list(pt$fsLevel,pt$vt),sd,na.rm=T)
+sink()
+
+plot(pt$TBA.m2.ha, pt$TBiom.mt.ha,log='xy')
+summary(pt$TBiom.mt.ha)
+sd (pt$TBiom.mt.ha)
+
+plot(25*(pt$Biom.mort+pt$Biom.tkrs)/1000,pt$TBiomLoss.mt.ha);abline(0,1)
+summary(pt$Biom.mort/pt$TBiom)
+summary(pt$Biom.tkrs/pt$TBiom)
+summary((pt$Biom.tkrs+pt$Biom.mort)/pt$TBiom)
+summary(pt$TBiomLoss.mt.ha/pt$TBiom.mt.ha)
+head(pt)
+
+fit <- lm(I(TBiomLoss.mt.ha/TBiom.mt.ha) ~ fsLevel + vt,data=pt)
+anova(fit)
+summary(fit)
+
+# Figure E
+pdf('figures/Fig3-BA-loss.pdf',7,9)
+op=par(mfrow=c(3,1))
+plot(pt$TBA.m2.ha,100*pt$TBA.rmort,col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot basal area',ylab='Percent BA loss, by mortality')
+legend(80,80,vtShapes$vt,pch=vtShapes$shp,cex=1.5)
+
+plot(pt$TBA.m2.ha,100*pt$TBA.rtkrs,col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot basal area',ylab='Percent BA loss, by topkill',ylim=c(0,100))
+legend(80,80,vtShapes$vt,pch=vtShapes$shp,cex=1.5)
+
+plot(pt$TBA.m2.ha,100*(pt$TBA.rtkrs+pt$TBA.rmort),col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot basal area',ylab='Percent BA loss, total')
+legend(80,80,vtShapes$vt,pch=vtShapes$shp,cex=1.5)
+par(op)
+dev.off()
+
+# Figure E - Biomass
+{
+  pdf('figures/Fig3x-Biom-loss.pdf',5,9)
+  op=par(mfrow=c(3,1))
+  plot(pt$TBiom.mt.ha,100*pt$Biom.rmort,col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot biomass (Mg/ha)',ylab='Percent biomass loss, by mortality')
+  legend(440,80,vtShapes$vt,pch=vtShapes$shp,cex=1)
+  legend(520,80,c('Unburned','Low','Medium','High'),pch=19,col=fsCols,cex=1)
+  
+  plot(pt$TBiom.mt.ha,100*pt$Biom.rtkrs,col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot biomass (Mg/ha)',ylab='Percent biomass loss, by topkill',ylim=c(0,100))
+  legend(440,80,vtShapes$vt,pch=vtShapes$shp,cex=1)
+  legend(520,80,c('Unburned','Low','Medium','High'),pch=19,col=fsCols,cex=1)
+  
+  plot(pt$TBiom.mt.ha,100*(pt$Biom.rtkrs+pt$Biom.rmort),col=pt$fsCols,pch=pt$shp,cex=2,xlab='Total plot biomass (Mg/ha)',ylab='Percent biomass loss, total')
+  legend(440,80,vtShapes$vt,pch=vtShapes$shp,cex=1)
+  legend(520,80,c('Unburned','Low','Medium','High'),pch=19,col=fsCols,cex=1)
+  
+  par(op)
+  dev.off()
+}
+
+
+
+# Community ordination# Community ordinatipton
 # matrix of number of stems by size class and species, before and after fire (based on mortality), to look at community change
 spNames
 spxSize <- paste(rep(spNames,each=4),rep(c('SA','ST','MT','LT'),length(spNames)),sep='.')
-tAllp$spxSize[rsel] <- paste(tAllp$Species[rsel],tAllp$Type.17.4[rsel],sep='.')
+tAllp$spxSize <- paste(tAllp$Species,tAllp$Type.17.4,sep='.')
 tmp <- table(tAllp$spxSize)
 match(spxSize,names(tmp))
 
 #community matrix
-cMat <- data.frame(matrix(NA,nrow=nrow(cMat),ncol=length(spxSize)))
+cMat <- data.frame(matrix(NA,nrow=2*nrow(pt),ncol=length(spxSize)))
 names(cMat) <- spxSize
 rownames(cMat) <- c(paste(pt$plot,'.17',sep=''),paste(pt$plot,'.18',sep=''))
+dim(cMat)
 head(cMat)
+
+#community matrix - species counts only, not by size class
+cMatS <- data.frame(matrix(NA,nrow=2*nrow(pt),ncol=length(spNames)))
+names(cMatS) <- spNames
+rownames(cMatS) <- c(paste(pt$plot,'.17',sep=''),paste(pt$plot,'.18',sep=''))
+dim(cMatS)
+head(cMatS)
 
 i=1
 for (i in 1:nrow(pt)) 
@@ -146,40 +285,168 @@ for (i in 1:nrow(pt))
   tmp <- tAllp[which(tAllp$Plot==plot),]
   (plot.17 <- table(tmp$spxSize))
   cMat[which(rownames(cMat)==paste(plot,'17',sep='.')),] <- as.numeric(plot.17[match(names(cMat),names(plot.17))])
+  
   tmp <- tmp[which(tmp$fate3.18!='DN'),]
   (plot.18 <- table(tmp$spxSize))
   cMat[which(rownames(cMat)==paste(plot,'18',sep='.')),] <- as.numeric(plot.18[match(names(cMat),names(plot.18))])
+  
+  tmp <- tAllp[which(tAllp$Plot==plot),]
+  (plot.17 <- table(tmp$Species))
+  cMatS[which(rownames(cMatS)==paste(plot,'17',sep='.')),] <- as.numeric(plot.17[match(names(cMatS),names(plot.17))])
+  
+  tmp <- tmp[which(tmp$fate3.18!='DN'),]
+  (plot.18 <- table(tmp$Species))
+  cMatS[which(rownames(cMatS)==paste(plot,'18',sep='.')),] <- as.numeric(plot.18[match(names(cMatS),names(plot.18))])
+  
 }
 for (i in 1:nrow(cMat)) 
-  for (j in 1:ncol(cMat))
-       if(is.na(cMat[i,j])) cMat[i,j] <- 0
-head(cMat)
-colsums <- apply(cMat,2,sum)
-dim(cMat)
-cMat <- cMat[,-which(colsums==0)]
-dim(cMat)
-
-cMat.ord <- decorana(cMat)
-str(cMat.ord)
-head(cMat.ord$rproj)
-plot(cMat.ord$rproj,col=c(rep('green',54),rep('red',54)),pch=19)
-i=1
-pt$del.cMat <- NA
-for (i in 1:54) 
 {
-  tmp <- cMat.ord$rproj[c(i,i+54),c(1,2)]
-  lines(tmp)
-  pt$del.cMat[i] <- sqrt(c(tmp[1,1]-tmp[2,1])^2 + c(tmp[1,2]-tmp[2,2])^2)
+  for (j in 1:ncol(cMat))
+  {
+    if(is.na(cMat[i,j])) cMat[i,j] <- 0
+  }
+  for (j in 1:ncol(cMatS))
+  {
+    if(is.na(cMatS[i,j])) cMatS[i,j] <- 0
+  }
 }
-hist(pt$del.cMat)
-boxplot(pt$del.cMat~pt$vt)
-boxplot(pt$del.cMat~pt$fsLevel)
-fit <- lm(del.cMat~vt+as.factor(fsLevel),data=pt)
-anova(fit)
+dim(cMatS)
+head(cMatS)
 
+## Inside brackets can be run on large or small community matrix
+cM <- cMatS
+{
+  head(cM)
+  colsums <- apply(cM,2,sum)
+  rowsums <- apply(cM,1,sum)
+  dim(cM)
+  cM <- cM[,-which(colsums==0)]
+  dim(cM)
+  
+  cMp <- cM
+  for (i in 1:nrow(cM)) cMp[i,] <- cM[i,]/rowsums[i]
+  apply(cMp,1,sum)
+  
+  cM.ord <- decorana(cM)
+  str(cM.ord)
+  plot(cM.ord)
+  head(cM.ord$rproj)
+  
+  pdf('figures/comm-ordination.pdf',6,6)
+  plot(cM.ord$rproj,col=c(rep('black',54),pt$fsCols),pch=c(pt$shp,pt$shp))
+  
+  pt$del.cM <- NA
+  pt$delN <- NA
+  pt$BCprepost <- NA
+  
+  i=1
+  for (i in 1:54) 
+  {
+    pt$delN[i] <- rowsums[i]-rowsums[c(i+54)]
+    tmp <- cM.ord$rproj[c(i,i+54),c(1,2,3,4)]
+    lines(tmp[,c(1,2)],col=pt$fsCols[i],lwd=2)
+    #text(x=tmp[2,1],y=tmp[2,2],labels=i)
+    pt$del.cM[i] <- sqrt(
+      c(tmp[1,1]-tmp[2,1])^2
+      + c(tmp[1,2]-tmp[2,2])^2
+      #+ c(tmp[1,3]-tmp[2,3])^2
+      #+ c(tmp[1,4]-tmp[2,4])^2
+    )
+    pd <- rbind(cMp[i,],cMp[(i+54),])
+    pt$BCprepost[i] <- vegdist(pd,method='bray')
+  }
+  points(cM.ord$rproj,col=c(rep('black',54),pt$fsCols),pch=c(pt$shp,pt$shp))
+  plot(pt$del.cM,pt$BCprepost)
+  
+  dev.off()
+  
+  # Set variable for analysis of community change
+  dctype <- 'ordination'
+  dctype <- 'braycurtis'
+  if (dctype=='ordination') 
+  {
+    pt$delComm <- pt$del.cM # for ordination
+    dir <- 'delComm-ordination'
+    ylabel <- 'Ordination vector length'
+  } else {
+    pt$delComm <- pt$BCprepost # for bray curtis
+    dir <- 'delComm-bray-curtis'
+    ylabel <- 'Bray Curtis distance'
+  }
+  write.csv(pt$delComm,paste('results/',dir,'.csv',sep=''))
+  
+  hist(pt$delN)
+  hist(pt$delComm)
+  boxplot(pt$delComm~pt$vt)
+  boxplot(pt$delComm~pt$fsLevel)
+  fit <- lm(delComm~vt+as.factor(fsLevel),data=pt)
+  anova(fit)
+  
+  # The larger the percentage of individuals that died, the more the community changed, but triangular, because mortality could have been proportional across sp x size.
+  pt$propMort <- pt$delN/rowsums[1:54]
+  
+  pdf(paste('figures/',dir,'/delComm.v.rmort.pdf',sep=''),6,6)
+  plot(pt$propMort,pt$delComm,col=pt$fsCols,pch=pt$shp,cex=2,xlab='Proportion of individuals that died in fire',ylab=ylabel)
+  if (dctype=='ordination') {
+    legend(0.02,1.3,vtShapes$vt,pch=vtShapes$shp,cex=1)
+    legend(0.2,1.3,c('Unburned','Low','Medium','High'),pch=19,col=fsCols,cex=1)
+  } else {
+    legend(0.02,0.6,vtShapes$vt,pch=vtShapes$shp,cex=1)
+    legend(0.2,0.6,c('Unburned','Low','Medium','High'),pch=19,col=fsCols,cex=1)
+  }
+  dev.off()
+  
+  plotCommNumbers <- function()
+  {
+    p1 <- which(rownames(cM) == paste(plotN,'.17',sep=''))
+    p2 <- which(rownames(cM) == paste(plotN,'.18',sep=''))
+    plot(t(cM[p1,]),t(cM[p2,]),
+         xlim=c(0,max(t(cM[p1,]))*1.1),
+         ylim=c(0,max(t(cM[p2,]))*1.1),
+         main=plotN,
+         xlab='Pre-fire number',
+         ylab='Post-fire number')
+    abline(0,1)
+    Nzero <- which(cM[p1,]==0)
+    nms <- names(cM)
+    nms[Nzero] <- ''
+    text(t(cM[p1,]),t(cM[p2,]),labels = nms,adj=c(0.5,-0.5))
+  }
+  
+  pdf(paste('figures/',dir,'/comm.change.examples.pdf',sep=''),7,10)
+  {
+    op=par(mfrow=c(3,1),mar=c(5,5,3,1))
+    plotN <- pt$plot[which.max(pt$delComm)]
+    plotCommNumbers()
+    
+    #plotN <- which.max(pt$propMort)
+    #plotCommNumbers()
+    
+    rsel <- which.min(pt$delComm[which(pt$propMort>0.6)])
+    plotN <- pt$plot[which(pt$propMort>0.65)[rsel]]
+    plotCommNumbers()
+    
+    rsel <- which.min(pt$delComm[which(pt$propMort > 0.1 & pt$propMort < 0.2)])
+    plotN <- pt$plot[which(pt$propMort > 0.1 & pt$propMort < 0.2)[rsel]]
+    plotCommNumbers()
+    par(op)
+  }
+  dev.off()
+}
+
+fs <- read.csv("https://raw.githubusercontent.com/dackerly/PepperwoodFireSeverity/master/data/FSextract/vegplots-54-20m-FS.csv")
+head(fs)
+tail(fs)
+
+head(pt)
+pt$hect <- NA
+pt$hect[which(pt$plot %in% Hect.plots)] <- 'YES'
+pt$GEO.x <- fs$GEO.x
+pt$GEO.y <- fs$GEO.y
+write.csv(pt[,c('plot','hect','GEO.x','GEO.y','vt','fsLevel','CON','EHRO','WHTO','TBA.m2.ha','TBiom.mt.ha','propMort','del.cM')],'results/plot-table.csv')
 ### THAT'S A GOOD STOPPING POINT
 
-
+#if (FALSE) {
 head(tAll)
 tAll$TR.BA.17 <- d2ba(tAll$DBH_cm.17)
 ptTBA <- tapply(tAll$TR.BA.17,tAll$Plot,sum,na.rm=T)
@@ -1646,3 +1913,4 @@ if (FALSE) {
   
 }
 
+}

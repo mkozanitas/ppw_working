@@ -289,7 +289,7 @@ allIndv$nP <- apply(allIndv[,Pn],1,lunique)
 head(allIndv$nP)
 (multPlots <- which(allIndv$nP>1))
 
-# OK, 1 individual that moved between plots (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
+# OK, 0 individuals that moved between plots! (not counting ones that were duplicated in one or more years, which would need to resolved first) We need to fix those. Here they are:
 allIndv[multPlots,1:9]
 
 # and which ones change species
@@ -470,7 +470,8 @@ head(table(tAll$TreeNum))
 # inferred pre-fire, old plots, and alive (new tags)
 # tagged in 2013 and not written down in data
 # new plot, alive after the fire
-
+dim(tAll)
+table(tAll$Plot)
 tAll$Cat17 <- NA
 
 # tagged and recorded in data sheets in 2013
@@ -491,6 +492,7 @@ tAll$Cat17[which(is.na(tAll$Live.13) & is.na(tAll$Live.18) & is.na(tAll$Live.19)
 
 # summarize 2017 category data
 table(tAll$Cat17,useNA='always')
+table(tAll$Type.18[which(tAll$Cat17=='new17')])
 
 # Not in any category - Check one at a time - DONE
 #tAll[which(is.na(tAll$Cat17))[8],]
@@ -499,13 +501,16 @@ table(tAll$Cat17,useNA='always')
 tAll$ExcStem <- 0
 tAll$ExcStem[which(is.na(tAll$Cat17))[c(2:5,8)]] <- 1
 
-# one QUEAGR without a num
-tAll[tAll$Plot=='PPW1339',c('Species.13','Num')]
-
 # what plot were 99s found in
 table(tAll$Plot.18[which(tAll$Num>10000)])
 table(tAll$Plot.18[which(tAll$Cat17 == '99s.old')])
 table(tAll$Plot.18[which(tAll$Cat17 == 'NewPlot')])
+
+summary(tAll$Num[which(tAll$Cat17 == '99s.old')])
+sort(tAll$Num[which(tAll$Cat17 == '99s.old')])
+
+hist(tAll$SA.BD_cm.18[which(tAll$Cat17 == '99s.old')])
+table(tAll$Species[which(tAll$Cat17 == '99s.old')])
 
 # three subsets of new individuals
 # we assume that all newIndvs were present just before the fire, as we either tagged them alive and recovering or dead; all of these should be included in estimates of fates
@@ -541,10 +546,39 @@ newTrees <- which(!tAll$Num %in% tAll$Num[n99] & !tAll$Num %in% tAll$Num[newPlot
 length(newTrees)
 sort(tAll$Num[newTrees])
 table(tAll$Plot.18[newTrees])
+tAll$dbh.18[newTrees]
 
 #tAll[newTrees[15],]
 # looks like 12 trees with Num < 5500 that were tagged and no data collected in 2013 - then there are a few new trees that may have recruited from <sapling to tree stage
 
+## were new saplings missed in 2013 or did they recruit between first census and fire
+table(tAll$Type.18[which(tAll$Cat17=='new17')])
+newSap17 <- which(tAll$Cat17=='new17' & tAll$Type.18=='SA')
+length(newSap17)
+
+# how many are 99?
+tAll$Num[which(tAll$Cat17=='new17' & tAll$Type.18=='SA' & tAll$Num>=99000)]
+
+# how tall are they in 18?
+nh <- hist(tAll$SA.Height_cm.18[newSap17],breaks=c(0,10,20,30,40,50,60,70,80,90,100,300))
+table(tAll$Notes.18[newSap17])
+
+# 2018 notes incl. NEW SA, New SA, new sa, new SA, ne SA
+newsa <- c(grep('NEW SA',tAll$Notes.18),grep('New SA',tAll$Notes.18),grep('new sa',tAll$Notes.18),grep('new SA',tAll$Notes.18),grep('ne SA',tAll$Notes.18),grep('Ne SA',tAll$Notes.18))
+length(newsa)
+sort(tAll$Num[newsa])
+sort(tAll$SA.Height_cm.18[newsa])
+tAll[newsa,c('Num','SA.Height_cm.18','SA.BD_cm.18')]
+
+hist(tAll$SA.Height_cm.18[tAll$Cat17=='new17'])
+plot(tAll$SA.Height_cm.13,tAll$SA.Height_cm.18);abline(0,1)
+hist(tAll$SA.Height_cm.18-tAll$SA.Height_cm.13)
+
+table(tAll$Cat17,useNA='a')
+
+# NEED TO REVIEW ALL THIS WITH MELINA
+
+# other checks
 length(intersect(newIndvs,n99))
 length(intersect(newIndvs,newPlot))
 length(intersect(n99,newPlot))
