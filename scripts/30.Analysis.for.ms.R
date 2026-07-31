@@ -117,6 +117,7 @@ tAll <- tAll[which(tAll$Live.17==1),c('Num','TreeNum','Species','FuncGroup','Plo
 # Remove Baccharis and QUEDEC
 tAll <- tAll[-which(tAll$Species %in% c('BACPIL','QUEDEC')),]
 dim(tAll)
+write.csv(tAll,"data/tAll.csv")
 
 table(tAll$fate3.18,tAll$Survey,useNA='a')
 tAll <- tAll[-which(is.na(tAll$fate3.18)),]
