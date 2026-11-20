@@ -24,6 +24,7 @@ head(ht16)
 tail(ht16)
 names(ht16)
 
+# Column named X is a note in wrong column PPW1340 9758 "changed from umbcal due to 2018 fieldnote- mkqc2025"
 table(ht16$Plot,useNA='a')
 ht16$Plot.Orig <- ht16$Plot
 substr(ht16$Plot.Orig,1,5) <- 'PPW15' # plots surveyed over three years (see Year) but all labeled 15 for simplicity
@@ -197,9 +198,16 @@ length(tmp)
 htAll[tmp,c('Num','Plot.15','Species.15','DBH_cm.15','Plot.18','Species.18','DBH_cm.18')]
 write.csv(htAll[tmp,],'data/pres15abs18.csv')
 
-# how many under 20 cm
+# how many under 20 cm - many of these are points - check that all the points are attached to a stem > 20, keep and flag
 dbhlt20 <- which(htAll$DBH_cm.17<20)
 length(dbhlt20)
+dim(htAll)
+names(htAll)
+htAll$TreeNum <- floor(htAll$Num)
+htAll$MainStem <- 0
+htAll$MainStem[which(htAll$TreeNum==htAll$Num)] <- 1
+length(which(htAll$DBH_cm.17<20))
+length(which(htAll$DBH_cm.17<20 & htAll$MainStem==0))
 range(htAll$DBH_cm.17[dbhlt20],useNA=T)
 hist(htAll$DBH_cm.17[dbhlt20])
 
@@ -306,6 +314,8 @@ substr(htc$Plot,4,5) <- '13'
 
 htAll$Subplot.17 <- 'XX'
 htAll$coordOutlier <- 0
+htAll$Rel.UTM.E.17 <- NA
+htAll$Rel.UTM.N.17 <- NA
 
 drawBox <- function(b,exlim=50,plot=NULL) {
   plot(b[1],b[3],xlim=c(b[1]-exlim,b[2]+exlim),ylim=c(b[3]-exlim,b[4]+exlim),pch=19,cex=2,col='red',main=plot)
@@ -319,7 +329,7 @@ i=1
 for (i in 1:length(plot.list)) {
   plot <- plot.list[i]
   rs <- which(htAll$Plot==plot)
-  tmp <- htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17')]
+  tmp <- htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17','Rel.UTM.E.17','Rel.UTM.N.17')]
   plot(htAll$UTM.E.17,htAll$UTM.N.17,asp=1,type='n',main=tmp[1,'Plot'])
   points(tmp$UTM.E.17,tmp$UTM.N.17,pch=19)
   
@@ -332,6 +342,8 @@ for (i in 1:length(plot.list)) {
   
   drawBox(b,exlim=500,plot)
   points(tmp[,c('UTM.E.17','UTM.N.17')],asp=1)
+  
+  # Correct offset in GPS units, based on maximizing number of trees in the plot
   source('scripts/adjustHectCoords.R')
   #drawBox(b,exlim=50,plot)
   #points(tmp$UTM.E.17+as.numeric(optRes[1]),tmp$UTM.N.17+as.numeric(optRes[2]))
@@ -339,6 +351,15 @@ for (i in 1:length(plot.list)) {
   
   tmp$UTM.E.17 <- tmp$UTM.E.17 + as.numeric(optRes[1])
   tmp$UTM.N.17 <- tmp$UTM.N.17 + as.numeric(optRes[2])
+  
+  drawBox(b,exlim=500,plot)
+  points(tmp[,c('UTM.E.17','UTM.N.17')],asp=1)
+  
+  tmp$Rel.UTM.E.17 <- tmp$UTM.E.17 - uxm
+  tmp$Rel.UTM.N.17 <- tmp$UTM.N.17 - uym
+  plot(tmp$Rel.UTM.E.17,tmp$Rel.UTM.N.17,asp=1)
+  abline(h=c(0,100))
+  abline(v=c(0,100))
   
   nrow(tmp)
   tmp$Subplot.17 <- 'L0'
@@ -360,13 +381,22 @@ for (i in 1:length(plot.list)) {
     }
   }
   table(tmp$Subplot.17)
-  htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17')] <- tmp
+  htAll[rs,c('Plot','Subplot.17','Num','Species','UTM.E.17','UTM.N.17','Rel.UTM.E.17','Rel.UTM.N.17')] <- tmp
 }
+
 table(htAll$Subplot.17)
 htAll$coordOutlier[which(substr(htAll$Subplot.17,2,2) %in% c(0,9))] <- 1
 table(htAll$coordOutlier)
 htAll$coordOutlier[which(substr(htAll$Subplot.17,1,1) %in% c('L','M'))] <- 1
 table(htAll$coordOutlier,htAll$ExcStem)
+
+# plot relative location of all trees
+plot(Rel.UTM.N.17~Rel.UTM.E.17,data=htAll[which(htAll$ExcStem==0),],asp=1)
+abline(h=c(0,100))
+abline(v=c(0,100))
+
+
+## MELINA - should we remove outliers or move them to nearest subplot?
 
 # Now move near outliers to nearest plot
 table(htAll$Subplot.17)

@@ -55,7 +55,6 @@ all.id[[1]] <- all.id[[1]][-c(2973,2974),]
 for (i in 1:4) print(tail(sort(all.id[[i]]$Num)))
 
 # Pull out all individuals with NA for bSprout - this should always be filled out. As of 5/15/22, no problems identified at this step!!
-# 9/24/24 - Melina: There are 955 NA for bSprout in 2013. Is that okay?
 bNA <- all.id[[1]][which(is.na(all.id[[1]]$bSprout)),]
 for (i in 2:4) bNA <- rbind(bNA,all.id[[i]][which(is.na(all.id[[i]]$bSprout)),])
 dim(bNA)
@@ -190,9 +189,11 @@ head(allIndv$nSp)
 
 # Just one problem left. #4072 assigned to Q. agrifolia in 2013 survey and Q. garryana in 2018. Then it died in the fire so it is not surveyed after that
 allIndv[which(allIndv$nSp>1),]
+
+### STOP AND DOUBLE CHECK WHEN REREADING
 # This individual is a sapling with no size data in 2013 so it can't be used for analysis. It can be left in the data as it will not causes any problems at the analysis step, since it doesn't have a size. And since it was killed I would trust the 2013 species ID more than 2018. Changing the 2018 id here to match 2013
 ## EDIT AFTER MELINA FIX
-all.id[[2]]$Species[which(all.id[[1]]$Num==4072)] <- 'QUEAGR'
+all.id[[2]]$Plot[which(all.id[[1]]$Num==4072)]
 
 # write entire indvData for use in next steps
 head(allIndv)
@@ -419,8 +420,6 @@ if (FALSE) {
   
   table(tAll$Cat17,useNA='a')
   
-  # NEED TO REVIEW ALL THIS WITH MELINA
-  
   # other checks
   length(intersect(newIndvs,n99))
   length(intersect(newIndvs,newPlot))
@@ -456,8 +455,6 @@ if (FALSE) {
   hist(tAll$DBH_cm.19[new19])
   hist(tAll$DBH_cm.20[new20])
   
-  # output suspicious transitions- can switch Type and year here to look at other combos
-  # MELINA_CHECK
   s1 <- which(tAll$Type.13=='TS' & tAll$Type.18=='TR')
   tAll[s1,c('Plot.13','Num','Species.13')]
   
@@ -531,17 +528,95 @@ eastness <- function(asp,slp,units='deg') {
   sin(asp)*sin(slp)
 }
 
-plotInfo <- get.plot.info()
-plotInfo
-plotInfo$northness <- northness(plotInfo$Aspect,plotInfo$Slope)
-plotInfo$eastness <- eastness(plotInfo$Aspect,plotInfo$Slope)
-write.csv(plotInfo,'data/plotinfo.csv')
+plotInfo <- read.csv('data/plot.info.2026.csv')
+head(plotInfo)
+plotInfo$northness <- northness(plotInfo$Aspect.true,plotInfo$Slope)
+plotInfo$eastness <- eastness(plotInfo$Aspect.true,plotInfo$Slope)
 ###
 
 # transfer northness to tAll
 p2t <- match(tAll$Plot,plotInfo$Plot)
 tAll$northness <- plotInfo$northness[p2t]
 tAll$eastness <- plotInfo$eastness[p2t]
+
+# Create single updated Quad, X_cm, Y_cm variables
+names(tAll)[grep('Quad_cm',names(tAll))]
+tAll$Quad <- tAll$Quad.13
+tAll$X_cm <- tAll$X_cm.13
+tAll$Y_cm <- tAll$Y_cm.13
+
+i <- '18'
+for (i in c('18','19','20'))
+{
+  ql <- paste(rep(c('A','B','C','D','E'),each=5),rep(1:5,5),sep='')
+  vn <- paste('Quad.',i,sep='')
+  rs <- which(tAll[,vn]!=tAll$Quad 
+              & !is.na(tAll[,vn])
+              & tAll[,vn] %in% ql)
+  tAll$Quad[rs] <- tAll[rs,vn]
+  
+  vn <- paste('X_cm.',i,sep='')
+  rs <- which(!is.na(tAll[,vn]) & is.numeric(tAll[,vn]))
+  tAll$X_cm[rs] <- tAll[rs,vn]
+  
+  vn <- paste('Y_cm.',i,sep='')
+  rs <- which(!is.na(tAll[,vn]) & is.numeric(tAll[,vn]))
+  tAll$Y_cm[rs] <- tAll[rs,vn]
+}
+
+table(tAll$Quad)
+plot(tAll$X_cm,tAll$Y_cm,asp=1)
+badX <- which(tAll$X_cm < 0 | tAll$X_cm > 500)
+length(badX)
+tAll[badX,c('Plot','Num','X_cm','X_cm.13','X_cm.18','X_cm.19','X_cm.20')]
+
+badY <- which(tAll$Y_cm < 0 | tAll$Y_cm>500)
+length(badY)
+tAll[badY,c('Plot','Num','Y_cm','Y_cm.13','Y_cm.18','Y_cm.19','Y_cm.20')]
+
+## Now calculate PX, PX - position relative to plot origin, in m
+qc <- c('A', 'B', 'C', 'D', '1', '2', '3', '4')
+qd <- rep(c(0, 5, 10, 15), 2)
+
+bx <- qd[match(substr(tAll$Quad, 1, 1), qc)]
+by <- qd[match(substr(tAll$Quad, 2, 2), qc)]
+
+tAll$PX_m <- bx + tAll$X_cm / 100
+tAll$PY_m <- by + tAll$Y_cm / 100
+tAll[1:10,c('Quad','X_cm','Y_cm','PX_m','PY_m')]
+plot(tAll$PX_m,tAll$PY_m)
+tAll[c(badX,badY),c('Quad','X_cm','PX_m','PY_m')]
+
+## rotate to true north
+dec <- 13*pi/180
+tAll$PXt_m <- tAll$PX_m * cos(dec) + tAll$PY_m * sin(dec)
+tAll$PYt_m <- tAll$PY_m * cos(dec) - tAll$PX_m * sin(dec)
+plot(tAll$PXt_m,tAll$PYt_m,asp=1)
+
+# adjust for aspect and slope of facet
+head(plotInfo)
+p2s <- match(tAll$Plot,plotInfo$Plot)
+asp <- plotInfo$Aspect.true[p2s] * pi/180
+slp <- plotInfo$Slope[p2s] * pi/180
+xyd <- tAll$PXt_m * sin(asp) + tAll$PYt_m * cos(asp)
+
+tAll$Rel.UTM.E <- tAll$PXt_m - xyd * (1 - cos(slp)) * sin(asp)
+tAll$Rel.UTM.N <- tAll$PYt_m - xyd * (1 - cos(slp)) * cos(asp)
+plot(tAll$PXtc_m,tAll$PYtc_m,asp=1)
+
+SWx <- plotInfo$SW.UTM.E[p2s]
+SWy <- plotInfo$SW.UTM.N[p2s]
+tAll$UTM.E <- SWx + tAll$PXtc_m
+tAll$UTM.N <- SWy + tAll$PYtc_m
+plot(tAll$UTM.E,tAll$UTM.N)
+
+##### Location variables
+# Calculate or change variable name to Rel.UTM.E (maybe with .17), in units starting near 40. There should be four coordinate variables when all is done:
+# Original X,Y within quad
+# PX_m, PY_m in ground coordinates and in m, which could be used to make plot maps
+# Rel.UTM.E, Rel.UTM.N Corrected with mag north and slope,aspect, + 40,40 origin, to Rel.UTM, which can be combined with hectare data. True map location relative to superplot origin
+# UTM.E, UTM.N True UTM
+########
 
 # tag all these individuals 'Plot' indicating they were surveyed in the 20 m plot surveys (vs. the hectare plants that are added to this data set later)
 tAll$Survey <- 'Plot'
@@ -565,6 +640,10 @@ names(tAll)
 names(htAll)
 cbind(names(htAll),names(htAll) %in% names(tAll)
 )
+
+##### TO DO
+## CHANGE REL.UTM and UTM to remove .17 and ensure columns line up with Plot data
+#######
 
 # check no overlap in numbers
 length(intersect(tAll$Num,htAll$Num))
@@ -664,16 +743,14 @@ dim(tAllh)
 
 # a few errors in Types - fix these in csvs?
 ## EDIT AFTER MELINA FIX
-table(tAllh$Type.13)
-tAllh[which(tAllh$Type.13=='A2'),c('Num','Plot')]
+table(tAllh$Type.13,useNA='a')
+tAllh[which(tAllh$Type.13=='A2'),]
+tAllh[which(tAllh$Type.13=='A2'),c('Num','Plot','Type.13')]
 tAllh$Type.13[which(tAllh$Type.13=='A2')] <- 'SA'
 
 table(tAllh$Type.17)
 tAllh[which(tAllh$Type.17=='A2'),c('Num','Plot')]
 tAllh$Type.17[which(tAllh$Type.17=='A2')] <- 'SA'
-
-tAllh[which(tAllh$Num==1112.1),c('Num','Plot')]
-tAllh$Type.18[which(tAllh$Num==1112.1)] <- 'SA'
 
 ### Add functional groups to tAll
 ### Are all species in spAtt? YES
@@ -702,33 +779,6 @@ table(tAllh$Tag.Pulled.Cum)
 ## EDIT AFTER MELINA FIX
 tp20comments <- which(tAllh$Tag.Pulled.20 %in% c('LOST','NEW SA','NOT FOUND','NOT FOUND IN 19 OR 20','NOT FOUND, DOSER KILL','TAG MOVED TO RSPRT','TYPE IN 19, NOT TR'))
 write.csv(tAllh[tp20comments,c('Plot','Num','Tag.Pulled.20')],'data/tp20problems.csv')
-
-# Construct a cumulative Quad, X, Y for plot stems, using most recent values
-## NEED TO VET THIS WITH MELINA
-tAllh$Quad <- NA
-tAllh$X_cm <- NA
-tAllh$Y_cm <- NA
-tAllh$Quad[which(!is.na(tAllh$Quad.13))] <- tAllh$Quad.13[which(!is.na(tAllh$Quad.13))]
-tAllh$X_cm[which(!is.na(tAllh$Quad.13))] <- tAllh$X_cm.13[which(!is.na(tAllh$Quad.13))]
-tAllh$Y_cm[which(!is.na(tAllh$Quad.13))] <- tAllh$Y_cm.13[which(!is.na(tAllh$Quad.13))]
-table(tAllh$Quad,useNA='always')
-
-tAllh$Quad[which(!is.na(tAllh$Quad.18))] <- tAllh$Quad.18[which(!is.na(tAllh$Quad.18))]
-tAllh$X_cm[which(!is.na(tAllh$Quad.18))] <- tAllh$X_cm.18[which(!is.na(tAllh$Quad.18))]
-tAllh$Y_cm[which(!is.na(tAllh$Quad.18))] <- tAllh$Y_cm.18[which(!is.na(tAllh$Quad.18))]
-table(tAllh$Quad,useNA='always')
-
-tAllh$Quad[which(!is.na(tAllh$Quad.19))] <- tAllh$Quad.19[which(!is.na(tAllh$Quad.19))]
-tAllh$X_cm[which(!is.na(tAllh$Quad.19))] <- tAllh$X_cm.19[which(!is.na(tAllh$Quad.19))]
-tAllh$Y_cm[which(!is.na(tAllh$Quad.19))] <- tAllh$Y_cm.19[which(!is.na(tAllh$Quad.19))]
-table(tAllh$Quad,useNA='always')
-
-tAllh$Quad[which(!is.na(tAllh$Quad.20))] <- tAllh$Quad.20[which(!is.na(tAllh$Quad.20))]
-tAllh$X_cm[which(!is.na(tAllh$Quad.20))] <- tAllh$X_cm.20[which(!is.na(tAllh$Quad.20))]
-tAllh$Y_cm[which(!is.na(tAllh$Quad.20))] <- tAllh$Y_cm.20[which(!is.na(tAllh$Quad.20))]
-table(tAllh$Quad[pRows],useNA='always')
-summary(tAllh$X_cm[pRows])
-summary(tAllh$Y_cm[pRows])
 
 ## REMOVE UNNEEDED COLUMNS
 names(tAllh)

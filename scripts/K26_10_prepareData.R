@@ -1,5 +1,7 @@
 ## This script takes the first steps in downloading and preparing the data used for the analysis published in Kozanitas et al. 2026 (DOI 10.1016/j.foreco.2026.123706). The data and some functions are stored on github. Note that during QA/QC of the data, sometimes we fix the data files, but often we make corrections in the script. Thus, it is important to run this script anytime an analysis is starting from the raw data. This script is fairly short and separate from the next steps because the queries to github are very slow.
-# This script downloads two versions of the data - one at the individual tree level and the other at the stem level. Data from all years (2013-2020) is combined, and saved to new Robjects for future ues. The next steps in data analysis are conducted in K26_20_cleanData.R. Note that the Kozanitas publication used the data at the stem level (i.e. branches=T)
+# This script downloads two versions of the data - one at the individual tree level and the other at the stem level. Data from all years (2013-2020) is combined, and saved to new Robjects for future ues. The next steps in data analysis are conducted in K26_20_cleanData.R. 
+
+##Note that the Kozanitas publication used the data at the stem level (i.e. branches=T)
 
 rm(list=ls())
 
